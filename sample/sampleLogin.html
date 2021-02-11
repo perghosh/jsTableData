@@ -128,9 +128,14 @@ body {
          eButton.addEventListener("click", (e) => {
             let TDLogin = window.global.TDLogin;
             let TTLogin = TDLogin.UIGet(0);
-            if( TTLogin.ERRORGetCount() > 0 ) {
-               let a = TTLogin.ERRORGet();
-               a.forEach( (aError, iIndex) => {
+            let eRow = TTLogin.ELEMENTGetRow( 0 );
+            let a = eRow.querySelectorAll(".error-message");
+            a.forEach((e)=>{ e.style.display = "none"; })
+
+            let aError = TTLogin.ERRORGetCount() ? TTLogin.ERRORGet() : TTLogin.ROWValidate( 0 );
+
+            if( Array.isArray( aError ) ) {
+               aError.forEach( (aError, iIndex) => {
                   let eCell = TTLogin.ELEMENTGetCell( aError );
                   if(eCell) {
                      let eError = eCell.querySelector("[data-error]");
@@ -142,6 +147,13 @@ body {
          });
 
       }      
+
+      function PAGE_GetErrorDescription( sError ) {
+         let sDescription;
+         if( sError === 'min' ) sDescription = "Not enough characters";
+         else if( sError === 'max' ) sDescription = "To many characters";
+         else if( sError === 'required' ) sDescription = "Value is required";
+      }
    </script>
 
 
@@ -176,8 +188,8 @@ body {
    <script>
       var aLogin = [
          { 
-            "name": "",
-            "password": ""
+            "name": null,
+            "password": null
          }
       ];
 

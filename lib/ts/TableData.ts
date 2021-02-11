@@ -442,9 +442,10 @@ export class CTableData {
    /**
     * Get column object for index or name
     * @param {number | string} _Index return column object for index or name
-    * @param {boolean} [bNull] 
+    * @param {boolean} [bNull] If true and index to column isn't found then return null. Otherwise undefined behavior if column isn't found 
+    * @param {boolean} [bRaw] if true then position is exact index for column in table data
     */
-   COLUMNGet(_Index: number | string, bNull?: boolean): details.column {
+   COLUMNGet(_Index: number | string, bNull?: boolean, bRaw?: boolean): details.column {
       if(!bNull) return this._column(_Index);
 
       let iIndex = this._index(_Index);

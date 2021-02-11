@@ -788,6 +788,26 @@ export class CUITableText implements IUITableData {
       return aRow;
    }
 
+   ROWValidate( _Row: number | number[] ) : boolean | [ number, number, unknown, unknown ][] {
+      let aError: [ number, number, unknown, unknown ][] = [];
+      if(typeof _Row === "number") _Row = [ _Row ];
+      for(let i = 0; i < _Row.length; i++) {
+         const iRow = _Row[i];
+
+         let aRow = this.data.ROWGet( iRow );
+         aRow.forEach((_Value, iIndex) => {
+            let oColumn = this.data.COLUMNGet( iIndex, false, true );
+            let _result = CTableData.ValidateValue( _Value, oColumn );
+            if(Array.isArray(_result) === true && _result[0] === false) {      // if error then add it to array with found error values
+               let iColumn = this._column_in_ui( iIndex );
+               aError.push([ iRow, iColumn, _Value, _result[1] ] );
+            }
+         });
+      }
+
+      return aError.length ? aError : true;
+   }
+
 
 
    /**
@@ -800,6 +820,19 @@ export class CUITableText implements IUITableData {
       }
       if(eElement) return eElement;
       throw "null section, have table been redrawn?";
+   }
+
+   ELEMENTGetRow(iRow: number, _Section?: string|HTMLElement): HTMLElement {
+      _Section = _Section || "body";
+      let eSection = typeof _Section === "string"? this.GetSection(_Section) : _Section;
+      let i = iRow;
+      let eRow = eSection.firstElementChild;                                   // Position at row
+      if( (<HTMLElement>eRow).dataset.type !== "row" ) i++;                    // no row ?
+      while(--i >= 0 && eRow) {
+         if( (<HTMLElement>eRow).dataset.type !== "row" ) i++;                 // no row ?
+         eRow = eRow.nextElementSibling;
+      }
+      return <HTMLElement>eRow;
    }
 
    /**
@@ -824,14 +857,21 @@ export class CUITableText implements IUITableData {
 
 
       let eSection = this.GetSection(sSection);
+      let eCell = this.ELEMENTGetRow( iRow, eSection );
+      /*
       let eCell = eSection.firstElementChild;                                  // Position at row
 
       let i = iRow;
-      while(--i >= 0 && eCell) eCell = eCell.nextElementSibling;
+      while(--i >= 0 && eCell) {
+         if( (<HTMLElement>eCell).dataset.type !== "row" ) i++;                // no row ?
+         eCell = eCell.nextElementSibling;
+      }
+      */
+
       if(eCell) {
-         eCell = eCell.firstElementChild;
-         i = iColumn;
-         while(--i >= 0 && eCell) eCell = eCell.nextElementSibling;
+         eCell = <HTMLElement>eCell.firstElementChild;
+         let i = iColumn;
+         while(--i >= 0 && eCell) eCell = <HTMLElement>eCell.nextElementSibling;
       }
 
       return <HTMLElement>eCell;
