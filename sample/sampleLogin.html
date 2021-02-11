@@ -90,7 +90,7 @@ body {
       <span data-value='1' style='flex-grow: 1; padding: 0px 2px;'></span>
    </div>
    <div data-description='1'></div>
-   <div class='error-message' data-error='1' style="display: none;"></div>
+   <div class='error-message' data-error='1' style="display: none; margin-left: 120px; text-align:right;"></div>
 </div>   
 `   
          }
@@ -115,6 +115,7 @@ body {
 
          TTLogin.Render();
          LOGIN_PrepareSections( TTLogin );
+         TTLogin.GetSection("body").focus();
       }
 
       function LOGIN_PrepareSections( TTLogin ) {
@@ -133,13 +134,14 @@ body {
             a.forEach((e)=>{ e.style.display = "none"; })
 
             let aError = TTLogin.ERRORGetCount() ? TTLogin.ERRORGet() : TTLogin.ROWValidate( 0 );
+            if( Array.isArray( aError ) && TTLogin.ERRORGetCount() === 0 ) TTLogin.ERRORSet( aError );
 
             if( Array.isArray( aError ) ) {
                aError.forEach( (aError, iIndex) => {
                   let eCell = TTLogin.ELEMENTGetCell( aError );
                   if(eCell) {
                      let eError = eCell.querySelector("[data-error]");
-                     eError.innerHTML = "Error";
+                     eError.innerHTML = PAGE_GetErrorDescription( aError[3] );
                      eError.style.display = "block";
                   }
                });
@@ -149,10 +151,11 @@ body {
       }      
 
       function PAGE_GetErrorDescription( sError ) {
-         let sDescription;
-         if( sError === 'min' ) sDescription = "Not enough characters";
+         let sDescription = "Unknown error";
+         if( sError === 'min' ) sDescription = "To few characters";
          else if( sError === 'max' ) sDescription = "To many characters";
          else if( sError === 'required' ) sDescription = "Value is required";
+         return sDescription;
       }
    </script>
 
@@ -236,12 +239,18 @@ var sCSS = `
    font-family: var(--gd-font-monospace);
    margin: 5px 0px;
    padding: 0.1em 0.5em;
+   border-radius: 4px;
 }
 
 
 .uitabletext_login input { 
    outline: none; 
 }
+
+.uitabletext_login .value:hover { 
+   border: 1px solid var(--gd-gray-light); 
+}
+
 
 .uitabletext_login button {
    background-color: inherit;
@@ -252,6 +261,10 @@ var sCSS = `
    font-size: 20px;
    outline: none;
    padding: 0.3em 1em;
+}
+
+.uitabletext_login button:focus {
+   border: 1px solid var(--gd-white);
 }
 
 .uitabletext_login > div > span { 

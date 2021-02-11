@@ -453,7 +453,7 @@ export class CUITableText implements IUITableData {
 
       const oTrigger = this.trigger;      // Get trigger object with trigger logic
       let iRow: number, iColumn: number;  // index for row and column in UI
-      if(Array.isArray(_Row) && _Row.length === 2) {
+      if(Array.isArray(_Row) && _Row.length === 2) {                           // check for [row, column] parameter
          value = _Column;
          [ iRow, iColumn ] = _Row;
       }
@@ -523,6 +523,15 @@ export class CUITableText implements IUITableData {
       }
 
       return null;
+   }
+
+   /**
+    * Set value error
+    * @param {[ number, number, unknown, unknown ] | [ number, number, unknown, unknown ][]} aError 
+    */
+   ERRORSet(aError: [ number, number, unknown, unknown ] | [ number, number, unknown, unknown ][]) {
+      if( aError.length && typeof aError[0] === "number") aError = [ <[ number, number, unknown, unknown ] >aError ];
+      this.m_aValueError = <[ number, number, unknown, unknown ][]>aError;
    }
 
    ERRORGetCount(): number { return this.m_aValueError.length; }
