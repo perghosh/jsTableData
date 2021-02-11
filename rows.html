@@ -1,0 +1,223 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+   <button>Add row</button> <button>Remove row</button>
+   <hr />
+   <div id="idSelect"></div>
+   <hr />
+   <div id="idResult" style="height: 200px; width: 400px; overflow: scroll;"></div>
+
+
+   <script type="module">
+      import { CTableData, browser } from "./lib/TableData.js";
+      import { edit } from "./lib/TableDataEdit.js";
+      import { CTableDataTrigger } from "./lib/TableDataTrigger.js";
+      import { CUITableText } from "./lib/UITableText.js";
+
+      window.edit = edit;
+      window.CTableData = CTableData;
+      window.CTableData_browser = browser;
+      window.CUITableText = CUITableText;
+      window.CTableDataTrigger = CTableDataTrigger;
+   </script>
+
+   <script>
+      function render_select(sId, aResult) {
+         let aData = aResult[ 0 ];
+         let aPosition = aResult[ 1 ];
+         let eDocument = new DocumentFragment();                               // document fragment collects elements before insert to DOM
+         let eSelect = document.createElement("select");                       // select element for dropdown created
+         eSelect.appendChild(document.createElement("option"));                // add empty value first
+         aData.forEach((a, i) => {
+            let eOption = document.createElement("option");                    // selectable option item
+            eOption.value = a[ 0 ]; // ID                                      // ID value to text
+            eOption.appendChild(document.createTextNode(a[ 1 ]))               // add readable text to option
+            eOption.dataset.index = aPosition[ i ].toString();                 // custom attribute using "data-" format
+            eSelect.appendChild(eOption);                                      // add to select
+         });
+         eDocument.appendChild(eSelect);                                       // add all to the document fragment
+
+         // create event to trigger change
+         eSelect.addEventListener("change", event => {
+            let eSelect = event.srcElement; console.assert(eSelect.tagName === "SELECT", "No Select element, this is wrong!");
+            let eOption = eSelect.options[ eSelect.selectedIndex ];
+            console.log(`Tag name is ${eOption.tagName} and data-index is  ${eOption.dataset.index}`);
+         });
+
+         // finaly insert to dom tree, when this is done the elements are moved from document fragment into dom tree
+         document.getElementById(sId).appendChild(eDocument);
+      }
+   </script>
+
+
+
+   <script>
+      function setup() {
+         CTableData_browser.AddCSS(sCSS); // prepare CSS
+         let tabledataTest = new CTableData();
+         tabledataTest.ReadObjects(json);
+
+         let tabledataTest2 = new CTableData();
+         tabledataTest2.ReadObjects(json);
+
+         tabledataTest.ROWAppend(tabledataTest2.GetData()[ 0 ]);
+
+         tabledataTest.ROWRemove(6, 5);
+         tabledataTest.ROWAppend(tabledataTest2.GetData()[ 0 ]);
+
+         let aResult = tabledataTest.GetData();
+         console.table(aResult[ 0 ]);
+         console.table(aResult[ 1 ]);
+
+         render_select("idSelect", aResult);
+
+         let oTrigger = new CTableDataTrigger({ table: tabledataTest, trigger: callbackTableData });
+         let oTableText = new CUITableText({
+            action: callbackTable,
+            edit: true,
+            parent: document.getElementById("idResult"),
+            section: [ "toolbar", "title", "table.header", "table.body", "table.footer", "statusbar" ],
+            table: tabledataTest,
+            trigger: oTrigger
+         });
+         oTableText.Render();
+
+         let aWidth = oTableText.COLUMNCalculateMaxWidth("body", null, 1); console.log(aWidth);
+         oTableText.COLUMNSetWidth(aWidth, "header");
+      }
+
+      function callbackTableData(iTrigger, iReason, data) {
+         console.log("Trigger:", iTrigger, " Reason:", iReason);
+         iTrigger = iTrigger & 0xffff;                                        console.log(iTrigger);
+      }
+
+      function callbackTable(sEventType, event, sSection) {
+                                                                              console.log(sEventType, sSection);
+      }
+
+
+   </script>
+
+
+   <script>
+      document.addEventListener('DOMContentLoaded', function() {
+         setup();
+      });
+
+
+      let sCSS = `
+.uitabletext { display: table; width: 100%; }
+.uitabletext > div { display: table-row; }
+.uitabletext > div > span { display: table-cell; padding: 5px; border-bottom: thin solid #ddd; border-left: thin solid #ddd; }
+[data-group="table"] > section.uitabletext-header { position: sticky; top: 0;}
+
+.uitabletext .input { border: 1px solid grey; }
+.uitabletext .selected { border: 1px solid grey; }
+`;
+
+
+      let json = [
+         {
+            "ID": 32,
+            "Name": "Neighborhood",
+            "act": 0,
+            "req": 0,
+            "prj": 0,
+            "book": 0,
+            "todo": "0 : 0"
+         },
+         {
+            "ID": 30,
+            "Name": "Selection - Systems",
+            "act": 0,
+            "req": 0,
+            "prj": 0,
+            "book": 0,
+            "todo": "0 : 0"
+         },
+         {
+            "ID": 1,
+            "Name": "SuperOffice database script",
+            "act": 0,
+            "req": 0,
+            "prj": 0,
+            "book": 0,
+            "todo": "0 : 0"
+         },
+         {
+            "ID": 4,
+            "Name": "Select core component",
+            "act": 0,
+            "req": 0,
+            "prj": 0,
+            "book": 0,
+            "todo": "0 : 0"
+         },
+         {
+            "ID": 58,
+            "Name": "Sample projects",
+            "act": 0,
+            "req": 0,
+            "prj": 0,
+            "book": 0,
+            "todo": "0 : 0"
+         },
+         {
+            "ID": 3077,
+            "Name": "TEST",
+            "act": 3,
+            "req": 2,
+            "prj": 7,
+            "book": 1,
+            "todo": "1 : 3"
+         },
+         {
+            "ID": 3090,
+            "Name": "Applications, tips, reviews, etc",
+            "act": 0,
+            "req": 0,
+            "prj": 0,
+            "book": 1,
+            "todo": "0 : 0",
+            "Type": "Application"
+         },
+         {
+            "ID": 3094,
+            "Name": "Garden crops",
+            "act": 0,
+            "req": 0,
+            "prj": 0,
+            "book": 2,
+            "todo": "0 : 0"
+         },
+         {
+            "ID": 3,
+            "Name": "Selection - Standard dashboards and components",
+            "act": 0,
+            "req": 0,
+            "prj": 0,
+            "book": 0,
+            "todo": "0 : 0",
+            "Thread": "Dashboards"
+         },
+         {
+            "ID": 47,
+            "Name": "rSelect",
+            "act": 11,
+            "req": 3,
+            "prj": 4,
+            "book": 6,
+            "todo": "0 : 0",
+            "Description": "#rselect",
+            "Type": "Script",
+            "Thread": "Dashboards"
+         }
+      ];
+   </script>
+</body>
+</html>
