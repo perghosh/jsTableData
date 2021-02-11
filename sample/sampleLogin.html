@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<head>
+   <meta charset="utf-8" />
+   <title>Login sample</title>
+   <style>
+:root {
+   --gd-blue: #0d6efd;
+   --gd-indigo: #6610f2;
+   --gd-purple: #6f42c1;
+   --gd-pink: #d63384;
+   --gd-red: #dc3545;
+   --gd-orange: #fd7e14;
+   --gd-yellow: #ffc107;
+   --gd-green: #198754;
+   --gd-teal: #20c997;
+   --gd-cyan: #0dcaf0;
+   --gd-white: #fff;
+   --gd-gray: #6c757d;
+   --gd-gray-dark: #343a40;
+   --gd-gray-light: #e9e8eb;
+   --gd-primary: #0d6efd;
+   --gd-secondary: #6c757d;
+   --gd-success: #198754;
+   --gd-info: #0dcaf0;
+   --gd-warning: #ffc107;
+   --gd-danger: #dc3545;
+   --gd-light: #f8f9fa;
+   --gd-dark: #212529;
+   --gd-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+   --gd-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+
+body {
+   color: #212529;
+   margin: 0;
+   font-family: var(--gd-font-sans-serif);
+   font-size: 1rem;
+   font-weight: 400;
+   line-height: 1.5;
+   background-color: #fff;
+}
+   </style>
+</head>
+<body>
+
+   <div  style="display: grid; height: 800px; place-items: center; overflow: auto; resize: both; width: 800px; background-color: var(--gd-info);">
+      <div id="idLoginContainer" style="height: 300px; width: 500px;"></div>
+   </div>
+
+<!--
+ | Page logic for login
+-->
+   <script>
+      function PAGE_Setup() {
+         window.global = {};
+         //window.SetTriggerName();
+         CTableData_browser.AddCSS(sCSS); // prepare CSS
+
+         let eEditors = edit.CEditors.GetInstance();
+         eEditors.Add("string", edit.CEditInput);
+         eEditors.Add("password", edit.CEditInput);
+
+         let TDLogin = new CTableData();
+         window.global.TDLogin = TDLogin;
+         TDLogin.ReadObjects(aLogin);
+
+         // convigure input fields and set type of input controls
+         TDLogin.COLUMNSetPropertyValue([ 0, 1 ], "edit.edit", true);
+         TDLogin.COLUMNSetPropertyValue( 0 , "edit.name", "string");
+         TDLogin.COLUMNSetPropertyValue( 1 , "edit.name", "password");
+
+         TDLogin.COLUMNSetPropertyValue( 0 , "alias", "User name");
+         TDLogin.COLUMNSetPropertyValue( 1 , "alias", "Password");
+
+         TDLogin.COLUMNSetPropertyValue( "name", "format.min", 3 );
+         TDLogin.COLUMNSetPropertyValue( "password", "format.min", 8 );
+
+         TDLogin.COLUMNSetPropertyValue( ["name", "password"], "format.required", true );
+
+
+
+         let oStyle = {
+            class_section: "uitabletext_login", class_value_error: "error_value",
+            html_value: `
+<div style='border-bottom: 1px dotted var(--gd-white); border-left: 1px dotted var(--gd-white); padding: 0.5em 1em;'>            
+   <div style='display: flex; align-items: stretch;'>
+      <span data-label='1' style='padding: 0px 1em 0px 0px; text-align: right; width: 75px;'></span>
+      <span data-value='1' style='flex-grow: 1; padding: 0px 2px;'></span>
+   </div>
+   <div data-description='1'></div>
+   <div class='error-message' data-error='1' style="display: none;"></div>
+</div>   
+`   
+         }
+
+         let options = {
+            parent: document.getElementById("idLoginContainer"),                 // container
+            section: [ "title", "body", "statusbar" ],
+            style: oStyle,
+            table: TDLogin,                                               // source data
+            name: "login",                                                      // name to access UI table in CTableData
+            edit: 1,                                                            // endable edit
+            render: ( sType, _value, eCell, oColumn ) => {
+               if(sType === "afterCellValue") {
+                  let eLabel = eCell.querySelector("[data-label]");
+                  eLabel.innerText = oColumn.alias;
+               }
+            }
+         };
+
+         let TTLogin = new CUITableText(options);
+         TDLogin.UIAppend(TTLogin);
+
+         TTLogin.Render();
+         LOGIN_PrepareSections( TTLogin );
+      }
+
+      function LOGIN_PrepareSections( TTLogin ) {
+         let eTitle = TTLogin.GetSection("title");
+         eTitle.innerHTML = "<span>Login to system</span>";
+
+         let eStatusbar = TTLogin.GetSection("statusbar");
+         eStatusbar.innerHTML = "<button>Login</button>";
+
+         let eButton = eStatusbar.firstChild;
+         eButton.addEventListener("click", (e) => {
+            let TDLogin = window.global.TDLogin;
+            let TTLogin = TDLogin.UIGet(0);
+            if( TTLogin.ERRORGetCount() > 0 ) {
+               let a = TTLogin.ERRORGet();
+               a.forEach( (aError, iIndex) => {
+                  let eCell = TTLogin.ELEMENTGetCell( aError );
+                  if(eCell) {
+                     let eError = eCell.querySelector("[data-error]");
+                     eError.innerHTML = "Error";
+                     eError.style.display = "block";
+                  }
+               });
+            }
+         });
+
+      }      
+   </script>
+
+
+<!--
+ | Init page
+-->
+   <script>
+      document.addEventListener('DOMContentLoaded', function() {
+         PAGE_Setup();
+      });
+   </script>
+
+<!--
+ | Load needed components to manage login data  
+-->
+   <script type="module">
+      import { CTableData, browser } from "./../lib/TableData.js";
+      import { edit } from "./../lib/TableDataEdit.js";
+      import { CTableDataTrigger } from "./../lib/TableDataTrigger.js";
+      import { CUITableText } from "./../lib/UITableText.js";
+
+      window.edit = edit;
+      window.CTableData = CTableData;
+      window.CTableData_browser = browser;
+      window.CUITableText = CUITableText;
+      window.CTableDataTrigger = CTableDataTrigger;
+   </script>
+
+<!--
+ | Source data for login test page
+-->
+   <script>
+      var aLogin = [
+         { 
+            "name": "",
+            "password": ""
+         }
+      ];
+
+var sCSS = `
+.uitabletext_login input:invalid { border-color: red; }
+
+.uitabletext_login { 
+   color: var(--gd-white);
+   display: block; 
+   outline: none; 
+   width: 100%;   
+}
+
+.uitabletext_login.uitabletext-title {
+   box-sizing: border-box; 
+   text-align: right;
+   font-size: 24px;
+   margin-bottom: 0.1em;
+   padding: 0.1em 0.1em;
+}
+
+.uitabletext_login.uitabletext-title > span { 
+   border-top: 1px dotted var(--gd-white); 
+   border-right: 1px dotted var(--gd-white); 
+   padding: 1px 5px;
+}
+
+.uitabletext_login.uitabletext-statusbar {
+   box-sizing: border-box; 
+   text-align: right;
+   padding: 0.1em 0.1em;
+}
+
+
+.uitabletext_login .selected { 
+   border: 1px solid var(--gd-gray-light); 
+   background-color: var(--gd-primary);
+}
+
+.uitabletext_login .error-message { 
+   background-color: var(--gd-danger);
+   color: (--gd-white); 
+   font-style: italic;
+   font-family: var(--gd-font-monospace);
+   margin: 5px 0px;
+   padding: 0.1em 0.5em;
+}
+
+
+.uitabletext_login input { 
+   outline: none; 
+}
+
+.uitabletext_login button {
+   background-color: inherit;
+   border: 1px dotted var(--gd-white);
+   border-radius: 20px;
+   color: var(--gd-white);
+   cursor: pointer;
+   font-size: 20px;
+   outline: none;
+   padding: 0.3em 1em;
+}
+
+.uitabletext_login > div > span { 
+   box-sizing: border-box; 
+   display: inline-block; 
+   margin: 1px; padding: 1px 5px; 
+   overflow: hidden; 
+   white-space: nowrap; 
+   width: 100%;
+}
+`;
+
+   </script>
+
+</body>
+</html>

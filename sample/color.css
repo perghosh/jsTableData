@@ -1,0 +1,38 @@
+﻿:root {
+   --gd-blue: #0d6efd;
+   --gd-indigo: #6610f2;
+   --gd-purple: #6f42c1;
+   --gd-pink: #d63384;
+   --gd-red: #dc3545;
+   --gd-orange: #fd7e14;
+   --gd-yellow: #ffc107;
+   --gd-green: #198754;
+   --gd-teal: #20c997;
+   --gd-cyan: #0dcaf0;
+   --gd-white: #fff;
+   --gd-gray: #6c757d;
+   --gd-gray-dark: #343a40;
+   --gd-gray-light: #e9e8eb;
+   --gd-primary: #0d6efd;
+   --gd-secondary: #6c757d;
+   --gd-success: #198754;
+   --gd-info: #0dcaf0;
+   --gd-warning: #ffc107;
+   --gd-danger: #dc3545;
+   --gd-light: #f8f9fa;
+   --gd-dark: #212529;
+   --gd-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+   --gd-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+   --gd-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
+}
+
+body {
+   margin: 0;
+   font-family: var(--gd-font-sans-serif);
+   font-size: 1rem;
+   font-weight: 400;
+   line-height: 1.5;
+   color: #212529;
+   background-color: #fff;
+}
+

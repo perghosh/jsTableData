@@ -1,0 +1,2 @@
+C:\_dev\git\js\gd_data_table\obj\Debug\rComponent.njsprojAssemblyReference.cache
+C:\_dev\git\js\gd_data_table\obj\Debug\rComponent.njsproj.CoreCompileInputs.cache

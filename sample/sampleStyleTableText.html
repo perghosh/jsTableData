@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta charset="utf-8" />
+   <title></title>
+   <style>
+      div.grid-3 {
+         border: thin solid #6d2dab;
+         display: grid;
+         grid-template-columns: repeat(3, auto);
+         background-color: #e1d5bf;
+      }
+
+      div.grid-cell {
+         border: thin solid;
+         background: #feffc4;
+         max-height: 300px;
+         overflow-y: auto;
+         margin: 10px;
+         padding: 1em;
+      }
+
+      table-info {
+         display: inline-block;
+         border: thin solid;
+         margin: 2px 5px;
+         padding: 1px 5px;
+         background-color: var(--gd-white);
+      }
+   </style>
+   <link href="color.css" rel="stylesheet" type="text/css" />
+   <script src="configure.js" type="text/javascript"></script>
+   <script src="sampleStyleTableText.js" type="text/javascript"></script>
+</head>
+<body>
+   <div id="idGrid" class="grid-3" style="background-color: #c4abba;">
+      <div class="grid-cell">Cell</div>
+      <div class="grid-cell">Cell</div>
+      <div class="grid-cell">Cell</div>
+      <div class="grid-cell">Cell</div>
+      <div class="grid-cell">Cell</div>
+      <div class="grid-cell">Cell</div>
+   </div>
+   <!-- <button onclick="TABLE_toggle_data();">Change data</button> -->
+   <select onchange="TABLE_toggle_data( this.value );">
+      <option value="WorldWarII">World War II</option>
+      <option value="Addresses" selected>Addresses</option>
+   </select>
+   <script>
+
+
+      //var g_vars = {};
+
+      document.addEventListener('DOMContentLoaded', function() {
+         setup();
+         TABLE_render_tables();
+         TABLE_set_width();
+      });
+
+
+   </script>
+
+   <script type="module">
+      import { CTableData, browser } from "./../lib/TableData.js";
+      import { edit } from "./../lib/TableDataEdit.js";
+      import { CTableDataTrigger } from "./../lib/TableDataTrigger.js";
+      import { CUITableText } from "./../lib/UITableText.js";
+
+      window.edit = edit;
+      window.CTableData = CTableData;
+      window.CTableData_browser = browser;
+      window.CUITableText = CUITableText;
+      window.CTableDataTrigger = CTableDataTrigger;
+   </script>
+</body>
+</html>
