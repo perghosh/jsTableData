@@ -60,7 +60,7 @@ body {
 
          let eEditors = edit.CEditors.GetInstance();
          eEditors.Add("string", edit.CEditInput);
-         eEditors.Add("password", edit.CEditInput);
+         eEditors.Add("password", edit.CEditPassword);
 
          let TDLogin = new CTableData();
          window.global.TDLogin = TDLogin;
@@ -68,14 +68,22 @@ body {
 
          // convigure input fields and set type of input controls
          TDLogin.COLUMNSetPropertyValue([ 0, 1 ], "edit.edit", true);
+         TDLogin.COLUMNSetPropertyValue([ 0, 1 ], "edit.edit", true);
          TDLogin.COLUMNSetPropertyValue( 0 , "edit.name", "string");
          TDLogin.COLUMNSetPropertyValue( 1 , "edit.name", "password");
+
+         TDLogin.COLUMNSetPropertyValue( 2 , "position.hide", 1);
 
          TDLogin.COLUMNSetPropertyValue( 0 , "alias", "User name");
          TDLogin.COLUMNSetPropertyValue( 1 , "alias", "Password");
 
          TDLogin.COLUMNSetPropertyValue( "name", "format.min", 3 );
          TDLogin.COLUMNSetPropertyValue( "password", "format.min", 8 );
+         TDLogin.COLUMNSetPropertyValue( "password", "format.convert", (v, aCell) => {
+            v = v || "";
+            let s = (new Array(v.length + 1)).join( "x" );
+            return s;
+         });
 
          TDLogin.COLUMNSetPropertyValue( ["name", "password"], "format.required", true );
 
@@ -192,7 +200,8 @@ body {
       var aLogin = [
          { 
             "name": null,
-            "password": null
+            "password": null,
+            "hide_this": null
          }
       ];
 

@@ -19,6 +19,10 @@ export const enum enumReason {
    Edit = 0x0001,
 }
 
+export const enum enumFormat {
+   Raw      = 0x0001,
+   Format   = 0x0002,
+}
 
 
 export const enum enumMove {
@@ -84,7 +88,7 @@ export interface IUITableData {
 
 namespace details {
    export type format = {
-         convert?: string | ((value: unknown) => string), // convert logic
+         convert?: ((value: unknown, aCell: [number, number]) => unknown), // convert logic, external or regex
          max?: number,     // max value for value, if string it is max number of characters, if number it has the max value
          min?:number,      // Same as max but opposite
          required?: number,// if value is required
@@ -132,7 +136,7 @@ namespace details {
       position?: {         // position information
          index?: number,
          col?: number,     // in what column, this is for input forms
-         hide?: number,    // if true value like 1 or more this columns is hidden
+         hide?: number|boolean,// if true ore one value like 1 or more this columns is hidden
          page?: number,    // when forms with pages are used, this has the page columns is placed
          row?: number,     // index to row. if table then 0 is same row as main row. negative numbers are above, positive numbers are below. in forms it has the index for row
       },
@@ -600,15 +604,15 @@ export class CTableData {
     * @param _Property
     * @param _Value
     */
-   COLUMNHasPropertyValue(_Index: boolean | number | string | number[] | string[], _Property: string | string[], _Value: unknown | unknown[]): boolean {
+   COLUMNHasPropertyValue(_Index: boolean | number | string | number[] | string[], _Property: string | string[], _Value?: unknown | unknown[]): boolean {
       return CTableData.HasPropertyValue(this.m_aColumn, <any>_Index, _Property, _Value);
    }
 
 
-   static HasPropertyValue(aSource: any, bAll: boolean, _Property: string | string[], _Value: unknown | unknown[]): boolean;
-   static HasPropertyValue(aSource: any, _Index: number | string, _Property: string | string[], _Value: unknown | unknown[]): boolean;
-   static HasPropertyValue(aSource: any, aIndex: number[] | string[], _Property: string | string[], _Value: unknown | unknown[]): boolean;
-   static HasPropertyValue(aSource: any, _2: any, _Property: any, _Value: unknown | unknown[] ): boolean {
+   static HasPropertyValue(aSource: any, bAll: boolean, _Property: string | string[], _Value?: unknown | unknown[]): boolean;
+   static HasPropertyValue(aSource: any, _Index: number | string, _Property: string | string[], _Value?: unknown | unknown[]): boolean;
+   static HasPropertyValue(aSource: any, aIndex: number[] | string[], _Property: string | string[], _Value?: unknown | unknown[]): boolean;
+   static HasPropertyValue(aSource: any, _2: any, _Property: any, _Value?: unknown | unknown[] ): boolean {
       let o: any;
       let bAll = false;
       let bReturn: boolean = false;
@@ -622,7 +626,8 @@ export class CTableData {
 
       let compare = (v, a: unknown | unknown[]): boolean =>  {
          if(Array.isArray(a)) return a.indexOf(v) !== -1;
-         return v === a;
+         if( a === void 0 && v) return true;
+         else return v === a;
       };
 
 
@@ -739,17 +744,26 @@ export class CTableData {
     * Get value in cell
     * @param  {number} iRow index for row in source array
     * @param  {number|string} _Column index or key to column value
-    * @param  bRaw {boolean} if raw value cell value from raw row is returned
+    * @param  {number} [iFormat] if raw value cell value from raw row is returned
     */
-   CELLGetValue(iRow: number, _Column: string | number, bRaw?: boolean) {
+   CELLGetValue(iRow: number, _Column: string | number, iFormat?: number) {
+      iFormat = iFormat || enumFormat.Format;
       let _V: unknown;
-      let [ iR, iC ] = this._get_cell_coords(iRow, _Column, bRaw); // iR = row index, iC = column index
+      let [ iR, iC ] = this._get_cell_coords(iRow, _Column, (iFormat & enumFormat.Raw) === enumFormat.Raw); // iR = row index, iC = column index
       let aRow: unknown[] = this.m_aBody[ iR ];
 
       if(aRow[ iC ] instanceof Array) {
          _V = aRow[ iC ][ 0 ];
       }
       else { _V = aRow[ iC ]; }
+
+      if( iFormat & enumFormat.Format ) {
+         iC--; // decrase column with one because first value is index key for row
+         if( this.m_aColumn[iC].format?.convert ) {
+            _V = this.m_aColumn[iC].format.convert( _V, [iR,iC] );
+         }
+      }
+
       return _V;
    }
 
@@ -1006,6 +1020,7 @@ export class CTableData {
       let aBody: unknown[][] = this.m_aBody;
 
       let bSortOrHide = this.COLUMNHasPropertyValue(true, [ "state.sort", "position.hide" ], [ 1, -1 ]);
+      let bConvert = this.COLUMNHasPropertyValue(true, "format.convert");
 
       // Check if sort values is needed
       let aSort: [ number, boolean, string?][] = o.sort || [];
@@ -1036,7 +1051,7 @@ export class CTableData {
       }
 
 
-      CTableData._get_data(aResult, aBody, iBeginRow, iEndRow, { slice: iSlice, hide: aHide.length === 0 ? null : aHide });
+      CTableData._get_data(aResult, aBody, iBeginRow, iEndRow, { slice: iSlice, hide: aHide.length === 0 ? null : aHide, table: this });
 
       return aResult;
    }
@@ -1214,6 +1229,8 @@ export class CTableData {
     */
    static _get_data(aResult: [ unknown[][], number[] ], aBody: unknown[][], iBegin, iEnd,
       options: {
+         table?: CTableData,
+         convert?: ((value: unknown, aCell: [number, number]) => string)[],
          hide?: number[],
          index?: boolean,
          order?: number[],
@@ -1232,6 +1249,7 @@ export class CTableData {
 
       let aHidden = options.hide || null,
          aOrder = options.order,
+         aConvert = options.convert,   // convert values
          iSlice = options.slice || 1,
          bAddIndex = options.index || false;
 
@@ -1242,14 +1260,7 @@ export class CTableData {
          aHidden = a;
       }
 
-      let iAdd = iBegin < iEnd ? 1 : -1;
-      for(let iRow = iBegin; iRow !== iEnd; iRow += iAdd) {
-         let aRow = aBody[ iRow ];
-
-         aIndex.push(<number>aRow[ 0 ]); // store physical index to row
-         aRow = aRow.slice(iSlice);
-
-
+      let callOrderAndHide = (aModify: unknown[], aOrder: number[], aHidden: number[]): unknown[] => {
          // How reorder works
          // row = [A,B,C,D,E,F], order = [5,4,3,2,1,0,0,0]
          // create new array
@@ -1257,22 +1268,52 @@ export class CTableData {
          // result = [F,E,D,C,B,A,A,A]
          if(aOrder) {
             let a = [];
-            aOrder.forEach((iPosition, iIndex) => { a.push(aRow[ iPosition ]); })
-            aRow = a;
+            aOrder.forEach((iPosition, iIndex) => { a.push(aModify[ iPosition ]); })
+            aModify = a;
          }
 
          // Remove hidden values, only push those that should be displayed
          // Push values that is to be shown.
          if(aHidden) {
             let a = [];
-            aHidden.forEach((iHide, iIndex) => { if(iHide !== 1) a.push(aRow[ iIndex ]); })
-            aRow = a;
+            aHidden.forEach((iHide, iIndex) => { if(iHide !== 1) a.push(aModify[ iIndex ]); })
+            aModify = a;
          }
+         return aModify;
+      };
+
+      let iAdd = iBegin < iEnd ? 1 : -1;
+      for(let iRow = iBegin; iRow !== iEnd; iRow += iAdd) {
+         let aRow = aBody[ iRow ];
+
+         aIndex.push(<number>aRow[ 0 ]); // store physical index number to row
+         aRow = aRow.slice(iSlice); // create a shallow copy of row
+
+         aRow = callOrderAndHide( aRow, aOrder, aHidden );
 
          // take first value if array in cell
          aRow.forEach((v, i) => { if(Array.isArray(v)) aRow[ i ] = v[ 0 ]; });
 
          aData.push(aRow);
+      }
+
+      // first step, do we need to convert values ?
+      if(aConvert) {
+         let aCell: [number,number] = [-1,-1];
+         let iRowCount = aData.length;
+         aConvert = <((value: unknown, aCell: [number, number]) => string)[]>callOrderAndHide( aConvert, aOrder, aHidden );
+
+         for(let iColumn = 0; iColumn < aConvert.length; iColumn++) {
+            if(aConvert[ iColumn ]) {
+               //let iC = options.table ? options.table._index(iColumn) : iColumn;
+               for(let iRow = 0; iRow < iRowCount; iRow++) {
+                  let iR = aIndex[iRow];
+                  aCell[0] = iR; 
+                  aCell[1] = iColumn; 
+                  aData[iRow][iColumn] = aConvert[iColumn]( aData[iRow][iColumn], aCell );
+               }
+            }
+         }
       }
 
       return [ aData, aIndex ];

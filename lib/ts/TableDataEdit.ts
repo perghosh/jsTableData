@@ -133,9 +133,10 @@ export namespace edit {
          //this.m_aEdit = [];
          aEdit.forEach(a => {
             let [ bEdit, sEditName, sGroup, sName ] = a[1];
-            if(bEdit !== true) this.m_aColumn.push(null);
+            sEditName = sEditName || sGroup;
+            if(bEdit !== true || !sEditName) this.m_aColumn.push(null);
             else {
-               let Edit: any = CEditors.GetInstance().GetEdit(sEditName || sGroup);
+               let Edit: any = CEditors.GetInstance().GetEdit(sEditName);
                let oEdit = new Edit({ edits: this, name: a[ 2 ]});
                this.m_aColumn.push(oEdit);
 
@@ -408,5 +409,49 @@ export namespace edit {
          return this.m_sOldValue !== _value;
       }
    }
+
+   export class CEditPassword extends CEdit {
+      m_sOldValue: string;
+      constructor(o: details.construct_edit) {
+         super(o);
+         this.m_sOldValue = "";
+      }
+
+      Create(_1: any): HTMLInputElement {
+         let eParent: HTMLElement = _1;
+         let e: HTMLInputElement = <HTMLInputElement>super.Create("INPUT", eParent);
+         e.type = "password";
+         return e;
+      }
+
+      GetValue(): string {
+         let _value = (<HTMLInputElement>this.m_eElement).value;
+         return _value;
+      }
+
+      GetValueStack(): details.value_stack { return [ this.m_aPosition, this.m_aPositionRelative, this.GetValue(), this.m_sOldValue]; }
+
+      SetPosition(aPosition: [ number, number ], aPositionRelative?: [ number, number ]): void {
+         super.SetPosition(aPosition, aPositionRelative);
+      }
+
+      SetValue(_Value: unknown) {
+         if(typeof _Value === "number" ) _Value = _Value.toString();
+         if(typeof _Value !== "string" ) {
+            if(_Value === null) _Value = "";
+            else if( typeof _Value === "number" || typeof _Value === "object" ) _Value = _Value.toString();
+            if(typeof _Value !== "string") _Value = "";
+         }
+
+         this.m_sOldValue = <string>_Value;
+         (<HTMLInputElement>this.m_eElement).value = <string>_Value;
+      }
+
+      IsModified(): boolean {
+         let _value = (<HTMLInputElement>this.m_eElement).value;
+         return this.m_sOldValue !== _value;
+      }
+   }
+
 
 }

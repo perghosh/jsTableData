@@ -54,7 +54,7 @@ function render_table(eParent, table, sName, oStyle, oCustomOptions) {
 function TABLE_render_tables() {
    let aStyle = [
       { html_header: "b.bg_secondary secondary" },
-      { html_value: "i.text-small"},
+      { html_cell: "i.text-small"},
       { class_section: "uitabletext-3" },
       {},
       {},
