@@ -1,6 +1,6 @@
 /*
  
- CEditors is a singleton class with controls use to edit values that are registered.
+ CEditors is a singleton class with controls use to edit values t, tabledata_columnhat are registered.
  This class should be filled with editors at application initialization.
 
  - If CDataTable is loaded with data and edit is enabled. Then it will try to create edit controls for each column that are  editable.
@@ -9,9 +9,9 @@
  
  */
 
+/// <reference path="TableData.ts" />
 
-
-import { CTableData, enumMove } from "./TableData.js";
+import { CTableData, enumMove, tabledata_column} from "./TableData";
 
 namespace details {
    export type construct_edits = {
@@ -23,6 +23,7 @@ namespace details {
       edits: edit.CEdits,        // owner edits
       name: string,              // name for edit
       position?: [ number, number ],// current position
+      column: tabledata_column,  // column information  
    }
 
    export type value_stack = 
@@ -131,13 +132,14 @@ export namespace edit {
                                                                                                    console.assert(this.m_eSupportElement !== null,"No support element found!");
 
          //this.m_aEdit = [];
-         aEdit.forEach(a => {
+         aEdit.forEach( (a,iIndex) => {
             let [ bEdit, sEditName, sGroup, sName ] = a[1];
             sEditName = sEditName || sGroup;
             if(bEdit !== true || !sEditName) this.m_aColumn.push(null);
             else {
+               let oColumn = this.data.COLUMNGet( iIndex, undefined, true );
                let Edit: any = CEditors.GetInstance().GetEdit(sEditName);
-               let oEdit = new Edit({ edits: this, name: a[ 2 ]});
+               let oEdit = new Edit({ edits: this, name: a[ 2 ], column: oColumn });
                this.m_aColumn.push(oEdit);
 
                if(bCreate) oEdit.Create(this.m_eSupportElement);
@@ -228,17 +230,20 @@ export namespace edit {
       m_sName: string;                  // Control name
       m_oEdits: CEdits;                 // Owning edit manager
       m_bOpen: boolean;                 // True if edit control is open (visible)
-      m_aPosition: [ number, number ];
-      m_aPositionRelative: [ number, number ];
+      m_aPosition: [ number, number ];  // Physical position in table data
+      m_aPositionRelative: [ number, number ];// Relative position in ui element
+      m_oColumn: tabledata_column;      // Column information from table data
 
       constructor(o: details.construct_edit) {
          this.m_oEdits = o.edits;       // set container (CEdits)
          this.m_sName = o.name;         // name for edit control
          this.m_bOpen = false;
          this.m_aPosition = o.position || [ -1, -1 ];
+         this.m_oColumn = o.column;
       }
 
       get element(): HTMLElement { return this.m_eElement; }
+      get column(): tabledata_column { return this.m_oColumn; }
 
       SetPosition(aPosition: [ number, number ], aPositionRelative?: [ number, number ]) {
          this.m_aPosition = aPosition;
@@ -246,8 +251,8 @@ export namespace edit {
       }
 
       Create(sTagName: string, eParent: HTMLElement): HTMLElement;
-      Create(eParent: HTMLElement): HTMLInputElement;
-      Create(sTagName: string, eParent: HTMLElement): HTMLInputElement;
+      Create(eParent: HTMLElement): HTMLElement;
+      Create(sTagName: string, eParent: HTMLElement): HTMLElement;
       Create(_1?: any, _2?: any): any {
          if(typeof _1 === "string" && _2) {
             this.m_eElement = document.createElement(_1);
@@ -291,7 +296,7 @@ export namespace edit {
       GetPosition(): [ number, number ] { return this.m_aPosition; }
       GetPositionRelative(): [ number, number ] { return this.m_aPositionRelative; }
 
-      GetValue(): string { return ""; }
+      GetValue(): string|unknown { return ""; }
       GetValueStack(): details.value_stack { return null; }
 
       SetValue(_value: any) { }
@@ -503,7 +508,66 @@ export namespace edit {
          let _value = (<HTMLInputElement>this.m_eElement).value;
          return this.m_sOldValue !== _value;
       }
+   }
+
+   export class CEditSelect extends CEdit {
+      m_OldValue: unknown;
+      constructor(o: details.construct_edit) {
+         super(o);
+         this.m_OldValue = null;
+      }
+
+      Create(_1: any): HTMLSelectElement {
+         let eParent: HTMLElement = _1;
+         let e = <HTMLSelectElement>super.Create("SELECT", eParent);
+
+         // create options for select
+         let aList = this.column.list;
+         aList.forEach( (a,i) => {
+            let eO = document.createElement("option");
+            eO.value = a[0].toString();
+            eO.text = a[1].toString();
+            e.appendChild( eO );
+         });
+
+         Object.assign(e.style, { display: "none" });
+         e.dataset.input = "1";
+         eParent.appendChild(e);
+         this.m_eElement = e;
+         return e;
+      }
+
+      GetValue(): string|unknown {
+         if( (<HTMLSelectElement>this.m_eElement).selectedIndex === -1 ) return null;
+         let _text = (<HTMLSelectElement>this.m_eElement).options[(<HTMLSelectElement>this.m_eElement).selectedIndex].text;
+         let _value = (<HTMLSelectElement>this.m_eElement).value;
+         return [_text, _value];
+      }
+
+      GetValueStack(): details.value_stack { return [ this.m_aPosition, this.m_aPositionRelative, this.GetValue(), this.m_OldValue]; }
+
+      SetPosition(aPosition: [ number, number ], aPositionRelative?: [ number, number ]): void {
+         super.SetPosition(aPosition, aPositionRelative);
+      }
+
+      SetValue(_Value: unknown) {
+         if(typeof _Value === "number" ) _Value = _Value.toString();
+         if(typeof _Value !== "string" ) {
+            if(_Value === null) _Value = "";
+            else if( typeof _Value === "number" || typeof _Value === "object" ) _Value = _Value.toString();
+            if(typeof _Value !== "string") _Value = "";
+         }
+
+         this.m_OldValue = _Value;
+         (<HTMLInputElement>this.m_eElement).value = <string>_Value;
+      }
+
+      IsModified(): boolean {
+         let _value = (<HTMLSelectElement>this.m_eElement).value;
+         return this.m_OldValue !== _value;
+      }
 
    }
+
 
 }

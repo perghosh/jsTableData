@@ -107,16 +107,6 @@ namespace details {
       },
       extra?: any,         // custom data
       format?: details.format,
-
-      /*
-      format?: {
-         convert?: string | ((value: unknown) => string), // convert logic
-         max?: number,     // max value for value, if string it is max number of characters, if number it has the max value
-         min?:number,      // Same as max but opposite
-         required?: number,// if value is required
-         verify?: string | ((value: string) => boolean), // regex string or method to verify value
-      },
-      */
       id?: string,         // id for column
       list?: [ string | number, string | number ][], // list attached to column
       key?: {
@@ -126,12 +116,6 @@ namespace details {
       name?: string,       // field name, same name as in database?
       style?: {
          [key: string]: string,
-         /*
-         textAlign?: number | string,// 0 = left, 1 = right, 2 = center, 3 = justify
-         color?: string,
-         left?: string,    // left offset position
-         top?: string,     // top offset position
-         */
       },
       position?: {         // position information
          index?: number,
@@ -168,6 +152,8 @@ namespace details {
       trigger?: ((iTrigger: number, iReason: number, _data: any) => boolean)[],
    }
 }
+
+export type tabledata_column = details.column;
 
 /**
  * 
@@ -450,7 +436,8 @@ export class CTableData {
     * @param {boolean} [bRaw] if true then position is exact index for column in table data
     */
    COLUMNGet(_Index: number | string, bNull?: boolean, bRaw?: boolean): details.column {
-      if(!bNull) return this._column(_Index);
+      if( bRaw ) this.m_aColumn[ <number>_Index ]
+      else if(!bNull) return this._column(_Index);
 
       let iIndex = this._index(_Index);
       if(iIndex === -1) return null;
