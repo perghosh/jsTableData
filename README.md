@@ -1,3 +1,3 @@
-# rComponent
+# jsTableData - JavaScript table framework
 
 
