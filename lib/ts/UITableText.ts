@@ -49,9 +49,16 @@ namespace details {
          class_cell_input?: string,
          class_cell_selected?: string,
          class_value_error?: string,
+         html_group?: string,             // element name to group sections
          html_header?: string,
          html_cell?: string,
+         html_cell_header?: string,
+         html_cell_footer?: string,
+         html_row?: string,
          html_value?: string,
+         html_section_header?: string,
+         html_section_body?: string,
+         html_section_footer?: string,
       },
       table?: CTableData,        // table data object. feeds table with data
       trigger?: CTableDataTrigger,// trigger logic
@@ -1213,18 +1220,29 @@ export class CUITableText implements IUITableData {
          let eParent = eComponent;
          let aSection = sName.split(".");                                      // if section name is split with . then it is grouped, name before . creates div group
          if(aSection.length === 2) {                                           // found group name ?
+            let sHtmlGroup: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_group") || "div";
+            let aGroup = sHtmlGroup.split("."), sClass;
+            if( aGroup.length > 1 ) { sHtmlGroup = aGroup[0]; sClass = aGroup[1]; } // found class name in group element?
             sName = aSection[ 1 ];
             let sGroup = aSection[ 0 ];                                        // get group name
-            let eGroup = <HTMLElement>eComponent.querySelector("div[data-group='" + sGroup + "']");
+            let eGroup = <HTMLElement>eComponent.querySelector(sHtmlGroup + "[data-group='" + sGroup + "']");
             if(eGroup === null) {                                              // is group not created ?
-               eGroup = document.createElement("div");
+               eGroup = document.createElement(sHtmlGroup);
+               if( sClass ) eGroup.className = sClass;
                eGroup.dataset.group = sGroup;
                eParent.appendChild(eGroup);                                    // add group to parent
             }
             eParent = eGroup;                                                  // group is parent to section
          }
 
-         let eSection = document.createElement("section");                     // create section
+         let sHtmlSection = "section";
+         switch(sName) {
+            case "header": sHtmlSection = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_section_header") || sHtmlSection; break;
+            case "body": sHtmlSection = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_section_body") || sHtmlSection; break;
+            case "footer": sHtmlSection = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_section_footer") || sHtmlSection; break;
+         }
+
+         let eSection = document.createElement(sHtmlSection);                  // create section
          eSection.dataset.section = sName;                                     // set section name, used to access section
          eSection.dataset.widget = CUITableText.s_sWidgetName;
          eSection.tabIndex = -1;
@@ -1322,15 +1340,16 @@ export class CUITableText implements IUITableData {
 
       let sClass: string;
       let iCount = aHeader.length;
+      let sHtmlRow: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row") || "div";
       let sStyle: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "header") || "";
-      let sHtml: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_header");
+      let sHtml: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_cell_header");
       if(!sHtml) sHtml = "span";
       else {
          let a = sHtml.split(".");
          if(a.length > 1) [ sHtml, sClass ] = a;
       }
       
-      let eRow = document.createElement("div");
+      let eRow = document.createElement(sHtmlRow);
       eRow.dataset.type = "row";                                               // "row" for header
       let iDiv = iCount;
       aHeader.forEach((a, i) => {
@@ -1364,6 +1383,7 @@ export class CUITableText implements IUITableData {
 
       let sClass: string;
       let sStyle: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "value") || null;
+      let sHtmlRow: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row") || "div";
       let sHtmlCell: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_cell") || "span"; // span is default for cell
       let sHtmlValue: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_value");
       if( typeof sHtmlValue === "string" ) sHtmlValue = sHtmlValue.trim();
@@ -1376,7 +1396,7 @@ export class CUITableText implements IUITableData {
 
 
       let aColumns = aBody[ 0 ];                                               // first row
-      let eRow = document.createElement("div");
+      let eRow = document.createElement(sHtmlRow);
       eRow.dataset.type = "row";                                               // "row" for body
       let i = aColumns.length;
       while(--i >= 0) {

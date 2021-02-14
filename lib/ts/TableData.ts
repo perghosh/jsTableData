@@ -280,6 +280,43 @@ export class CTableData {
     */
    get id() { return this.m_sId; }
 
+   ReadArray(aData: unknown[][]) {
+      let iBegin = 1, iEnd = aData.length;
+
+      /*
+      let add_column = sName => {
+         if(this.COLUMNGet(sName, true) === null) {
+            this.COLUMNAppend(sName);
+            if(this.ROWGetCount(true) !== 0) this.ROWExpand();
+         }
+      };
+      */
+
+      let aRow: unknown[] = aData[0];
+
+      if(this.COLUMNGetCount() === 0) {
+         aRow.forEach((sName) => { 
+            this.COLUMNAppend(sName);
+         });
+      }
+
+
+      let iRow = this.ROWGetCount() + this.m_iHeaderSize;
+      let aReturn = this.ROWAppend(iEnd - iBegin);
+
+      // Add to body
+      for(let i = iBegin; i < iEnd; i++) {
+         aRow = aData[i];
+         let iTo = aRow.length;
+         let aBodyRow = this.m_aBody[iRow];
+         for( let j = 0; j < iTo; j++ ) {  
+            aBodyRow[j+1] = aRow[j];
+         }
+
+         iRow++;
+      }
+   }
+
 
    /**
     * Read object data
@@ -304,12 +341,6 @@ export class CTableData {
       let aColumns = Object.keys(oFirst);
       aColumns.forEach((sName: string) => {
          add_column(sName);
-         /*
-         if(this.COLUMNGet(sName, true) === null) {
-            this.COLUMNAppend(sName);
-            if(this.ROWGetCount(true) !== 0) this.ROWExpand();
-         }
-         */
       });
 
       let iRow = this.ROWGetCount() + this.m_iHeaderSize;
