@@ -34,7 +34,8 @@ export const enum enumMove {
    page_up     = 16,
    page_down   = 32,
    begin       = 64,
-   end         = 128,
+   disable     = 128,
+   end         = 256,
 }
 
 export const enum enumValueType {
@@ -58,7 +59,9 @@ export const enum enumValueType {
    bin            = 0x80020,
    blob           = 0x80021,
    file           = 0x80022,
-   date          = 0x100030,
+   datetime      = 0x100030,
+   date          = 0x100031,
+   time          = 0x100032,
 
    group_boolean  = 0x00100,
    group_number   = 0x10000,
@@ -88,11 +91,17 @@ export interface IUITableData {
 
 namespace details {
    export type format = {
-         convert?: ((value: unknown, aCell: [number, number]) => unknown), // convert logic, external or regex
-         max?: number,     // max value for value, if string it is max number of characters, if number it has the max value
-         min?:number,      // Same as max but opposite
-         required?: number,// if value is required
-         verify?: string | ((value: string) => boolean), // regex string or method to verify value
+      convert?: ((value: unknown, aCell: [number, number]) => unknown), // convert logic, external or regex
+      max?: number,     // max value for value, if string it is max number of characters, if number it has the max value
+      min?:number,      // Same as max but opposite
+      required?: number,// if value is required
+      verify?: string | ((value: string) => boolean), // regex string or method to verify value
+   };
+
+   export type type = { 
+      group?: string,   // group name for type like "number" , "string"
+      type?: number,    // number for type
+      name?: string,    // name for type
    };
 
 
@@ -133,11 +142,7 @@ namespace details {
          sorted?: number,  // column is sorted
       },
       title?: string,      // used for tool tips
-      type: {              // number describing type or object with detailed information about type
-         group?: string,   // group name for type like "number" , "string"
-         type?: number,    // number for type
-         name?: string,    // name for type
-      },
+      type?: details.type, // type information
       value?: string,      // value shown in field if any or condition default
    }
 
@@ -182,18 +187,57 @@ export class CTableData {
    };
 
    static s_aJsType: [string,enumValueType][] = [
-      ["number",enumValueType.r8],["string",enumValueType.str],["boolean",enumValueType.i1Bool],["date",enumValueType.date]
+      ["number",enumValueType.r8],["string",enumValueType.str],["boolean",enumValueType.i1Bool],["date",enumValueType.datetime],["binary",enumValueType.blob]
    ];
+
+   static s_aType: [string,enumValueType][] = [
+      ["i1",enumValueType.i1],  ["i1Bool",enumValueType.i1Bool],  ["i2",enumValueType.i2],    ["i4",enumValueType.i4], ["i8",enumValueType.i8],
+      ["u1",enumValueType.u1],  ["u2",enumValueType.u2],          ["u4",enumValueType.u4],    ["u8",enumValueType.u8], 
+      ["r4",enumValueType.r4],  ["r8",enumValueType.r8],
+      ["str",enumValueType.str],["blobstr",enumValueType.blobstr],["utf8",enumValueType.utf8],["ascii",enumValueType.ascii],
+      ["bin",enumValueType.bin],["blob",enumValueType.blob],
+      ["file",enumValueType.file],
+      ["datetime",enumValueType.datetime],["date",enumValueType.date],["time",enumValueType.time]
+   ];
+
+   /**
+    * Return value type number or type name based on argument
+    * @param  {number|string} _T If string then return number for type, if number then return type name
+    * @return {number|string} type name or type number
+    * @throws {string} information about type if type isn't found
+    */
+   static GetType( _T: number|string ): number|string {
+      const a = CTableData.s_aType;
+      let i = a.length;
+      if( typeof _T === "string" ) {
+         while( --i >= 0 ) { if( _T === a[i][0] ) return a[i][1]; }
+      }
+      while( --i >= 0 ) { if( _T === a[i][1] ) return a[i][0]; }
+      throw "unknown type " + _T.toString() ;
+   }
+
 
    /**
     * Return internal type number for standard javascript type names
     * @param {string} sType javascript type name
     */
-   static GetJSType(sType: string): enumValueType {
+   static GetJSType(_Type: string|number): enumValueType|string {
       let i = CTableData.s_aJsType.length;
-      while(--i >= 0) {
-         const a = CTableData.s_aJsType[i];
-         if( a[0] === sType ) return a[1];
+      if( typeof _Type === "string" ) {
+         while(--i >= 0) {
+            const a = CTableData.s_aJsType[i];
+            if( a[0] === _Type ) return a[1];
+         }
+      }
+      else {
+         while(--i >= 0) {
+            const a = CTableData.s_aJsType[i];
+            const iGroup: number = ((a[1] & 0xffffff00) & _Type); // type flags
+            if( iGroup === 0 ) continue;
+
+            if( _Type !== enumValueType.i1Bool ) return a[1];
+            else return "boolean";
+         }
       }
       return enumValueType.unknown;
    }
@@ -231,7 +275,7 @@ export class CTableData {
          oFormat = (<details.column>oFormat).format;
       }
 
-      if( !eType ) eType = CTableData.GetJSType( typeof _Value );
+      if( !eType ) eType = <number>CTableData.GetJSType( typeof _Value );
 
       _Value = CTableData.ConvertValue( _Value, eType );
 
@@ -745,16 +789,52 @@ export class CTableData {
    }
 
    /**
-    * Set type for columns based on value types in array
+    * Set type for columns based on value types in array:
+    * Remember to take array with values that match number of values in each row.
     * @param aType array with values that types are extracted from
+    *//**
+    * Set type for specified column
+    * @param {number} iIndex index to column type is set to
+    * @param {unknown|details.type} _Type Column type, if single value function tries to figure out what type it is
     */
-   COLUMNSetType(aType: unknown[]) {
-      aType.forEach((v: unknown, i: number) => {
-         let oColumn = this.COLUMNGet(i);
+   COLUMNSetType(aType: unknown[]);
+   COLUMNSetType(iIndex: number, _Type: unknown|details.type);
+   COLUMNSetType(_1: any, _2?: any) {
+      if( typeof _1 === "number" ) _1 = [_1, _2];
+      else if(_2 !== undefined && Array.isArray(_1)) {
+         let a: any = [];
+         _1.forEach((iColumn) => { 
+            a.push( [iColumn, _2] );
+         });
+         _1 = a;
+      }
+
+      _1.forEach((v: unknown, i: number) => {
+         let iColumn = i;
+         if(Array.isArray(v)) {
+            iColumn = v[0];
+            v = v[1];
+         }
+
+         let oColumn = this.COLUMNGet(iColumn);
          const s = typeof v;
-         oColumn.type.group = s;
-         oColumn.type.type = CTableData.GetJSType( s );
-         if( s === "number" ) oColumn.style.textAlign = "right";
+         if(s !== "object") {
+            oColumn.type.group = s;
+            oColumn.type.type = <number>CTableData.GetJSType(s);
+            if(s === "number") oColumn.style.textAlign = "right";
+         }
+         else {
+            let eType: enumValueType = (<details.type>v).type || enumValueType.unknown;
+            if(eType === enumValueType.unknown) {
+               oColumn.type.type = <number>CTableData.GetType( (<details.type>v).name );
+               oColumn.type.name = (<details.type>v).name;
+            }
+            else if( !(<details.type>v).name ) {
+               oColumn.type.name = <string>CTableData.GetType( (<details.type>v).type );
+            }
+
+            if( !(<details.type>v).group ) oColumn.type.group = <string>CTableData.GetJSType( (<details.type>v).type );
+         }
       });
    }
 

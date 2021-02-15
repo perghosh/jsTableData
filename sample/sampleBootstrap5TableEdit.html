@@ -4,6 +4,20 @@
    <meta charset="utf-8" />
    <title>Bootstrap table sample</title>
    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.css">
+   <style type="text/css">
+      .uitabletext td {
+         white-space: nowrap; 
+      }
+
+      .uitabletext td.selected {
+         color:  var(--bs-white);
+         background-color: var(--bs-primary);
+      }
+
+      tbody { 
+         outline: none; 
+      }
+   </style>
 </head>
 <body>
 
@@ -15,9 +29,18 @@
       function PAGE_Setup() {
          window.global = {};
 
+         let eEditors = edit.CEditors.GetInstance();
+         eEditors.Add("string", edit.CEditInput);
+
+
          let TDHappiness = new CTableData();
          window.global.TDHappiness = TDHappiness;
          TDHappiness.ReadArray(aTable);                     // read happiness data
+         TDHappiness.COLUMNSetPropertyValue(true, "edit.edit", true);// enable edit for all column
+         TDHappiness.COLUMNSetPropertyValue( true, "edit.name", "string");// set string editor for all columns
+
+
+         TDHappiness.COLUMNSetType(aTable[1]);              // set column types from second row in soursce data
 
          // style CUITableText
          let oStyle = {
@@ -37,11 +60,21 @@
             table: TDHappiness,                             // source data
             name: "happiness",                              // name to access UI table in CTableData
             style: oStyle,                                  // styling
+            edit: 1,                                        // enable edit
+            support_element: document.getElementById("idBootstrapTable"),
          };
 
          let TTHappiness = new CUITableText(options);       // create CUITableText that render table in browser
          TDHappiness.UIAppend(TTHappiness);                 // add ui object to source data object (CTableData)
          TTHappiness.Render();                              // render table
+
+         // make header sticky
+         let eSection = TTHappiness.GetSection("header");
+         let aTH = eSection.querySelectorAll("th");
+         aTH.forEach((e)=> {
+            Object.assign(e.style, {backgroundColor: "var(--bs-white)", position: "sticky", top: "0px"});
+         });
+
       }
    </script>
 

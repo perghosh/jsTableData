@@ -60,6 +60,7 @@ namespace details {
          html_section_body?: string,
          html_section_footer?: string,
       },
+      support_element?: string|HTMLElement,
       table?: CTableData,        // table data object. feeds table with data
       trigger?: CTableDataTrigger,// trigger logic
       width?: {
@@ -133,6 +134,7 @@ export class CUITableText implements IUITableData {
       class_header?: string, class_value?: string, class_section?: string, class_component?: string, class_cell_input?: string, class_cell_selected?: string,
       html_header?: string, html_value?: string
    };
+   m_eSupportElement: HTMLElement;
    m_aValueError: [ number, number, unknown, unknown ][];// Error values
    m_oWidth: { max_row_width?: number, max_value_width?: number  }
 
@@ -178,7 +180,6 @@ export class CUITableText implements IUITableData {
       this.m_iRowCountMax  = o.max || -1;
       this.m_aSection      = o.section || [ "toolbar", "title", "header", "body", "footer", "statusbar" ]; // sections "header" and "body" are required
       this.m_aSelected     = [];
-      //this.m_oSettings     = o.settings || {};
       this.m_iState        = 0;
       this.m_oTableData    = o.table || null;
       this.m_oTableDataTrigger = o.trigger || null;
@@ -210,6 +211,11 @@ export class CUITableText implements IUITableData {
 
       if(this.m_eParent) {
          this.Create(o.callback_create);
+      }
+
+      if(o.support_element) {
+         if( typeof o.support_element === "string" ) this.m_eSupportElement = this.GetSection(o.support_element);
+         else this.m_eSupportElement = o.support_element;
       }
 
       // if edit and support element is set then initialize inputs
@@ -315,7 +321,7 @@ export class CUITableText implements IUITableData {
     * @returns {HTMLElement}
     */
    GetSupportElement(): HTMLElement {                                         console.assert(typeof this.m_eComponent === "object", "Support element not created!");
-      let e = this.GetSection("body", true);
+      let e = this.m_eSupportElement || this.GetSection("body", true);
       return e || this.m_eComponent;
    }
 
@@ -1023,13 +1029,14 @@ export class CUITableText implements IUITableData {
       if(bInput === true) this.INPUTSet( iRow, iColumn );
    }
 
-   INPUTDeactivate(iRow?: number, _Column?: number | number[]): boolean {
+   INPUTDeactivate(_Row?: number|boolean, _Column?: number | number[]): boolean {
       let bOk = true;
-      if(iRow === void 0) {
+      if(_Row === void 0) {
 
       }
 
       if(this.m_oEdits) {
+         if( _Row === false ) this.m_oEdits.Deactivate( false );
          bOk = this.m_oEdits.Deactivate();
          if( bOk === true ) this.m_iOpenEdit = 0;                              // Edit controls closed, set to 0
       }
@@ -1245,7 +1252,9 @@ export class CUITableText implements IUITableData {
          let eSection = document.createElement(sHtmlSection);                  // create section
          eSection.dataset.section = sName;                                     // set section name, used to access section
          eSection.dataset.widget = CUITableText.s_sWidgetName;
-         eSection.tabIndex = -1;
+         
+         if(sName === "body") eSection.tabIndex = -1;                          // tab index on body to enable keyboard movement
+
          let a = sClass.split(" ");
          a.push(CUITableText.s_sWidgetName + "-" + sName);
          eSection.classList.add( ...a );
@@ -1474,14 +1483,16 @@ export class CUITableText implements IUITableData {
             else if((<KeyboardEvent>e).keyCode === 35) eMove = enumMove.end;
             else if((<KeyboardEvent>e).keyCode === 33) eMove = enumMove.page_up;
             else if((<KeyboardEvent>e).keyCode === 34) eMove = enumMove.page_down;
+            else if((<KeyboardEvent>e).keyCode === 27) eMove = enumMove.disable;
             if(eMove) { 
                if( this.m_iOpenEdit > 0 ) {                                    // any open edit elements?
-                  this.GetSection("body").focus();                             // Set focus to body, closing edit elements will make it loose focus
-                  this.INPUTDeactivate();                                      // close all edits
+                  if( eMove == enumMove.disable ) this.INPUTDeactivate( false );
+                  else this.INPUTDeactivate();                                      // close all edits
+                  this.GetSection("body").focus({preventScroll: true});        // Set focus to body, closing edit elements will make it loose focus
                }
                this.INPUTMove(eMove, true);
             }
-            else if(this.m_oEdits) {
+            else if(this.m_oEdits && (<KeyboardEvent>e).keyCode >= 32) {       // space and above
                let oEdit = this.m_oEdits.GetEdit(this._column_in_data(this.m_aInput[1]));// Get edit for column (second value in input array)
                if(oEdit !== null) {
                   if(oEdit.IsOpen() === false) {
@@ -1506,7 +1517,9 @@ export class CUITableText implements IUITableData {
                let oEdit = this.edits.GetEdit(<HTMLElement>e.srcElement);
                if(oEdit.IsModified() === true) {                               // Is value modified
                   let bOk: boolean = true;
-                  this.SetCellValue( oEdit.GetPositionRelative(), oEdit.GetValue(), {iReason: enumReason.Edit,edit:oEdit} );
+                  let _Value = oEdit.GetValue();
+                  this.INPUTDeactivate()
+                  this.SetCellValue( oEdit.GetPositionRelative(), _Value, {iReason: enumReason.Edit,edit:oEdit} );
 //                  if(!this.trigger) this.SetCellValue(oEdit.GetPosition(), oEdit.GetValue(), undefined, { iReason: enumReason.Edit,edit:oEdit));
 //                  else this.trigger.CELLSetValue({ iReason: enumReason.Edit, dataUI: this }, oEdit.GetValueStack(), oEdit.GetPosition(), oEdit.GetValue());
 /*
