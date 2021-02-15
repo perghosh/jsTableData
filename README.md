@@ -19,7 +19,7 @@ Two more areas can be used, one for managing events and one for editing. Both ha
 
 
 Developments samples
-- [Six tables from same source](https://perghosh.github.io/jsTableData/table1.html) 
+- [Six tables from same source](https://perghosh.github.io/jsTableData/sample/sampleStyleTableText.html) 
 
 
 
