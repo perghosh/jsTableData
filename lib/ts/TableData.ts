@@ -1,24 +1,3 @@
-// before = 0x10000000
-// after  = 0x
-
-// edit   = 0x010000
-// load   = 0x020000
-// column = 0x030000
-
-const TRIGGER_BEFORE = 0x10000000;
-const TRIGGER_AFTER  = 0x20000000;
-
-export const enum enumTrigger {
-   BeforeSetValue     = 0x10010001,
-   AfterSetValue      = 0x20010002,
-   BeforeSetRange     = 0x10010003,
-   AfterSetRange      = 0x20010004,
-}
-
-export const enum enumReason {
-   Edit = 0x0001,
-}
-
 export const enum enumFormat {
    Raw      = 0x0001,
    Format   = 0x0002,
@@ -1204,6 +1183,7 @@ export class CTableData {
     * @param aArgument
     * @param callback
     */
+   /*
    Trigger(aTrigger: number[], iReason: number, aArgument: any[], callback: (any) => any) {
       let _trigger = (iTrigger: number, iReason: number, aArgument: any[]): boolean => {
          let bOk: boolean = true;
@@ -1236,6 +1216,7 @@ export class CTableData {
          }
       }
    }
+   */
 
    /**
     * 
