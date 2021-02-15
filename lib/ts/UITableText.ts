@@ -13,7 +13,7 @@
  */
 
 
-import { CTableData, enumMove, IUITableData } from "./TableData.js";
+import { CTableData, enumMove, IUITableData, tabledata_column } from "./TableData.js";
 import { edit } from "./TableDataEdit.js";
 import { CTableDataTrigger, enumTrigger, enumReason, EventDataTable } from "./TableDataTrigger.js";
 
@@ -678,6 +678,29 @@ export class CUITableText implements IUITableData {
     * @returns {number} number of visible columns.
     */
    COLUMNGetCount(): number { return this.m_iColumnCount; }
+
+   /**
+    * Get column object and index for column in ui table
+    * @param {number | string | HTMLElement} _Index
+    */
+   COLUMNGet(_Index: number | string | HTMLElement): [number, tabledata_column] {
+      let iColumn: number;
+      if(typeof _Index === "number") {
+         iColumn = this._column_in_data( _Index );
+      }
+      else if(typeof _Index === "string") {
+         iColumn = this.data._index( _Index );
+      }
+      else {
+         let aRowCol = this.GetRowCol( _Index );
+         if(aRowCol) {
+            iColumn = aRowCol[1];
+         }
+      }
+
+      if( typeof iColumn === "number" && iColumn >= 0 ) return [iColumn, this.data.COLUMNGet( iColumn )];
+      return null;
+   }
 
 
    /**
@@ -1539,12 +1562,12 @@ export class CUITableText implements IUITableData {
     * Return index to physical position in table data. This is needed if operations based on data is executed
     * @param iIndex
     */
-   private _column_in_data(iIndex: number) { return this.m_aColumnPhysicalIndex[ iIndex ]; }
+   private _column_in_data(iIndex: number): number { return this.m_aColumnPhysicalIndex[ iIndex ]; }
    /**
     * Get column position in table, this position can differ from the position in  table data
     * @param iIndex
     */
-   private _column_in_ui(iIndex: number) {
+   private _column_in_ui(iIndex: number): number {
       let i = this.m_aColumnPhysicalIndex.length;
       while(--i >= 0) {
          if(this.m_aColumnPhysicalIndex[ i ] === iIndex) return i;

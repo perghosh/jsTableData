@@ -36,7 +36,7 @@
          let TDHappiness = new CTableData();
          window.global.TDHappiness = TDHappiness;
          TDHappiness.ReadArray(aTable);                     // read happiness data
-         TDHappiness.COLUMNSetPropertyValue(true, "edit.edit", true);// enable edit for all column
+         TDHappiness.COLUMNSetPropertyValue(true, "edit.edit", true);// enable edit for all columns
          TDHappiness.COLUMNSetPropertyValue( true, "edit.name", "string");// set string editor for all columns
 
 
@@ -62,6 +62,16 @@
             style: oStyle,                                  // styling
             edit: 1,                                        // enable edit
             support_element: document.getElementById("idBootstrapTable"),
+            action: function(sType, e, sSection) {
+               if(sType === "click" && sSection === "header") {
+                  let aColumn = this.COLUMNGet(e.srcElement );
+                  if(aColumn) {
+                     this.Sort(aColumn[0], true);
+                     this.Render();
+                     //console.log( aColumn );
+                  }
+               }
+            }
          };
 
          let TTHappiness = new CUITableText(options);       // create CUITableText that render table in browser

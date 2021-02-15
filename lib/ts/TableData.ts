@@ -304,8 +304,18 @@ export class CTableData {
     */
    get id() { return this.m_sId; }
 
-   ReadArray(aData: unknown[][]) {
-      let iBegin = 1, iEnd = aData.length;
+   /**
+    * Read array information into table data. If table is empty the default is to create columns and
+    * names for each column are taken from first row.
+    * @param {unknown[][]} aData array with rows where each row is an array of values
+    * @param {object} oOptions configure reading
+    * @param {number} [oOptions.begin] start row, where to begin reading data, if not set then start from second row (first is column names)
+    * @param {number} [oOptions.end] end row, where to stop reading data, if not set then it reads all rows from aData
+    */
+   ReadArray(aData: unknown[][], oOptions?: {begin?: number, end?: number}) {
+      oOptions = oOptions || {};
+      let iBegin = typeof oOptions.begin === "number" ? oOptions.begin : 1,
+         iEnd = typeof oOptions.end === "number" ? oOptions.end : aData.length;
 
       /*
       let add_column = sName => {
