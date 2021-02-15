@@ -15,7 +15,11 @@ Two more areas can be used, one for managing events and one for editing. Both ha
 |-|-|
 |[Bootstrap 5 table](https://perghosh.github.io/jsTableData/sample/sampleBootstrap5Table.html)|Style table with bootstrap 5|
 |[Enable editing in Bootstrap 5 table](https://perghosh.github.io/jsTableData/sample/sampleBootstrap5TableEdit.html)|Style table with bootstrap and edit table values|
-|[Login form](https://perghosh.github.io/jsTableData/sample/sampleLogin.html)||
+|[Login form](https://perghosh.github.io/jsTableData/sample/sampleLogin.html)|Sample login form using CTableData|
+
+
+Developments samples
+- [Six tables from same source](https://perghosh.github.io/jsTableData/table1.html) 
 
 
 
