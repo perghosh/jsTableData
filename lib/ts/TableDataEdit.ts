@@ -255,6 +255,7 @@ export namespace edit {
 
       get element(): HTMLElement { return this.m_eElement; }
       get column(): tabledata_column { return this.m_oColumn; }
+      get data() { return this.m_oEdits.m_oTableData; }
 
       SetPosition(aPosition: [ number, number ], aPositionRelative?: [ number, number ]) {
          this.m_aPosition = aPosition;
@@ -476,6 +477,7 @@ export namespace edit {
       }
 
       IsModified(): boolean {
+         if( this.m_iState & enumInputState.Canceled ) return false;
          let _value = (<HTMLInputElement>this.m_eElement).value;
          return this.m_sOldValue !== _value;
       }
@@ -509,7 +511,8 @@ export namespace edit {
       }
 
       GetValue(): string {
-         let _value = (<HTMLInputElement>this.m_eElement).value;
+         let _value = "";
+         if( (<HTMLInputElement>this.m_eElement).checked ) _value = (<HTMLInputElement>this.m_eElement).value;
          return _value;
       }
 
@@ -528,10 +531,14 @@ export namespace edit {
          }
 
          this.m_sOldValue = <string>_Value;
-         (<HTMLInputElement>this.m_eElement).value = <string>_Value;
+         (<HTMLInputElement>this.m_eElement).value = <string>_Value || "1";
+
+         let bCheck = _Value ? true : false;
+         (<HTMLInputElement>this.m_eElement).checked = bCheck;
       }
 
       IsModified(): boolean {
+         if( this.m_iState & enumInputState.Canceled ) return false;
          let _value = (<HTMLInputElement>this.m_eElement).value;
          return this.m_sOldValue !== _value;
       }
@@ -565,6 +572,7 @@ export namespace edit {
       }
 
       GetValue(): string|unknown {
+         if( this.m_iState & enumInputState.Canceled ) return false;
          if( (<HTMLSelectElement>this.m_eElement).selectedIndex === -1 ) return null;
          let _text = (<HTMLSelectElement>this.m_eElement).options[(<HTMLSelectElement>this.m_eElement).selectedIndex].text;
          let _value = (<HTMLSelectElement>this.m_eElement).value;
@@ -585,11 +593,20 @@ export namespace edit {
             if(typeof _Value !== "string") _Value = "";
          }
 
-         this.m_OldValue = _Value;
-         (<HTMLInputElement>this.m_eElement).value = <string>_Value;
+         let aValue = this.data.CELLGetValue( this.m_aPosition[0], this.m_aPosition[1], 4 );
+
+         if( Array.isArray(aValue) && aValue.length > 1 ) {
+            this.m_OldValue = aValue[1];
+            (<HTMLInputElement>this.m_eElement).value = aValue[1];
+         }
+         else {
+            this.m_OldValue = _Value;
+            (<HTMLInputElement>this.m_eElement).value = <string>_Value;
+         }
       }
 
       IsModified(): boolean {
+         if( this.m_iState & enumInputState.Canceled ) return false;
          let _value = (<HTMLSelectElement>this.m_eElement).value;
          return this.m_OldValue !== _value;
       }

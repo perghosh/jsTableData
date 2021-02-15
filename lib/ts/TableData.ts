@@ -22,6 +22,7 @@ export const enum enumReason {
 export const enum enumFormat {
    Raw      = 0x0001,
    Format   = 0x0002,
+   All      = 0x0004,
 }
 
 
@@ -850,8 +851,9 @@ export class CTableData {
       let [ iR, iC ] = this._get_cell_coords(iRow, _Column, (iFormat & enumFormat.Raw) === enumFormat.Raw); // iR = row index, iC = column index
       let aRow: unknown[] = this.m_aBody[ iR ];
 
-      if(aRow[ iC ] instanceof Array) {
-         _V = aRow[ iC ][ 0 ];
+      if(Array.isArray(  aRow[ iC ] ) ) {
+         if( !(enumFormat.All &iFormat) ) _V = aRow[ iC ][ 0 ];
+         else _V = aRow[ iC ];
       }
       else { _V = aRow[ iC ]; }
 
