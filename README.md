@@ -26,7 +26,12 @@ Development samples
 - [Six tables from same source](https://perghosh.github.io/jsTableData/sample/sampleStyleTableText.html) 
 
 
+### Customize components from popular frameworks
+*Bootstrap table*
 ![sample showing bootstrap table using jsTableData](https://perghosh.github.io/jsTableData/images/bootstrap_table.png)
+
+*Login page using [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)*
+![sample showing bootstrap table using jsTableData](https://perghosh.github.io/jsTableData/images/login.png)
 
 
 

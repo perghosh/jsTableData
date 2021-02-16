@@ -1077,6 +1077,7 @@ export class CUITableText implements IUITableData {
     */
    render_header(aHeader: [ number, [ string, string ] ][]): HTMLElement {
       let eSection = this.create_header(aHeader);
+      if( !eSection ) return null;
 
       let bCall = this._has_render_callback( "askHeaderValue", "header" );
 
