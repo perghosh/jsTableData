@@ -9,9 +9,29 @@
          white-space: nowrap; 
       }
 
+      .uitabletext th {
+         position: relative;
+      }
+      
       .uitabletext td.selected {
-         color:  var(--bs-white);
+         color: var(--bs-white);
          background-color: var(--bs-primary);
+      }
+
+      .uitabletext .marker {
+         top:  0px;
+         right: 0px;
+         position: absolute;
+      }
+
+      .sort-ascending { 
+         vertical-align: middle; 
+         content: url("data:image/svg+xml, %3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath d='M7.247 4.86l-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z'/%3e%3c/svg%3e"); 
+      }
+
+      .sort-descending {
+         vertical-align: middle;
+         content: url("data:image/svg+xml, %3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3e%3c/svg%3e");
       }
 
       tbody { 
@@ -25,6 +45,9 @@
       <div id="idBootstrapTable" style="height: 500px; width: 1200px; overflow: auto;"></div>
    </div>
 
+   <i class="sort-ascending"></i>
+   <i class="sort-descending"></i>
+
    <script>
       function PAGE_Setup() {
          window.global = {};
@@ -37,10 +60,10 @@
          window.global.TDHappiness = TDHappiness;
          TDHappiness.ReadArray(aTable);                     // read happiness data
          TDHappiness.COLUMNSetPropertyValue(true, "edit.edit", true);// enable edit for all columns
-         TDHappiness.COLUMNSetPropertyValue( true, "edit.name", "string");// set string editor for all columns
+         TDHappiness.COLUMNSetPropertyValue(true, "edit.name", "string");// set string editor for all columns
 
 
-         TDHappiness.COLUMNSetType(aTable[1]);              // set column types from second row in soursce data
+         TDHappiness.COLUMNSetType(aTable[ 1 ]);              // set column types from second row in soursce data
 
          // style CUITableText
          let oStyle = {
@@ -64,11 +87,22 @@
             support_element: document.getElementById("idBootstrapTable"),
             action: function(sType, e, sSection) {
                if(sType === "click" && sSection === "header") {
-                  let aColumn = this.COLUMNGet(e.srcElement );
+                  let aColumn = this.COLUMNGet(e.srcElement);
                   if(aColumn) {
-                     this.Sort(aColumn[0], true);
+                     this.Sort(aColumn[ 0 ], true);
                      this.Render();
                      //console.log( aColumn );
+                  }
+               }
+            },
+            render: function( sName, v, eElement, c ) {
+               if( sName === "afterHeaderValue" ) {
+                  let iSort = c.state?.sort;
+                  if( iSort ) {
+                     let eI = document.createElement("i");
+                     if( iSort === 1 ) eI.className = "marker sort-ascending";
+                     else eI.className = "marker sort-descending";
+                     eElement.appendChild(eI);
                   }
                }
             }
@@ -81,11 +115,11 @@
          // make header sticky
          let eSection = TTHappiness.GetSection("header");
          let aTH = eSection.querySelectorAll("th");
-         aTH.forEach((e)=> {
-            Object.assign(e.style, {backgroundColor: "var(--bs-white)", position: "sticky", top: "0px"});
+         aTH.forEach((e) => {
+            Object.assign(e.style, { backgroundColor: "var(--bs-white)", position: "sticky", top: "0px" });
          });
 
-         TTHappiness.GetSection("body").focus({preventScroll: true});
+         TTHappiness.GetSection("body").focus({ preventScroll: true });
 
       }
    </script>
@@ -122,35 +156,35 @@
    -->
    <script>
       var aTable = [
-   [ "Country", "Region", "Happiness Rank", "Happiness Score", "Standard Error", "Economy (GDP per Capita)", "Family", "Health (Life Expectancy)", "Freedom", "Trust (Government Corruption)", "Generosity", "Dystopia Residual"],
-   [ "Switzerland", "Western Europe", 1, 7.587, 0.03411, 1.39651, 1.34951, 0.94143, 0.66557, 0.41978, 0.29678, 2.51738 ],
-   [ "Switzerland", "Western Europe", 1, 7.587, 0.03411, 1.39651, 1.34951, 0.94143, 0.66557, 0.41978, 0.29678, 2.51738 ],
-   [ "Iceland", "Western Europe", 2, 7.561, 0.04884, 1.30232, 1.40223, 0.94784, 0.62877, 0.14145, 0.4363, 2.70201 ],
-   [ "Denmark", "Western Europe", 3, 7.527, 0.03328, 1.32548, 1.36058, 0.87464, 0.64938, 0.48357, 0.34139, 2.49204 ],
-   [ "Norway", "Western Europe", 4, 7.522, 0.0388, 1.459, 1.33095, 0.88521, 0.66973, 0.36503, 0.34699, 2.46531 ],
-   [ "Canada", "North America", 5, 7.427, 0.03553, 1.32629, 1.32261, 0.90563, 0.63297, 0.32957, 0.45811, 2.45176 ],
-   [ "Finland", "Western Europe", 6, 7.406, 0.0314, 1.29025, 1.31826, 0.88911, 0.64169, 0.41372, 0.23351, 2.61955 ],
-   [ "Netherlands", "Western Europe", 7, 7.378, 0.02799, 1.32944, 1.28017, 0.89284, 0.61576, 0.31814, 0.4761, 2.4657 ],
-   [ "Sweden", "Western Europe", 8, 7.364, 0.03157, 1.33171, 1.28907, 0.91087, 0.6598, 0.43844, 0.36262, 2.37119 ],
-   [ "New Zealand", "Australia and New Zealand", 9, 7.286, 0.03371, 1.25018, 1.31967, 0.90837, 0.63938, 0.42922, 0.47501, 2.26425 ],
-   [ "Australia", "Australia and New Zealand", 10, 7.284, 0.04083, 1.33358, 1.30923, 0.93156, 0.65124, 0.35637, 0.43562, 2.26646 ],
-   [ "Israel", "Middle East and Northern Africa", 11, 7.278, 0.0347, 1.22857, 1.22393, 0.91387, 0.41319, 0.07785, 0.33172, 3.08854 ],
-   [ "Costa Rica", "Latin America and Caribbean", 12, 7.226, 0.04454, 0.95578, 1.23788, 0.86027, 0.63376, 0.10583, 0.25497, 3.17728 ],
-   [ "Austria", "Western Europe", 13, 7.2, 0.03751, 1.33723, 1.29704, 0.89042, 0.62433, 0.18676, 0.33088, 2.5332 ],
-   [ "Mexico", "Latin America and Caribbean", 14, 7.187, 0.04176, 1.02054, 0.91451, 0.81444, 0.48181, 0.21312, 0.14074, 3.60214 ],
-   [ "United States", "North America", 15, 7.119, 0.03839, 1.39451, 1.24711, 0.86179, 0.54604, 0.1589, 0.40105, 2.51011 ],
-   [ "Brazil", "Latin America and Caribbean", 16, 6.983, 0.04076, 0.98124, 1.23287, 0.69702, 0.49049, 0.17521, 0.14574, 3.26001 ],
-   [ "Luxembourg", "Western Europe", 17, 6.946, 0.03499, 1.56391, 1.21963, 0.91894, 0.61583, 0.37798, 0.28034, 1.96961 ],
-   [ "Ireland", "Western Europe", 18, 6.94, 0.03676, 1.33596, 1.36948, 0.89533, 0.61777, 0.28703, 0.45901, 1.9757 ],
-   [ "Belgium", "Western Europe", 19, 6.937, 0.03595, 1.30782, 1.28566, 0.89667, 0.5845, 0.2254, 0.2225, 2.41484 ],
-   [ "United Arab Emirates", "Middle East and Northern Africa", 20, 6.901, 0.03729, 1.42727, 1.12575, 0.80925, 0.64157, 0.38583, 0.26428, 2.24743 ],
-   [ "United Kingdom", "Western Europe", 21, 6.867, 0.01866, 1.26637, 1.28548, 0.90943, 0.59625, 0.32067, 0.51912, 1.96994 ],
-   [ "Oman", "Middle East and Northern Africa", 22, 6.853, 0.05335, 1.36011, 1.08182, 0.76276, 0.63274, 0.32524, 0.21542, 2.47489 ],
-   [ "Venezuela", "Latin America and Caribbean", 23, 6.81, 0.06476, 1.04424, 1.25596, 0.72052, 0.42908, 0.11069, 0.05841, 3.19131 ],
-   [ "Singapore", "Southeastern Asia", 24, 6.798, 0.0378, 1.52186, 1.02, 1.02525, 0.54252, 0.4921, 0.31105, 1.88501 ],
-   [ "Panama", "Latin America and Caribbean", 25, 6.786, 0.0491, 1.06353, 1.1985, 0.79661, 0.5421, 0.0927, 0.24434, 2.84848 ],
-   [ "Germany", "Western Europe", 26, 6.75, 0.01848, 1.32792, 1.29937, 0.89186, 0.61477, 0.21843, 0.28214, 2.11569 ]
-         ];
+         [ "Country", "Region", "Happiness Rank", "Happiness Score", "Standard Error", "Economy (GDP per Capita)", "Family", "Health (Life Expectancy)", "Freedom", "Trust (Government Corruption)", "Generosity", "Dystopia Residual" ],
+         [ "Switzerland", "Western Europe", 1, 7.587, 0.03411, 1.39651, 1.34951, 0.94143, 0.66557, 0.41978, 0.29678, 2.51738 ],
+         [ "Switzerland", "Western Europe", 1, 7.587, 0.03411, 1.39651, 1.34951, 0.94143, 0.66557, 0.41978, 0.29678, 2.51738 ],
+         [ "Iceland", "Western Europe", 2, 7.561, 0.04884, 1.30232, 1.40223, 0.94784, 0.62877, 0.14145, 0.4363, 2.70201 ],
+         [ "Denmark", "Western Europe", 3, 7.527, 0.03328, 1.32548, 1.36058, 0.87464, 0.64938, 0.48357, 0.34139, 2.49204 ],
+         [ "Norway", "Western Europe", 4, 7.522, 0.0388, 1.459, 1.33095, 0.88521, 0.66973, 0.36503, 0.34699, 2.46531 ],
+         [ "Canada", "North America", 5, 7.427, 0.03553, 1.32629, 1.32261, 0.90563, 0.63297, 0.32957, 0.45811, 2.45176 ],
+         [ "Finland", "Western Europe", 6, 7.406, 0.0314, 1.29025, 1.31826, 0.88911, 0.64169, 0.41372, 0.23351, 2.61955 ],
+         [ "Netherlands", "Western Europe", 7, 7.378, 0.02799, 1.32944, 1.28017, 0.89284, 0.61576, 0.31814, 0.4761, 2.4657 ],
+         [ "Sweden", "Western Europe", 8, 7.364, 0.03157, 1.33171, 1.28907, 0.91087, 0.6598, 0.43844, 0.36262, 2.37119 ],
+         [ "New Zealand", "Australia and New Zealand", 9, 7.286, 0.03371, 1.25018, 1.31967, 0.90837, 0.63938, 0.42922, 0.47501, 2.26425 ],
+         [ "Australia", "Australia and New Zealand", 10, 7.284, 0.04083, 1.33358, 1.30923, 0.93156, 0.65124, 0.35637, 0.43562, 2.26646 ],
+         [ "Israel", "Middle East and Northern Africa", 11, 7.278, 0.0347, 1.22857, 1.22393, 0.91387, 0.41319, 0.07785, 0.33172, 3.08854 ],
+         [ "Costa Rica", "Latin America and Caribbean", 12, 7.226, 0.04454, 0.95578, 1.23788, 0.86027, 0.63376, 0.10583, 0.25497, 3.17728 ],
+         [ "Austria", "Western Europe", 13, 7.2, 0.03751, 1.33723, 1.29704, 0.89042, 0.62433, 0.18676, 0.33088, 2.5332 ],
+         [ "Mexico", "Latin America and Caribbean", 14, 7.187, 0.04176, 1.02054, 0.91451, 0.81444, 0.48181, 0.21312, 0.14074, 3.60214 ],
+         [ "United States", "North America", 15, 7.119, 0.03839, 1.39451, 1.24711, 0.86179, 0.54604, 0.1589, 0.40105, 2.51011 ],
+         [ "Brazil", "Latin America and Caribbean", 16, 6.983, 0.04076, 0.98124, 1.23287, 0.69702, 0.49049, 0.17521, 0.14574, 3.26001 ],
+         [ "Luxembourg", "Western Europe", 17, 6.946, 0.03499, 1.56391, 1.21963, 0.91894, 0.61583, 0.37798, 0.28034, 1.96961 ],
+         [ "Ireland", "Western Europe", 18, 6.94, 0.03676, 1.33596, 1.36948, 0.89533, 0.61777, 0.28703, 0.45901, 1.9757 ],
+         [ "Belgium", "Western Europe", 19, 6.937, 0.03595, 1.30782, 1.28566, 0.89667, 0.5845, 0.2254, 0.2225, 2.41484 ],
+         [ "United Arab Emirates", "Middle East and Northern Africa", 20, 6.901, 0.03729, 1.42727, 1.12575, 0.80925, 0.64157, 0.38583, 0.26428, 2.24743 ],
+         [ "United Kingdom", "Western Europe", 21, 6.867, 0.01866, 1.26637, 1.28548, 0.90943, 0.59625, 0.32067, 0.51912, 1.96994 ],
+         [ "Oman", "Middle East and Northern Africa", 22, 6.853, 0.05335, 1.36011, 1.08182, 0.76276, 0.63274, 0.32524, 0.21542, 2.47489 ],
+         [ "Venezuela", "Latin America and Caribbean", 23, 6.81, 0.06476, 1.04424, 1.25596, 0.72052, 0.42908, 0.11069, 0.05841, 3.19131 ],
+         [ "Singapore", "Southeastern Asia", 24, 6.798, 0.0378, 1.52186, 1.02, 1.02525, 0.54252, 0.4921, 0.31105, 1.88501 ],
+         [ "Panama", "Latin America and Caribbean", 25, 6.786, 0.0491, 1.06353, 1.1985, 0.79661, 0.5421, 0.0927, 0.24434, 2.84848 ],
+         [ "Germany", "Western Europe", 26, 6.75, 0.01848, 1.32792, 1.29937, 0.89186, 0.61477, 0.21843, 0.28214, 2.11569 ]
+      ];
 
    </script>
 

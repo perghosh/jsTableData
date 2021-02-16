@@ -1078,6 +1078,32 @@ export class CUITableText implements IUITableData {
    render_header(aHeader: [ number, [ string, string ] ][]): HTMLElement {
       let eSection = this.create_header(aHeader);
 
+      let bCall = this._has_render_callback( "askHeaderValue", "header" );
+
+      let eRow = <HTMLElement>eSection.firstElementChild;
+      let eSpan: HTMLElement = <HTMLElement>eRow.firstElementChild;
+      const iCount = aHeader.length;
+      for( let i = 0; i < iCount; i++ ) {
+         const aName = aHeader[i][1];
+
+         if( bCall ) { 
+            let bRender = true;
+            for(let j = 0; j < this.m_acallOnRender.length; j++) {
+               let b = this.m_acallOnRender[j].call(this, "beforeHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ) ) );
+               if( b === false ) bRender = false;
+            }
+            if( bRender === false ) continue;
+         }
+
+         if( eSpan ) {
+            eSpan.innerText = aName[ 0 ] || aName[ 1 ];                         // alias or name
+            eSpan.title = eSpan.innerText;
+            if( bCall ) this.m_acallOnRender.forEach((call) => { call.call(this, "afterHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ) ) ); });
+            eSpan = <HTMLElement>eSpan.nextElementSibling;
+         }
+
+      }
+
       return eSection;
    }
 
@@ -1125,8 +1151,8 @@ export class CUITableText implements IUITableData {
          this.m_aRowPhysicalIndex = aResult[ 1 ];                              // keep index to rows
       }
 
-      let bCall = this.m_acallOnRender !== undefined;
       if(eSection === null) return;
+      let bCall = this._has_render_callback( "askCellValue", "body" );
 
       let eRow = <HTMLElement>eSection.firstElementChild;
 
@@ -1385,13 +1411,10 @@ export class CUITableText implements IUITableData {
       eRow.dataset.type = "row";                                               // "row" for header
       let iDiv = iCount;
       aHeader.forEach((a, i) => {
-         let aName = a[ 1 ];                                                   // first item in array is index, take second a[ 1 ] = [alias, name]
          let eSpan = document.createElement(sHtml);
 
          eSpan.style.cssText = sStyle;
          if(sClass) eSpan.className = sClass;
-         eSpan.innerText = aName[ 0 ] || aName[ 1 ];                           // alias or name
-         eSpan.title = eSpan.innerText;
 
          eRow.appendChild(eSpan);
          if(eSpan) eRow.appendChild(eSpan);
@@ -1445,6 +1468,18 @@ export class CUITableText implements IUITableData {
       }
 
       return eSection;
+   }
+
+
+   _has_render_callback(sName, sSection): boolean {
+      let bCall = this.m_acallOnRender !== undefined;
+      if(bCall) {
+         for(let i = 0; i < this.m_acallOnRender.length; i++) {
+            let b = this.m_acallOnRender[i].call(this, sName, sSection );
+            if( b === false ) bCall = false;
+         }
+      }
+      return bCall;
    }
 
    /**
