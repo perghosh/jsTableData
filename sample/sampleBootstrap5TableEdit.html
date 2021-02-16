@@ -54,13 +54,16 @@
 
          let eEditors = edit.CEditors.GetInstance();
          eEditors.Add("string", edit.CEditInput);
+         eEditors.Add("number", edit.CEditNumber);
 
 
          let TDHappiness = new CTableData();
          window.global.TDHappiness = TDHappiness;
          TDHappiness.ReadArray(aTable);                     // read happiness data
+         TDHappiness.COLUMNSetType(TDHappiness.ROWGet(1));
          TDHappiness.COLUMNSetPropertyValue(true, "edit.edit", true);// enable edit for all columns
-         TDHappiness.COLUMNSetPropertyValue(true, "edit.name", "string");// set string editor for all columns
+         TDHappiness.COLUMNSetPropertyValue([0,1], "edit.name", "string");// set string editor for all columns
+         TDHappiness.COLUMNSetPropertyValue([2,3,4,5,6,7,8,9,10,11], "edit.name", "number");// set string editor for all columns
 
 
          TDHappiness.COLUMNSetType(aTable[ 1 ]);              // set column types from second row in soursce data
