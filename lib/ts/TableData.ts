@@ -32,10 +32,10 @@ export const enum enumValueType {
    r4             = 0x3000A,
    r8             = 0x3000B,
 
-   str            = 0x40010,
-   blobstr        = 0x40011,
-   utf8           = 0x40012,
-   ascii          = 0x40013,
+   str            = 0x40010, // DEC 262160
+   blobstr        = 0x40011, // DEC 262161
+   utf8           = 0x40012, // DEC 262162
+   ascii          = 0x40013, // DEC 262163
    bin            = 0x80020,
    blob           = 0x80021,
    file           = 0x80022,
@@ -167,7 +167,7 @@ export class CTableData {
    };
 
    static s_aJsType: [string,enumValueType][] = [
-      ["number",enumValueType.r8],["string",enumValueType.str],["boolean",enumValueType.i1Bool],["date",enumValueType.datetime],["binary",enumValueType.blob]
+      ["binary",enumValueType.blob],["boolean",enumValueType.i1Bool],["date",enumValueType.datetime],["number",enumValueType.r8],["string",enumValueType.str]
    ];
 
    static s_aType: [string,enumValueType][] = [
@@ -212,10 +212,10 @@ export class CTableData {
       else {
          while(--i >= 0) {
             const a = CTableData.s_aJsType[i];
-            const iGroup: number = ((a[1] & 0xffffff00) & _Type); // type flags
+            const iGroup: number = ((a[1] & 0xffff0000) & _Type); // type flags
             if( iGroup === 0 ) continue;
 
-            if( _Type !== enumValueType.i1Bool ) return a[1];
+            if( _Type !== enumValueType.i1Bool ) return a[0];
             else return "boolean";
          }
       }
@@ -1117,10 +1117,12 @@ export class CTableData {
 
       if(bSortOrHide === true) {
          if(aSort.length === 0) {
-            let a = <[ number, number ][]>this.COLUMNGetPropertyValue(true, "state.sort");
-            a.forEach((s) => {
-               if(s[ 1 ]) {
-                  aSort.push([ s[ 0 ], s[ 1 ] === -1 ? true : false, "string" ]);
+            let a = <[ number, [ number, number ] ][]>this.COLUMNGetPropertyValue(true, ["state.sort", "type.type"]);
+            a.forEach((aC) => {
+               if(aC[ 1 ][0] !== 0) {
+                  let sGrouptype = CTableData.GetJSType( aC[1][1] );
+                  if( typeof sGrouptype === "number" ) sGrouptype = "string";  // group name for type not found, set to string as default
+                  aSort.push([ aC[ 0 ], aC[1][0] === -1 ? true : false, sGrouptype ]);
                }
             });
          }
@@ -1419,14 +1421,15 @@ export class CTableData {
    static _sort(aBody: unknown[][], aOrder: [ number, boolean, string? ][]): void {
       if(aBody.length === 0 || aOrder.length === 0) return;
 
-      aBody.sort(function(a, b) {
+      aBody.sort(function(x, y) {
          let iReturn = 0;  // if 0 = equal, -1 = less and 1 = greater
          for(let i: number = 0; i < aOrder.length; i++) {
-            let iColumn = aOrder[ i ][ 0 ] + 1; // add one because first is always index for row
-            let bDesc = aOrder[ i ][ 1 ];
-            let sType = aOrder.length > 2 ? aOrder[ i ][ 2 ] : "string";       // string is default
-            let v0 = a[ iColumn ];
-            let v1 = b[ iColumn ];
+            let a = aOrder[i];
+            let iColumn = a[ 0 ] + 1; // add one because first is always index for row
+            let bDesc = a[ 1 ];
+            let sType = a.length > 2 ? a[ 2 ] : "string";       // string is default
+            let v0 = x[ iColumn ];
+            let v1 = y[ iColumn ];
 
             if(Array.isArray(v0)) v0 = v0[ 0 ];
             if(Array.isArray(v1)) v1 = v1[ 0 ];
@@ -1453,10 +1456,9 @@ export class CTableData {
                if(typeof v1 !== "number") {
                   v1 = Number(v1);
                   if(isNaN(<number>v1)) v1 = 0;
-
-                  iCompare = v0 < v1 ? -1 : 0;
-                  if(iCompare === 0) iCompare = v0 > v1 ? 1 : 0;
                }
+               iCompare = v0 < v1 ? -1 : 0;
+               if(iCompare === 0) iCompare = v0 > v1 ? 1 : 0;
             }
 
             iReturn = iCompare;

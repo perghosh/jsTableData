@@ -45,3 +45,9 @@ oTableData.ReadObjects(aAddresses);
 oTrigger.Trigger( CTableDataTrigger.GetTriggerNumber("AfterLoadNew") );        // Execute trigger called "AfterLoadNew"
 ```
 
+.. header:: _Enable edit for all columns in table_
+```ts
+let TDSampleData = new CTableData();
+TDSampleData.ReadArray(aTable); // read data from array, first row has column names as default
+TDSampleData.COLUMNSetPropertyValue(true, "edit.edit", true);// enable edit for all columns
+```
