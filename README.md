@@ -26,7 +26,7 @@ Development samples
 - [Six tables from same source](https://perghosh.github.io/jsTableData/sample/sampleStyleTableText.html) 
 
 
-![sample showing bootstrap table using jsTableData](https://github.com/perghosh/jsTableData/bootstrap_table.png)
+![sample showing bootstrap table using jsTableData](https://perghosh.github.io/jsTableData/images/bootstrap_table.png)
 
 
 
