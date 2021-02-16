@@ -91,7 +91,11 @@
                   if(aColumn) {
                      this.Sort(aColumn[ 0 ], true);
                      this.Render();
-                     //console.log( aColumn );
+                     let eSection = this.GetSection("header");
+                     let aTH = eSection.querySelectorAll("th");
+                     aTH.forEach((e) => {
+                        Object.assign(e.style, { backgroundColor: "var(--bs-white)", position: "sticky", top: "0px" });
+                     });
                   }
                }
             },
@@ -105,6 +109,7 @@
                      eElement.appendChild(eI);
                   }
                }
+               else if( sName === "askCellValue" ) return false;
             }
          };
 
