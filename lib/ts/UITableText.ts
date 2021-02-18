@@ -18,7 +18,9 @@ import { edit } from "./TableDataEdit.js";
 import { CTableDataTrigger, enumTrigger, enumReason, EventDataTable } from "./TableDataTrigger.js";
 
 const enum enumState {
-   HtmlValue = 0x0001,  // Value in table has a small dom tree and we need to query for the element holding value
+   HtmlValue = 0x0001,   // Value in table has a small dom tree and we need to query for the element holding value
+   SetDirtyRow = 0x0002, // When value in row is change, set row to dirty
+   SetHistory = 0x0004,  // Record changes in history
 }
 
 namespace details {
@@ -218,8 +220,11 @@ export class CUITableText implements IUITableData {
          else this.m_eSupportElement = o.support_element;
       }
 
-      // if edit and support element is set then initialize inputs
-      if(o.edit && this.GetSupportElement() !== null ) { this.INPUTInitialize(); }
+      if(o.edit) {
+         if( this.GetSupportElement() !== null ) this.INPUTInitialize();       // if edit and support element is set then initialize inputs
+         this.set_state(true, enumState.SetDirtyRow );  
+         this.set_state(true, enumState.SetHistory );
+      }
    }
 
    /**
@@ -429,7 +434,7 @@ export class CUITableText implements IUITableData {
       const iDataRow: number = this._row_in_data(iRow), iDataColumn: number = this._column_in_data(iColumn);  // index for row and column in CTableData, its physical position
 
 
-      const _result = CTableData.ValidateValue( value, this.data.COLUMNGet(iDataColumn) );
+      const _result = CTableData.ValidateValue( value, this.data.COLUMNGet(iDataColumn) );         // valudate value
 
       if(oTriggerData) {
          oTriggerData.data = this.data;
@@ -437,13 +442,14 @@ export class CUITableText implements IUITableData {
       }
 
       if(_result === true || _result[0] === true ) {
-         if( this.m_aValueError.length > 0 ) this.RemoveCellError( iRow, iColumn );
+         if( this.m_aValueError.length > 0 ) this.RemoveCellError( iRow, iColumn );// remove error for this value if it was set before
          if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.BeforeSetValue, oTriggerData, oTriggerData.edit.GetValueStack() ); }
 
          if( bOk !== false ) {
             let aRow = this.m_aRowBody[iRow];
-            aRow[iColumn] = value;
-            this.data.CELLSetValue( iDataRow, iDataColumn, value )
+            aRow[iColumn] = value;                                             // Modify value internally
+            this.data.CELLSetValue( iDataRow, iDataColumn, value )             // Set value to cell
+            if( this.is_state( enumState.SetDirtyRow ) ) this.data.DIRTYSet( iDataRow ); // Set row as dirty
          }
 
          if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.AfterSetValue, oTriggerData, oTriggerData.edit.GetValueStack() ); }

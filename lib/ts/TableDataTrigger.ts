@@ -39,7 +39,6 @@ export const enum enumTrigger {
 
    OnSetValueError_,
    OnResize_,
-   END,                 // Last event
 
    UpdateDataNew,
    UpdateData,
@@ -47,6 +46,7 @@ export const enum enumTrigger {
    UpdateRowDelete,
    UpdateRow,
    UpdateCell,
+   LAST_EVENT,                                                                 // Last event
 
    MASK = 0xffff,
    TRIGGER_BEFORE    = 0x10000,
@@ -114,12 +114,29 @@ export class CTableDataTrigger {
       return -1;
    }
 
+   static GetTriggerName(iTrigger: number): string {
+      return CTableDataTrigger.s_aTriggerName[ iTrigger & enumTrigger.MASK ];
+   }
+
+
+   static SetTriggerName(aName: string[] | [ number, string ][]) {
+      if( CTableDataTrigger.s_aTriggerName.length === 0 ) CTableDataTrigger.s_aTriggerName = new Array( enumTrigger.LAST_EVENT );
+      if(Array.isArray(aName[ 0 ])) {
+         let i = aName.length;
+         while( --i >= 0) CTableDataTrigger.s_aTriggerName[ aName[i][0] ] = aName[i][1];
+      }
+      else {
+         let i = aName.length;
+         while( --i >= 0) CTableDataTrigger.s_aTriggerName[ i ] = <string>aName[i];
+      }
+   }
+
    constructor(options: details.construct) {
       const o: details.construct = options || {};
 
       this.m_oTableData = o.table || null;
 
-      this.m_aTrigger = (new Array(enumTrigger.END)).fill(true);
+      this.m_aTrigger = (new Array(enumTrigger.LAST_EVENT)).fill(true);
       this.m_acallTrigger = [];
       if(o.trigger) this.m_acallTrigger = Array.isArray(o.trigger) ? o.trigger : [ o.trigger ];
 

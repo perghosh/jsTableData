@@ -399,6 +399,114 @@ export class CTableData {
    GetBody() { return this.m_aBody; }
 
    /**
+    * Return array with rows and if specified another array with row numbers
+    * @param oOptions
+    */
+   GetData(oOptions?: { begin?: number, end?: number, max?: number, page?: number, sort?: [ number, boolean, string?][], hide?: number[] }): [ unknown[][], number[] ] {
+      let o = oOptions || {};
+      let iPage = 0;
+      let iTotalRowCount = this.ROWGetCount(true);
+
+      let iBeginRow = this.m_iHeaderSize,
+         iEndRow = iTotalRowCount - this.m_iFooterSize,
+         iSlice = 1; // Important, first column in body is the index for row, default is not to add this column to result
+      let aResult: [ unknown[][], number[] ] = [[],[]];
+
+      iBeginRow = o.begin || iBeginRow;
+      iEndRow = o.end || iEndRow;
+
+      if(o.max && (iEndRow - iBeginRow) > o.max) iEndRow = iBeginRow + o.max;  // if max number of rows is set, check total and decrease if above.
+
+      let aBody: unknown[][] = this.m_aBody;
+
+      let bSortOrHide = this.COLUMNHasPropertyValue(true, [ "state.sort", "position.hide" ], [ 1, -1 ]);
+      let bConvert = this.COLUMNHasPropertyValue(true, "format.convert");
+
+      // Check if sort values is needed
+      let aSort: [ number, boolean, string?][] = o.sort || [];
+      let aHide: number[] = o.hide || [];
+
+      if(bSortOrHide === true) {
+         if(aSort.length === 0) {
+            let a = <[ number, [ number, number ] ][]>this.COLUMNGetPropertyValue(true, ["state.sort", "type.type"]);
+            a.forEach((aC) => {
+               if(aC[ 1 ][0] !== 0) {
+                  let sGrouptype = CTableData.GetJSType( aC[1][1] );
+                  if( typeof sGrouptype === "number" ) sGrouptype = "string";  // group name for type not found, set to string as default
+                  aSort.push([ aC[ 0 ], aC[1][0] === -1 ? true : false, sGrouptype ]);
+               }
+            });
+         }
+
+         if(aHide.length === 0) {
+            let a = <[ number, number ][]>this.COLUMNGetPropertyValue(true, "position.hide");
+            a.forEach((aH) => {
+               aHide.push(aH[1]);
+            });
+         }
+      }
+
+
+      if(aSort.length) {
+         aBody = aBody.slice(0);
+         CTableData._sort(aBody, aSort);
+      }
+
+
+      CTableData._get_data(aResult, aBody, iBeginRow, iEndRow, { slice: iSlice, hide: aHide.length === 0 ? null : aHide, table: this });
+
+      return aResult;
+   }
+
+   GetDataForKeys(aKey?: number[], aColumn?: number[]): unknown[][] {
+      aKey = aKey || this.m_aDirtyRow;
+      // aColumn = aColumn || implement columns from properties
+      return CTableData._get_data_for_keys( aKey, this.m_aBody, aColumn );
+   }
+
+   Sort( aBody: unknown[][] ) {
+      let aOrder: [ number, boolean, string ][];
+      
+      this.m_aColumn.forEach((oColumn, iIndex) => {
+         let bDesc: boolean = false;
+         if( oColumn.state.sort ) aOrder.push( [iIndex, bDesc, "string"] );
+      });
+   }
+
+   /**
+    * Check if any or selected row is dirty (dirty = values are modified)
+    * @param {number} [iIndex] Index to row that is checked if dirty
+    * @returns {boolean} true if row is dirty when row is specified, or if no row is specified than returns true if any row is dirty. Otherwise false
+    */
+   IsDirty(iIndex?: number): boolean {
+      if(typeof iIndex === "number") {
+         for(let i = 0; i < this.m_aDirtyRow.length; i++) {
+            if(this.m_aDirtyRow[ i ] === iIndex) return true;
+         }
+         return false;
+      }
+      return this.m_aDirtyRow.length > 0;
+   }
+
+   /**
+    * Validate cords to be within table bounds
+    * @param iR
+    * @param _C
+    */
+   ValidateCoords(iR: number, _C: number | string): boolean {
+      if(typeof _C === "number") {
+         return this._validate_coords(iR, _C);
+      }
+      else if(typeof _C === "string") {
+         if(this._index(_C) === -1) return false;
+      }
+
+      if(iR >= this.m_aBody.length) return false;
+      return true;
+   }
+
+
+   /**
     * Clear internal data, everything that is data related that is.
     */
    ClearData() {
@@ -1063,130 +1171,70 @@ export class CTableData {
       }
    }
 
-   
    /**
-    * Return row for index
-    * @param iRow index to row
-    * @param bRaw use physical index and don't copy row
+    * Set row as dirty (dirty = modified)
+    * @param iKey key to row that is set as dirty
+    * @returns number of dirty rows
     */
-   /*
-   GetRow(_Row: number, bRaw?: boolean): unknown[] {
-      let aRow: unknown[];
-
-      let iRow = <number>_Row;
-      iRow += this.m_iHeaderSize;
-      aRow = this.m_aBody[ iRow ];
-
-      if(!bRaw) {
-         Array.from(aRow);
-         aRow.shift();
+   DIRTYSet(iKey: number): number {
+      let i = this.m_aDirtyRow.length;
+      while(--i >= 0) {
+         if(iKey === this.m_aDirtyRow[i]) return;
       }
-
-      return aRow;
+      this.m_aDirtyRow.push(iKey);
+      return this.m_aDirtyRow.length;
    }
-   */
+
+   DIRTYRemove(iKey: number): void {
+      let i = this.m_aDirtyRow.length;
+      while(--i >= 0) {
+         if(iKey === this.m_aDirtyRow[ i ]) { this.m_aDirtyRow.splice(i, 1); break; }
+      }
+   }
 
 
-   /**
-    * Return array with rows and if specified another array with row numbers
-    * @param oOptions
-    */
-   GetData(oOptions?: { begin?: number, end?: number, max?: number, page?: number, sort?: [ number, boolean, string?][], hide?: number[] }): [ unknown[][], number[] ] {
-      let o = oOptions || {};
-      let iPage = 0;
-      let iTotalRowCount = this.ROWGetCount(true);
+   XMLGetData(aBody: unknown[][], 
+      oOptions: { columns?: details.column[], values?: string, value?: string }, 
+      doc?: XMLDocument 
+   ): XMLDocument {
+      oOptions = oOptions || {};
+      doc = doc || (new DOMParser()).parseFromString("<document/>", "text/xml");
+      let xml = doc.documentElement;
+      const sValues = oOptions.values || "values";
+      const sValue = oOptions.value || "value";
 
-      let iBeginRow = this.m_iHeaderSize,
-         iEndRow = iTotalRowCount - this.m_iFooterSize,
-         iSlice = 1; // Important, first column in body is the index for row, default is not to add this column to result
-      let aResult: [ unknown[][], number[] ] = [[],[]];
+      let aColumn = oOptions.columns || this.m_aColumn;
 
-      iBeginRow = o.begin || iBeginRow;
-      iEndRow = o.end || iEndRow;
-
-      if(o.max && (iEndRow - iBeginRow) > o.max) iEndRow = iBeginRow + o.max;  // if max number of rows is set, check total and decrease if above.
-
-      let aBody: unknown[][] = this.m_aBody;
-
-      let bSortOrHide = this.COLUMNHasPropertyValue(true, [ "state.sort", "position.hide" ], [ 1, -1 ]);
-      let bConvert = this.COLUMNHasPropertyValue(true, "format.convert");
-
-      // Check if sort values is needed
-      let aSort: [ number, boolean, string?][] = o.sort || [];
-      let aHide: number[] = o.hide || [];
-
-      if(bSortOrHide === true) {
-         if(aSort.length === 0) {
-            let a = <[ number, [ number, number ] ][]>this.COLUMNGetPropertyValue(true, ["state.sort", "type.type"]);
-            a.forEach((aC) => {
-               if(aC[ 1 ][0] !== 0) {
-                  let sGrouptype = CTableData.GetJSType( aC[1][1] );
-                  if( typeof sGrouptype === "number" ) sGrouptype = "string";  // group name for type not found, set to string as default
-                  aSort.push([ aC[ 0 ], aC[1][0] === -1 ? true : false, sGrouptype ]);
-               }
-            });
+      const iRowKey = 1;
+      const iRowCount = aBody.length;
+      const iColumnCount = aBody[0].length;
+      for(let iRow = 0; iRow < iRowCount; iRow++) {
+         const aRow = aBody[iRow];
+         let eValues = xml.appendChild( doc.createElement( sValues ) );
+         eValues.setAttribute( "index", iRow.toString() );
+         let iColumn = 0
+         if(iRowKey === 1) {
+            iColumn++;
+            eValues.setAttribute( "row", aRow[0].toString() );
          }
 
-         if(aHide.length === 0) {
-            let a = <[ number, number ][]>this.COLUMNGetPropertyValue(true, "position.hide");
-            a.forEach((aH) => {
-               aHide.push(aH[1]);
-            });
+         for(; iColumn < iColumnCount; iColumn++) {
+            const i = iColumn - iRowKey;
+            const v = aRow[i]
+            const oC = aColumn[i];
+            let eValue = xml.appendChild( doc.createElement( sValue ) );
+
+            eValue.setAttribute( "col", i.toString() );
+            if( oC.name ) eValue.setAttribute( "name", oC.name );
+
+            eValue.appendChild( doc.createTextNode( v.toString() ) );
          }
       }
 
-
-      if(aSort.length) {
-         aBody = aBody.slice(0);
-         CTableData._sort(aBody, aSort);
-      }
-
-
-      CTableData._get_data(aResult, aBody, iBeginRow, iEndRow, { slice: iSlice, hide: aHide.length === 0 ? null : aHide, table: this });
-
-      return aResult;
+      return doc;
    }
 
-   Sort( aBody: unknown[][] ) {
-      let aOrder: [ number, boolean, string ][];
-      
-      this.m_aColumn.forEach((oColumn, iIndex) => {
-         let bDesc: boolean = false;
-         if( oColumn.state.sort ) aOrder.push( [iIndex, bDesc, "string"] );
-      });
-   }
 
-   /**
-    * Check if any or selected row is dirty (dirty = values are modified)
-    * @param {number} [iIndex] Index to row that is checked if dirty
-    * @returns {boolean} true if row is dirty when row is specified, or if no row is specified than returns true if any row is dirty. Otherwise false
-    */
-   IsDirty(iIndex?: number): boolean {
-      if(typeof iIndex === "number") {
-         for(let i = 0; i < this.m_aDirtyRow.length; i++) {
-            if(this.m_aDirtyRow[ i ] === iIndex) return true;
-         }
-         return false;
-      }
-      return this.m_aDirtyRow.length > 0;
-   }
-
-   /**
-    * Validate cords to be within table bounds
-    * @param iR
-    * @param _C
-    */
-   ValidateCoords(iR: number, _C: number | string): boolean {
-      if(typeof _C === "number") {
-         return this._validate_coords(iR, _C);
-      }
-      else if(typeof _C === "string") {
-         if(this._index(_C) === -1) return false;
-      }
-
-      if(iR >= this.m_aBody.length) return false;
-      return true;
-   }
 
    /**
     * 
@@ -1410,6 +1458,43 @@ export class CTableData {
       }
 
       return [ aData, aIndex ];
+   }
+
+   /**
+    * Extract data from internal body based on row keys
+    * @param aKey array of row keys for rows to extract
+    * @param aBody body having data to extract from
+    * @param aColumn if specific columns are taken, with aColumn it is possible to select columns to extract
+    */
+   static _get_data_for_keys(aKey: number[], aBody: unknown[][], aColumn?: number[]): unknown[][] {
+
+      let aReturn: unknown[][] = [];
+
+      let get_row = (iKey: number, aBody: unknown[][]): unknown[] => {
+         let aRow: unknown[];
+         if(iKey < aBody.length && aBody[ iKey ][ 0 ] === iKey) aRow = aBody[ iKey ];
+         else {
+            let i = aBody.length;
+            while(--i >= 0) {
+               if(aBody[ i ][ 0 ] === iKey) { aRow = aBody[ i ]; break; }
+            }
+         }
+         return aRow;
+      }
+
+      aKey.forEach((iKey) => { 
+         let aRow = get_row( iKey, aBody );
+         if(aRow) {
+            let a: unknown[] = [];
+            aRow.forEach((v) => {
+               if( Array.isArray(v) ) a.push( v[0] );
+               else a.push(v);
+            });
+            aReturn.push(a);
+         }
+      });
+
+      return aReturn;
    }
 
 

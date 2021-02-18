@@ -169,12 +169,6 @@ function TABLE_toggle_data( sSelectData ) {
       oTableText.create_body();
       oTableText.render_body();
    }
-
-
-   //oTableText.INPUTActivate(4, 3, true);
-
-   //oTrigger.Trigger();
-   //tabledataTest.Tr
 }
 
 /**

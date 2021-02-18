@@ -42,7 +42,12 @@
 <body>
 
    <div class="" style="display: grid; height: 800px; place-items: center; overflow: auto; resize: both; width: 1400px; background-color: var(--bs-light);">
-      <div id="idBootstrapTable" style="height: 500px; width: 1200px; overflow: auto;"></div>
+      <div style="height: 500px; width: 1200px; overflow: auto;">
+         <textarea id="idXml" style="display: none; height: 50px; width: 100%;"></textarea>
+         <div id="idBootstrapTable" style=""></div>
+      </div>
+
+      
    </div>
 
    <i class="sort-ascending"></i>
@@ -79,6 +84,9 @@
             html_section_footer: "tfoot",                   // "tfoot" for footer section
          }
 
+         // trigger logic, this will enable triggering callbacks when CUITableText call methods in CTableData
+         let oTrigger = new CTableDataTrigger({ table: TDHappiness, trigger: CALLBACK_TableData }); 
+         CTableDataTrigger.SetTriggerName([ [8, "AfterSetValue"] ]);
 
          let options = {
             parent: document.getElementById("idBootstrapTable"),// container
@@ -88,6 +96,7 @@
             style: oStyle,                                  // styling
             edit: 1,                                        // enable edit
             support_element: document.getElementById("idBootstrapTable"),
+            trigger: oTrigger,                              // set trigger object, this will enable triggers
             action: function(sType, e, sSection) {
                if(sType === "click" && sSection === "header") {
                   let aColumn = this.COLUMNGet(e.srcElement);
@@ -128,8 +137,29 @@
          });
 
          TTHappiness.GetSection("body").focus({ preventScroll: true });
-
       }
+
+      /**
+       * Callback for events managed by CTableDataTrigger
+       * @param {EventDataTable} oEventData standard event data
+       * @param {any} e This is dependent on the event.
+       */
+      function CALLBACK_TableData(oEventData, e) {                             console.log("Event:", oEventData.iEvent, " Reason:", oEventData.iReason);
+         let sName = CTableDataTrigger.GetTriggerName( oEventData.iEvent );
+         if( typeof sName !== "string" ) return;
+         switch(sName) {
+            case "AfterSetValue":
+               {
+                  let aData = oEventData.data.GetDataForKeys();
+                  let xml = oEventData.data.XMLGetData(aData);
+                  const sXml = (new XMLSerializer()).serializeToString(xml);
+                  document.getElementById("idXml").style.display = "block";
+                  document.getElementById("idXml").innerText = sXml;
+               }
+               break;
+         }
+      }
+
    </script>
 
 
