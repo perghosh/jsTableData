@@ -146,7 +146,7 @@ export type tabledata_column = details.column;
 export class CTableData {
    m_aBody: unknown[][];   // values
    m_acallTrigger: ((iTrigger: number, iReason: number, _data: any) => boolean)[];
-   m_aColumn: details.column[];// array with columns (or fields if used in form)
+   m_aColumn: details.column[];// array with column information for each column in table (or fields if used in form)
    m_aColumnIndex?: number[];// If columns have a different order, this points to column in `m_aColumn` and `m_aBody`.
                              // When this is specified always use it to get to column.
    m_aDirtyRow?: number[]; //  Dirty rows
@@ -154,10 +154,13 @@ export class CTableData {
    m_iFooterSize: number;  // if bottom rows in body is used for something "else"
    m_aHeader?: unknown[][];// Header values, like sticky if result is presented in table
    m_iHeaderSize?: number; // if top rows in body is used for something "else"
+   m_aHistory: [number,number,unknown][];// history of modified values
    m_sId: string;          // Unique id for source data 
    m_iNextKey: number;     // key counter used to set key to rows. Each row holds a key value
    m_iPage?: number;       // index to active page
    m_aUITable?: [ string, IUITableData][];// UITable objects connected
+
+   static s_iIdNext: number = 0;
 
    /**
     * Default column options. Changing this will change them globally
@@ -293,7 +296,8 @@ export class CTableData {
       this.m_aDirtyRow = o.dirty_row || [];
       this.m_iFooterSize = o.footer_size || 0;
       this.m_iHeaderSize = o.header_size || 0;
-      this.m_sId = o.id || "id" + (new Date()).getUTCMilliseconds();
+      this.m_aHistory = [];
+      this.m_sId = o.id || "id" + ++CTableData.s_iIdNext;
       this.m_iNextKey = 0;
       this.m_iPage = o.page || 0;
       this.m_aUITable = [];
@@ -967,10 +971,10 @@ export class CTableData {
 
    /**
     * Set value in cell
-    * @param  {number} iRow index for row in source array
-    * @param  {number|string} _Column index or key to column value
-    * @param  value {variant} value set to cell
-    * @param  bRaw {boolean} if raw value cell value from raw row is returned
+    * @param  {number} iRow key for row in source array
+    * @param  {number|string} _Column index or column name to column value is set to
+    * @param  {unknown} value value set to cell
+    * @param  {boolean} bRaw if raw value cell value from raw row is set
     */
    CELLSetValue(iRow: number, _Column: string | number, value: unknown, bRaw?: boolean): void;
    CELLSetValue(aRange: [ iR: number, _C: string | number ], value: unknown, bRaw?: boolean): void;
@@ -1019,9 +1023,9 @@ export class CTableData {
 
    /**
     * Is value in cell array or a primitive, if array then this return true
-    * @param  {number} iRow index for row in source array
-    * @param  {number|string} _Column index or key to column value
-    * @param  bRaw {boolean} if raw value cell value from raw row is returned
+    * @param  {number} iRow key for row in source array
+    * @param  {number|string} _Column index or name for column where value is checked for array value
+    * @param  {boolean} bRaw if raw then iRow access index in internal source array (not row key)
     */
    CELLIsArray(iRow: number, _Column: string | number, bRaw?: boolean): boolean {
       let [ iR, iC ] = this._get_cell_coords(iRow, _Column, bRaw); // iR = row index, iC = column index
@@ -1190,6 +1194,51 @@ export class CTableData {
       while(--i >= 0) {
          if(iKey === this.m_aDirtyRow[ i ]) { this.m_aDirtyRow.splice(i, 1); break; }
       }
+   }
+
+   HISTORYPush(_Row: number | [number,number|string], _Column: string | number) {
+      let iRow: number, iR: number, iC: number;
+
+      if(Array.isArray(_Row)) {
+         iRow = _Row[0];
+         _Column = _Row[1];
+      }
+      else iRow = _Row;
+
+      iR = this._row( iRow );
+      iC = this._index(_Column);
+
+      this.m_aHistory.push( [iRow , iC, this.m_aBody[iR][iC] ] );             // Add to history
+   }
+
+   HISTORYPop(_1?: any, _2?: any): boolean {
+      let aHistory = this.m_aHistory;
+      if( aHistory.length === 0 ) return false;
+
+      let iC: number = null;
+      if( _2 !== undefined ) iC = this._index( _2 );
+      let a: [number,number,unknown];
+
+      if(_1 === undefined) {
+         a = aHistory.pop();
+      }
+      else {
+         let i = aHistory.length;
+         while(--i >= 0) {
+            a = aHistory[i];
+            if(_1 === a[ 0 ] && (iC === null || iC === a[ 1 ])) {
+               a = aHistory.splice( i, 1 )[0];
+               break;
+            }
+         }
+         if( i < 0 ) return false;
+      }
+
+      const iR = this._row( a[0] );
+      
+      this.m_aBody[iR][a[1]] = a[2]; // restore value   
+
+      return true;
    }
 
 

@@ -446,6 +446,7 @@ export class CUITableText implements IUITableData {
          if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.BeforeSetValue, oTriggerData, oTriggerData.edit.GetValueStack() ); }
 
          if( bOk !== false ) {
+            if( this.is_state( enumState.SetHistory ) ) this.data.HISTORYPush( iDataRow,iDataColumn ); // add to history
             let aRow = this.m_aRowBody[iRow];
             aRow[iColumn] = value;                                             // Modify value internally
             this.data.CELLSetValue( iDataRow, iDataColumn, value )             // Set value to cell
