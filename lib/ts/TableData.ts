@@ -145,7 +145,6 @@ export type tabledata_column = details.column;
  * */
 export class CTableData {
    m_aBody: unknown[][];   // values
-   m_acallTrigger: ((iTrigger: number, iReason: number, _data: any) => boolean)[];
    m_aColumn: details.column[];// array with column information for each column in table (or fields if used in form)
    m_aColumnIndex?: number[];// If columns have a different order, this points to column in `m_aColumn` and `m_aBody`.
                              // When this is specified always use it to get to column.
@@ -291,7 +290,6 @@ export class CTableData {
       const o = options || {};
 
       this.m_aBody = o.body || [];
-      this.m_acallTrigger = o.trigger || [];
       this.m_aColumn = o.column || [];
       this.m_aDirtyRow = o.dirty_row || [];
       this.m_iFooterSize = o.footer_size || 0;

@@ -83,6 +83,7 @@ export type EventDataTable = {
    data?: CTableData,          // table data object
    dataUI?: IUITableData,      // ui table data object
    edit?: edit.CEdit,          // Edit control
+   element?: HTMLElement,      // if elements is involved in event
 }
 
 

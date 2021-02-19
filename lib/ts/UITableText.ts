@@ -25,10 +25,11 @@ const enum enumState {
 
 namespace details {
    export type construct = {
-      action?: ((sType: string, e: Event, sSection: string) => boolean) | ((sType: string, e: Event, sSection: string) => boolean)[],
-      render?: ((sType: string, v: any, e: HTMLElement, oColumn: any) => boolean) | ((sType: string, v: any, e: HTMLElement, oColumn: any) => boolean)[],
       body?: unknown[][],        // table data
-      callback_create?: (eSection: HTMLElement, sName: string) => void | boolean, // callback to create sections
+      callback_action?: ((sType: string, e: EventDataTable, sSection: string) => boolean) | ((sType: string, e: EventDataTable, sSection: string) => boolean)[],
+      callback_create?: ((sType: string, e: EventDataTable, sSection: string) => boolean) | ((sType: string, e: EventDataTable, sSection: string) => boolean)[],
+      callback_render?: ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column ) => boolean) | ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column) => boolean)[],
+      create?: boolean,          // create elements for table in constructor
       edit?: boolean,            // enable edit for table
       edits?: edit.CEdits;       // edits component, logic for edit fields used in table
       id?: string,               // id for CUITableText
@@ -109,8 +110,9 @@ parent.addEventListener('click', function(e) {
  * 
  * */
 export class CUITableText implements IUITableData {
-   m_acallOnAction: ((sType: string, e: Event, sSection: string) => boolean)[];
-   m_acallOnRender: ((sType: string, v: any, e: HTMLElement, oColumn: any) => boolean)[];
+   m_acallAction: ((sType: string, e: EventDataTable, sSection: string) => boolean)[];
+   m_acallCreate: ((sType: string, e: EventDataTable, sSection: string) => boolean)[];
+   m_acallRender: ((sType: string, e: EventDataTable, sSection: string, oColumn: any) => boolean)[];
    m_iColumnCount: number;    // Number of columns shown, this may not match number of columns in table data
    m_aColumnPhysicalIndex: number[]; // index for column in table data
    m_eComponent: HTMLElement; // Element that acts as container to table, sections can exist outside container but default is within
@@ -161,11 +163,14 @@ export class CUITableText implements IUITableData {
    constructor(options: details.construct) {
       const o: details.construct = options || {};
 
-      this.m_acallOnAction = [];
-      if(o.action) this.m_acallOnAction = Array.isArray(o.action) ? o.action : [ o.action ];
+      this.m_acallAction = [];
+      if(o.callback_action) this.m_acallAction = Array.isArray(o.callback_action) ? o.callback_action : [ o.callback_action ];
 
-      this.m_acallOnRender = [];
-      if(o.render) this.m_acallOnRender = Array.isArray(o.render) ? o.render : [ o.render ];
+      this.m_acallCreate = [];
+      if(o.callback_create) this.m_acallCreate = Array.isArray(o.callback_create) ? o.callback_create : [ o.callback_create ];
+
+      this.m_acallRender = [];
+      if(o.callback_render) this.m_acallRender = Array.isArray(o.callback_render) ? o.callback_render : [ o.callback_render ];
 
       this.m_aRowBody      = o.body || [];
       this.m_iColumnCount  = 0;
@@ -211,19 +216,21 @@ export class CUITableText implements IUITableData {
 */
       this.m_oWidth = o.width || {};
 
-      if(this.m_eParent) {
-         this.Create(o.callback_create);
-      }
+      if(o.create !== false) {
+         if(this.m_eParent) {
+            this.Create();
+         }
 
-      if(o.support_element) {
-         if( typeof o.support_element === "string" ) this.m_eSupportElement = this.GetSection(o.support_element);
-         else this.m_eSupportElement = o.support_element;
-      }
+         if(o.support_element) {
+            if(typeof o.support_element === "string") this.m_eSupportElement = this.GetSection(o.support_element);
+            else this.m_eSupportElement = o.support_element;
+         }
 
-      if(o.edit) {
-         if( this.GetSupportElement() !== null ) this.INPUTInitialize();       // if edit and support element is set then initialize inputs
-         this.set_state(true, enumState.SetDirtyRow );  
-         this.set_state(true, enumState.SetHistory );
+         if(o.edit) {
+            if(this.GetSupportElement() !== null) this.INPUTInitialize();       // if edit and support element is set then initialize inputs
+            this.set_state(true, enumState.SetDirtyRow);
+            this.set_state(true, enumState.SetHistory);
+         }
       }
    }
 
@@ -286,8 +293,8 @@ export class CUITableText implements IUITableData {
    Create(callback?: ((eSection: HTMLElement, sName: string) => void|boolean), eParent?: HTMLElement ): void {
       let eComponent = this.GetComponent(true);                                // create component in not created
 
-      if(eComponent.firstChild === null) {
-         this.create_sections(eComponent, callback);
+      this.create_sections(eComponent, callback);
+      if(eComponent.parentElement === null) {
          this.m_eParent.appendChild(eComponent);
       }
    }
@@ -302,20 +309,25 @@ export class CUITableText implements IUITableData {
     */
    GetComponent( bCreate?: boolean ): HTMLElement {
       if(this.m_eComponent) return this.m_eComponent;
+
+      /*
       let aChildren = this.m_eParent.children;
       let i = aChildren.length;
       while(--i >= 0) {
          let e = <HTMLElement>aChildren[ i ];
          if(e.tagName === "SECTION" && e.dataset.id === this.id && e.dataset.section === "section") return <HTMLElement>e;
       }
+      */
 
 
-      this._trigger(enumTrigger.BeforeCreate);
+      //this._trigger(enumTrigger.BeforeCreate);
 
       if(bCreate === true) {
          let eComponent = document.createElement("section");
          Object.assign(eComponent.dataset, {section: "component", id: this.id, table: this.data.id }); // set "data-" ids.
          this.m_eComponent = eComponent;
+
+         this._has_create_callback( "afterCreate", {data: this.data, dataUI: this, element: eComponent }, "component" );
       }
 
       return this.m_eComponent;
@@ -1096,8 +1108,8 @@ export class CUITableText implements IUITableData {
 
          if( bCall ) { 
             let bRender = true;
-            for(let j = 0; j < this.m_acallOnRender.length; j++) {
-               let b = this.m_acallOnRender[j].call(this, "beforeHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ) ) );
+            for(let j = 0; j < this.m_acallRender.length; j++) {
+               let b = this.m_acallRender[j].call(this, "beforeHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ) ) );
                if( b === false ) bRender = false;
             }
             if( bRender === false ) continue;
@@ -1106,7 +1118,7 @@ export class CUITableText implements IUITableData {
          if( eSpan ) {
             eSpan.innerText = aName[ 0 ] || aName[ 1 ];                         // alias or name
             eSpan.title = eSpan.innerText;
-            if( bCall ) this.m_acallOnRender.forEach((call) => { call.call(this, "afterHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ) ) ); });
+            if( bCall ) this.m_acallRender.forEach((call) => { call.call(this, "afterHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ) ) ); });
             eSpan = <HTMLElement>eSpan.nextElementSibling;
          }
 
@@ -1172,8 +1184,8 @@ export class CUITableText implements IUITableData {
             let sValue = aRow[ i ];
             if( bCall ) { 
                let bRender = true;
-               for(let j = 0; j < this.m_acallOnRender.length; j++) {
-                  let b = this.m_acallOnRender[j].call(this, "beforeCellValue", sValue, eColumn, this.data.COLUMNGet( this._column_in_data( i ) ) );
+               for(let j = 0; j < this.m_acallRender.length; j++) {
+                  let b = this.m_acallRender[j].call(this, "beforeCellValue", sValue, eColumn, this.data.COLUMNGet( this._column_in_data( i ) ) );
                   if( b === false ) bRender = false;
                }
                if( bRender === false ) continue;
@@ -1184,7 +1196,7 @@ export class CUITableText implements IUITableData {
             if(Object.keys(aStyle[ i ][1]).length > 0) Object.assign(e.style, aStyle[ i ][1]);
             if(sValue !== null && sValue != void 0) e.innerText = sValue.toString();
             else e.innerText = " ";
-            if( bCall ) this.m_acallOnRender.forEach((call) => { call.call(this, "afterCellValue", sValue, eColumn, this.data.COLUMNGet( this._column_in_data( i ) ) ); });
+            if( bCall ) this.m_acallRender.forEach((call) => { call.call(this, "afterCellValue", sValue, eColumn, this.data.COLUMNGet( this._column_in_data( i ) ) ); });
 
             eColumn = <HTMLElement>eColumn.nextElementSibling;                 // next column element in row
          }
@@ -1375,9 +1387,9 @@ export class CUITableText implements IUITableData {
             });
          }
 
+         let bOk = this._has_create_callback("afterCreate", {data: this.data, dataUI: this, element: eSection }, sName );
+         if( bOk !== false ) eParent.appendChild(eSection);
 
-         // add to component if no callback or if callback do not return false
-         if(!callback || (callback && callback(eSection, "section") !== false)) eParent.appendChild(eSection);
          return [sName, eSection];
       };
 
@@ -1478,12 +1490,24 @@ export class CUITableText implements IUITableData {
       return eSection;
    }
 
+   _has_create_callback(sName, v: any, sSection, call?: ((sType: string, v: any, e: HTMLElement) => boolean)): boolean {
+      let a = call ? [call] : this.m_acallCreate;
+      let bCall = a !== undefined;
+      if(bCall) {
+         for(let i = 0; i < a.length; i++) {
+            let b = a[i].call(this, sName, v, sSection );
+            if( b === false ) bCall = false;
+         }
+      }
+      return bCall;
+   }
+
 
    _has_render_callback(sName, sSection): boolean {
-      let bCall = this.m_acallOnRender !== undefined;
+      let bCall = this.m_acallRender !== undefined;
       if(bCall) {
-         for(let i = 0; i < this.m_acallOnRender.length; i++) {
-            let b = this.m_acallOnRender[i].call(this, sName, sSection );
+         for(let i = 0; i < this.m_acallRender.length; i++) {
+            let b = this.m_acallRender[i].call(this, sName, sSection );
             if( b === false ) bCall = false;
          }
       }
@@ -1497,9 +1521,9 @@ export class CUITableText implements IUITableData {
     * @param {string} sSection section name, table text has container elements with a name (section name)
     */
    private _on_action(sType: string, e: Event, sSection: string) {
-      if(this.m_acallOnAction && this.m_acallOnAction.length > 0) {
-         let i = 0, iTo = this.m_acallOnAction.length;
-         let callback = this.m_acallOnAction[ i ];
+      if(this.m_acallAction && this.m_acallAction.length > 0) {
+         let i = 0, iTo = this.m_acallAction.length;
+         let callback = this.m_acallAction[ i ];
          while(i++ < iTo) {
             let bResult = callback.call(this, sType, e, sSection);
             if(bResult === false) return;
