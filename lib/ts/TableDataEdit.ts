@@ -556,7 +556,7 @@ export namespace edit {
          let e = <HTMLSelectElement>super.Create("SELECT", eParent);
 
          // create options for select
-         let aList = this.column.list;
+         let aList = this.m_oColumn.list;
          aList.forEach( (a,i) => {
             let eO = document.createElement("option");
             eO.value = a[0].toString();

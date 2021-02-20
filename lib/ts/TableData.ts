@@ -616,7 +616,7 @@ export class CTableData {
     * @param {boolean} [bRaw] if true then position is exact index for column in table data
     */
    COLUMNGet(_Index: number | string, bNull?: boolean, bRaw?: boolean): details.column {
-      if( bRaw ) this.m_aColumn[ <number>_Index ]
+      if( bRaw ) return this.m_aColumn[ <number>_Index ];
       else if(!bNull) return this._column(_Index);
 
       let iIndex = this._index(_Index);
@@ -868,7 +868,7 @@ export class CTableData {
                }
                else {
                   _Old.push([ _Position, column[ s0 ] ]);
-                  if( !Array.isArray(_Value) ) column[ s0 ] = _Value;
+                  if( !Array.isArray(_Value) || bArray === false ) column[ s0 ] = _Value;
                   else column[ s0 ] = _Value[i];
                }
             });
@@ -885,7 +885,7 @@ export class CTableData {
             }
             else {
                _Old.push([ _Position, column[ s0 ] ]);
-               if( !Array.isArray(_Value) ) column[ s0 ] = _Value;
+               if( !Array.isArray(_Value) || bArray === false ) column[ s0 ] = _Value;
                else column[ s0 ] = _Value[i];
             }
          }

@@ -117,9 +117,9 @@ body {
             table: TDLogin,                                               // source data
             name: "login",                                                      // name to access UI table in CTableData
             edit: 1,                                                            // endable edit
-            render: ( sType, _value, eCell, oColumn ) => {
+            callback_render: ( sType, _value, eElement, oColumn ) => {
                if(sType === "afterCellValue") {
-                  let eLabel = eCell.querySelector("[data-label]");
+                  let eLabel = eElement.querySelector("[data-label]");
                   eLabel.innerText = oColumn.alias;
                }
             }
