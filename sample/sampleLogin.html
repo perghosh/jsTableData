@@ -63,17 +63,19 @@ body {
          eEditors.Add("password", edit.CEditPassword);
          eEditors.Add("checkbox", edit.CEditCheckbox);
          eEditors.Add("select", edit.CEditSelect);
+         eEditors.Add("text", edit.CEditTextarea);
 
          let TDLogin = new CTableData();
          window.global.TDLogin = TDLogin;
          TDLogin.ReadObjects(aLogin);
 
          // convigure input fields and set type of input controls
-         TDLogin.COLUMNSetPropertyValue([ 0, 1, 3, 4 ], "edit.edit", true);
+         TDLogin.COLUMNSetPropertyValue([ 0, 1, 3, 4, 5 ], "edit.edit", true);
          TDLogin.COLUMNSetPropertyValue( 0, "edit.name", "string");
          TDLogin.COLUMNSetPropertyValue( 1, "edit.name", "password");
          TDLogin.COLUMNSetPropertyValue( 3, "edit.name", "checkbox");
          TDLogin.COLUMNSetPropertyValue( 4, "edit.name", "select");
+         TDLogin.COLUMNSetPropertyValue( 5, "edit.name", "text");
 
          TDLogin.COLUMNSetPropertyValue( 2 , "position.hide", 1);
 
@@ -81,6 +83,7 @@ body {
          TDLogin.COLUMNSetPropertyValue( 1 , "alias", "Password");
          TDLogin.COLUMNSetPropertyValue( 3 , "alias", "Guest");
          TDLogin.COLUMNSetPropertyValue( "country", "alias", "Country");
+         TDLogin.COLUMNSetPropertyValue( "comment", "alias", "Comment");
 
          TDLogin.COLUMNSetPropertyValue( "name", "format.min", 3 );
          TDLogin.COLUMNSetPropertyValue( "password", "format.min", 8 );
@@ -210,7 +213,8 @@ body {
             "password": null,
             "hide_this": null,
             "guest": null,
-            "country": ["Finland", 3]
+            "country": ["Finland", 3],
+            "comment": null
          }
       ];
 

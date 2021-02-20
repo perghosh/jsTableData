@@ -327,7 +327,7 @@ export namespace edit {
       SetValue(_value: any) { }
       IsModified(): boolean { return false; }
       IsOpen(): boolean { return (this.m_iState & enumInputState.Open) === enumInputState.Open; }
-      IsMoveKey(i: number): boolean {
+      IsMoveKey(i: number, e?: any): boolean {
          if( i === 9 || i === 13) return true;
          return false;
       }
@@ -612,6 +612,59 @@ export namespace edit {
       }
 
    }
+
+
+   export class CEditTextarea extends CEdit {
+      m_sOldValue: string;
+      constructor(o: details.construct_edit) {
+         super(o);
+         this.m_sOldValue = "";
+      }
+
+      Create(_1: any): HTMLInputElement {
+         let eParent: HTMLElement = _1;
+         let e: HTMLInputElement = <HTMLInputElement>super.Create("TEXTAREA", eParent);
+         return e;
+      }
+
+      GetValue(): string {
+         let _value = (<HTMLInputElement>this.m_eElement).value;
+         return _value;
+      }
+
+      GetValueStack(): details.value_stack { return [ this.m_aPosition, this.m_aPositionRelative, this.GetValue(), this.m_sOldValue]; }
+
+      SetPosition(aPosition: [ number, number ], aPositionRelative?: [ number, number ]): void {
+         super.SetPosition(aPosition, aPositionRelative);
+      }
+
+      SetValue(_Value: unknown) {
+         if(typeof _Value === "number" ) _Value = _Value.toString();
+         if(typeof _Value !== "string" ) {
+            if(_Value === null) _Value = "";
+            else if( typeof _Value === "number" || typeof _Value === "object" ) _Value = _Value.toString();
+            if(typeof _Value !== "string") _Value = "";
+         }
+
+         this.m_sOldValue = <string>_Value;
+         (<HTMLInputElement>this.m_eElement).value = <string>_Value;
+      }
+
+      IsModified(): boolean {
+         if( this.m_iState & enumInputState.Canceled ) return false;
+         let _value = (<HTMLInputElement>this.m_eElement).value;
+         return this.m_sOldValue !== _value;
+      }
+
+      IsMoveKey(i: number, e?: any): boolean {
+         if(i === 9 || i === 13 && (e.ctrlKey === false && e.shiftKey === false) ) {
+            return true;
+         }
+         return false;
+      }
+
+   }
+
 
 
 }
