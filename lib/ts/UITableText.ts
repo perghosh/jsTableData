@@ -327,7 +327,7 @@ export class CUITableText implements IUITableData {
          Object.assign(eComponent.dataset, {section: "component", id: this.id, table: this.data.id }); // set "data-" ids.
          this.m_eComponent = eComponent;
 
-         this._has_create_callback( "afterCreate", {data: this.data, dataUI: this, element: eComponent }, "component" );
+         this._has_create_callback( "afterCreate", {data: this.data, dataUI: this, eElement: eComponent }, "component" );
       }
 
       return this.m_eComponent;
@@ -350,7 +350,14 @@ export class CUITableText implements IUITableData {
     * @returns {HTMLElement} Element for section or null if not found
     * @throws {string} string with valid section names
     */
-   GetSection(sName: string, bNoThrow?: boolean): HTMLElement {
+   GetSection(_Name: string | HTMLElement, bNoThrow?: boolean): HTMLElement {
+      let sName: string;
+      if(typeof _Name !== "string") {
+         const e = <HTMLElement>_Name.closest("[data-section]");
+         if(e) sName = e.dataset.section;
+      }
+      else sName = _Name;
+
       let i = this.m_aSection.length;
       while(--i >= 0) {
          let a = <[string, HTMLElement]>this.m_aSection[ i ];
@@ -445,13 +452,18 @@ export class CUITableText implements IUITableData {
 
       const iDataRow: number = this._row_in_data(iRow), iDataColumn: number = this._column_in_data(iColumn);  // index for row and column in CTableData, its physical position
 
-
-      const _result = CTableData.ValidateValue( value, this.data.COLUMNGet(iDataColumn) );         // valudate value
-
+      const oColumn = this.data.COLUMNGet(iDataColumn);
       if(oTriggerData) {
+         oTriggerData.column = oColumn;
          oTriggerData.data = this.data;
          oTriggerData.dataUI = this;
       }
+
+      if( oTrigger ) { 
+         bOk = oTrigger.Trigger( enumTrigger.BeforeValidateValue, oTriggerData, oTriggerData.edit.GetValueStack() ); 
+         if( bOk === false ) return;
+      }
+      const _result = CTableData.ValidateValue( value, oColumn );              // validate value
 
       if(_result === true || _result[0] === true ) {
          if( this.m_aValueError.length > 0 ) this.RemoveCellError( iRow, iColumn );// remove error for this value if it was set before
@@ -1387,7 +1399,7 @@ export class CUITableText implements IUITableData {
             });
          }
 
-         let bOk = this._has_create_callback("afterCreate", {data: this.data, dataUI: this, element: eSection }, sName );
+         let bOk = this._has_create_callback("afterCreate", {data: this.data, dataUI: this, eElement: eSection }, sName );
          if( bOk !== false ) eParent.appendChild(eSection);
 
          return [sName, eSection];
@@ -1490,7 +1502,7 @@ export class CUITableText implements IUITableData {
       return eSection;
    }
 
-   _has_create_callback(sName, v: any, sSection, call?: ((sType: string, v: any, e: HTMLElement) => boolean)): boolean {
+   _has_create_callback(sName, v: EventDataTable, sSection, call?: ((sType: string, v: any, e: HTMLElement) => boolean)): boolean {
       let a = call ? [call] : this.m_acallCreate;
       let bCall = a !== undefined;
       if(bCall) {
@@ -1609,7 +1621,7 @@ export class CUITableText implements IUITableData {
                   let bOk: boolean = true;
                   let _Value = oEdit.GetValue();
                   this.INPUTDeactivate()
-                  this.SetCellValue( oEdit.GetPositionRelative(), _Value, {iReason: enumReason.Edit,edit:oEdit} );
+                  this.SetCellValue( oEdit.GetPositionRelative(), _Value, {iReason: enumReason.Edit,edit:oEdit, eElement: <HTMLElement>e.srcElement } );
 //                  if(!this.trigger) this.SetCellValue(oEdit.GetPosition(), oEdit.GetValue(), undefined, { iReason: enumReason.Edit,edit:oEdit));
 //                  else this.trigger.CELLSetValue({ iReason: enumReason.Edit, dataUI: this }, oEdit.GetValueStack(), oEdit.GetPosition(), oEdit.GetValue());
 /*

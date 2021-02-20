@@ -581,11 +581,11 @@ export class CTableData {
 
 
    /**
-    * Append columns to table data
+    * Append column or columns to table data
     * @param {unknown | unknown[]} _Column column data added to table data. if column is sent as string it is treated as column name
-    * @param {((_C: unknown[], _Empty: details.column[]) => details.column[])} [convert] Callback method if column need to reformatting to adapt to table data format
+    * @param {((_C: unknown[], _Empty: details.column[]) => details.column[])} [callConvert] Callback method if column need to reformatting to adapt to table data format
     */
-   COLUMNAppend(_Column: unknown | unknown[], convert?: ((_C: unknown[], _Empty: details.column[]) => details.column[])) : number {
+   COLUMNAppend(_Column: unknown | unknown[], callConvert?: ((_C: unknown[], _Empty: details.column[]) => details.column[])) : number {
       let aColumn: details.column[];
 
       // check if _Column is string, if string it is treated as a name
@@ -593,11 +593,16 @@ export class CTableData {
 
       if(Array.isArray(_Column) === false) _Column = [ _Column ];
 
-      if(convert) {
-         let a = convert(<unknown[]>_Column, aColumn);
+      if(callConvert) {
+         let a = callConvert(<unknown[]>_Column, aColumn);
          if(Array.isArray(a)) aColumn = a;
       }
-      else aColumn = <details.column[]>_Column;
+      else {
+         for(let i = 0; i < (<unknown[]>_Column).length; i++) {
+            if(typeof _Column[ i ] === "string") { _Column[i] = this._create_column(1, { id: _Column[i], name: _Column[i], position: { index: this.COLUMNGetCount() } })[0]; }
+         }
+         aColumn = <details.column[]>_Column;
+      }
 
       this.m_aColumn = this.m_aColumn.concat(aColumn);
 
@@ -826,7 +831,7 @@ export class CTableData {
     * Set property value for column
     * @param {boolean|number|string|number[]} _Index index or name for column that you want to set
     * @param {string | string[]} _Property property name, if child property remember the format is "property.property"
-    * @param {unknown} _Value value set to property
+    * @param {unknown} _Value value set to property, if array then each array value are matched to column setting multiple column properties
     * @param {boolean} [bRaw] Index for column will use direct index in internal column array.
     * @returns {unknown} old property value
     */
@@ -850,7 +855,7 @@ export class CTableData {
          }
 
          if(Array.isArray(_Property)) {
-            _Property.forEach((s) => {
+            _Property.forEach((s,i) => {
                let [ s0, s1 ] = s.split("."); // format to find property is property_name.property_name because some properties are in child objects
                
                if(column.hasOwnProperty(s0) === false) {
@@ -858,11 +863,13 @@ export class CTableData {
                }
                if(typeof s1 === "string") {
                   _Old.push([_Position,column[ s0 ][ s1 ]]);
-                  column[ s0 ][ s1 ] = _Value;
+                  if( !Array.isArray(_Value) ) column[ s0 ][ s1 ] = _Value;
+                  else column[ s0 ][ s1 ] = _Value[i];
                }
                else {
                   _Old.push([ _Position, column[ s0 ] ]);
-                  column[ s0 ] = _Value;
+                  if( !Array.isArray(_Value) ) column[ s0 ] = _Value;
+                  else column[ s0 ] = _Value[i];
                }
             });
          }
@@ -878,7 +885,8 @@ export class CTableData {
             }
             else {
                _Old.push([ _Position, column[ s0 ] ]);
-               column[ s0 ] = _Value;
+               if( !Array.isArray(_Value) ) column[ s0 ] = _Value;
+               else column[ s0 ] = _Value[i];
             }
          }
       }
@@ -1070,7 +1078,7 @@ export class CTableData {
    }
 
    /**
-    * Append rows to table. Added rows will always add one more compared to number of columns. First rows holds index for row.
+    * Append rows to table. Added rows will always add one more compared to number of columns. First rows holds index number for row.
     * @param {number | unknown[] | unknown[][]} _Row number of rows, or array of values added to row
     * @param {boolean} [bRaw] if true then add to body without calculating position
     * @returns [number,number] keys to added rows, first key and first and one more than last key for added rows
@@ -1086,7 +1094,7 @@ export class CTableData {
       else {
          aRow = <unknown[][]>_Row;
          if(aRow.length === 0) return;
-         if(Array.isArray(aRow[ 0 ]) === false) aRow = [ aRow ];
+         if(Array.isArray(aRow[ 0 ]) === false) { (<unknown[]><unknown>aRow).unshift(-1); aRow = [ aRow ]; }
       }
 
       if(bRaw || this.m_iFooterSize === 0) {
@@ -1138,7 +1146,7 @@ export class CTableData {
          aRow = <unknown[][]>_Row;
          if(aRow.length === 0) return;
 
-         if(Array.isArray(aRow[ 0 ]) === false) aRow = [ aRow ];
+         if(Array.isArray(aRow[ 0 ]) === false) { aRow = [ aRow ]; }
          // Prepare rows for insertion
          for(let i = 0; i < aRow.length; i++) {
             let a = aRow[ i ];

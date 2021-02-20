@@ -6,7 +6,6 @@
    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.css">
    <style type="text/css">
       .page-table-parent {
-         display: grid;
          grid-gap: 10px;
          grid-template-rows: 50px 25px minmax(200px, 1fr) 50px;
       }
@@ -51,7 +50,7 @@
    </style>
 </head>
 <body style="padding: 2em;">
-   <div class="" style="display: grid; height: 800px; place-items: center; overflow: auto; resize: both; width: 1400px; background-color: var(--bs-light); overflow: auto;">
+   <div class="" style="height: 800px; overflow: auto; resize: both; width: 1400px; background-color: var(--bs-light); overflow: auto;">
       <div class="page-table-parent uitabletext">
         <div class="page-table-box" data-section="title" style="background-color: var(--bs-primary); color: var(--bs-white);"></div>
         <div class="page-table-box" data-section="toolbar"></div>
@@ -60,6 +59,9 @@
       </div>
    </div>
 
+   <div id="idEventList" style="position: absolute; top: 0; right:0;"></div>
+
+   <hr />
    <textarea id="idXml" style="display: none; height: 50px; width: 100%;"></textarea>
 
    <script>
@@ -71,6 +73,8 @@
          eEditors.Add("number", edit.CEditNumber);
 
 
+// Prepare source data for table, this is done with CTableData that is the main source feeder to CUITableText,
+// --
          let TDHappiness = new CTableData();
          window.global.TDHappiness = TDHappiness;
          TDHappiness.ReadArray(aTable);                     // read happiness data
@@ -78,12 +82,12 @@
          TDHappiness.COLUMNSetPropertyValue(true, "edit.edit", true);// enable edit for all columns
          TDHappiness.COLUMNSetPropertyValue([0,1], "edit.name", "string");// set string editor for all columns
          TDHappiness.COLUMNSetPropertyValue([2,3,4,5,6,7,8,9,10,11], "edit.name", "number");// set string editor for all columns
-
-
          TDHappiness.COLUMNSetType(aTable[ 1 ]);              // set column types from second row in soursce data
 
-         // style CUITableText
-         let oStyle = {
+
+// Prepare data to CUITableText. In this sample we use a lot of different customization possibilities for CUITableText
+// --
+         let oStyle = { // the style object can be used to modify type of elements created
             html_group: "table.table",                      // "table" element and class table
             html_row: "tr",                                 // "tr" element for each row
             html_cell_header: "th",                         // "th" for column headers
@@ -95,7 +99,7 @@
 
          // trigger logic, this will enable triggering callbacks when CUITableText call methods in CTableData
          let oTrigger = new CTableDataTrigger({ table: TDHappiness, trigger: CALLBACK_TableData }); 
-         CTableDataTrigger.SetTriggerName([ [8, "AfterSetValue"] ]);
+         CTableDataTrigger.SetTriggerName([ [7, "BeforeValidateValue"], [9, "AfterSetValue"] ]);
 
          let options = {
             parent: document.querySelector(".page-table-parent"),          //document.getElementById("idBootstrapTable"),// container
@@ -125,10 +129,10 @@
                let eParent;
                if( sName === "afterCreate" ) {
                   bAppend = false;
-                  if( sSection === "component" ) { document.querySelector(".page-table-box[data-section=\"component\"]").appendChild( e.element ); }
-                  else if( sSection === "title" ) { document.querySelector(".page-table-box[data-section=\"title\"]").appendChild( e.element ); }
-                  else if( sSection === "toolbar" ) { document.querySelector(".page-table-box[data-section=\"toolbar\"]").appendChild( e.element ); }
-                  else if( sSection === "statusbar" ) { document.querySelector(".page-table-box[data-section=\"statusbar\"]").appendChild( e.element ); }
+                  if( sSection === "component" ) { document.querySelector(".page-table-box[data-section=\"component\"]").appendChild( e.eElement ); }
+                  else if( sSection === "title" ) { document.querySelector(".page-table-box[data-section=\"title\"]").appendChild( e.eElement ); }
+                  else if( sSection === "toolbar" ) { document.querySelector(".page-table-box[data-section=\"toolbar\"]").appendChild( e.eElement ); }
+                  else if( sSection === "statusbar" ) { document.querySelector(".page-table-box[data-section=\"statusbar\"]").appendChild( e.eElement ); }
                   else bAppend = true;
                }
 
@@ -151,11 +155,13 @@
          let TTHappiness = new CUITableText(options);       // create CUITableText that render table in browser
          TDHappiness.UIAppend(TTHappiness);                 // add ui object to source data object (CTableData)
          TTHappiness.Render();                              // render table
+
+         // Customize title
          let eTitle = TTHappiness.GetSection("title");
          eTitle.style.position = "relative";
          eTitle.innerHTML = `<div style="right: 0px; top: 0px; position: absolute;"><i>Table using bootstrap css.<br>Edit, Events, History and Sorting is enabled.</i></div>`;
 
-         // make header sticky
+         // Make header sticky
          let eSection = TTHappiness.GetSection("header");
          let aTH = eSection.querySelectorAll("th");
          aTH.forEach((e) => {
@@ -163,6 +169,45 @@
          });
 
          TTHappiness.GetSection("body").focus({ preventScroll: true });
+         window.TTHappiness = TTHappiness;
+      }
+
+
+      /**
+       * Set up table  to list events
+       */
+      function PAGE_SetupEventList() {
+         window.iEventCount = 0;
+         window.TDEventList = new CTableData();
+         TDEventList.COLUMNAppend(["Number","Event","Section"]);
+         TDEventList.COLUMNSetPropertyValue(true, "alias", ["Number", "Name", "Section"] );
+         TDEventList.COLUMNSetPropertyValue( 0, "state.sort", -1 );  // sort on number in descending order
+         TDEventList.COLUMNSetType( 0, 0 );  // sort on number in descending order
+
+         let oStyle = { // the style object can be used to modify type of elements created
+            html_group: "table.table",                      // "table" element and class table
+            html_row: "tr",                                 // "tr" element for each row
+            html_cell_header: "th",                         // "th" for column headers
+            html_cell: "td",                                // "td" for cells
+            html_section_header: "thead",                   // "thead" for header section
+            html_section_body: "tbody",                     // "tbody" for body section
+         }
+
+
+         let options = {
+            parent: document.getElementById("idEventList"),          //document.getElementById("idBootstrapTable"),// container
+            section: [ "title", "table.header", "table.body" ], // sections to create
+            table: TDEventList,                             // source data
+            name: "event",                                  // name to access UI table in CTableData
+            style: oStyle,                                  // styling
+            max: 10,
+         }
+
+         window.TTEventList = new CUITableText(options);    // create CUITableText that render table in browser
+         TDEventList.UIAppend(TTEventList);                 // add ui object to source data object (CTableData)
+         TTEventList.Render();                              // render table
+
+
       }
 
       /**
@@ -170,9 +215,15 @@
        * @param {EventDataTable} oEventData standard event data
        * @param {any} e This is dependent on the event.
        */
-      function CALLBACK_TableData(oEventData, e) {                             console.log("Event:", oEventData.iEvent, " Reason:", oEventData.iReason);
+      function CALLBACK_TableData(oEventData, v ) {                            console.log("Event:", oEventData.iEvent, " Reason:", oEventData.iReason);
          let sName = CTableDataTrigger.GetTriggerName( oEventData.iEvent );
          if( typeof sName !== "string" ) return;
+
+         let eSection = window.TTHappiness.GetSection(oEventData.eElement);
+         TDEventList.ROWAppend([ ++window.iEventCount, sName, eSection.dataset.section ]);
+         TTEventList.create_body();
+         TTEventList.Render();
+
          switch(sName) {
             case "AfterSetValue":
                {
@@ -195,6 +246,7 @@
    -->
    <script>
       document.addEventListener('DOMContentLoaded', function() {
+         PAGE_SetupEventList();
          PAGE_Setup();
       });
    </script>
@@ -219,6 +271,7 @@
     | Source data for login test page
    -->
    <script>
+
       var aTable = [
          [ "Country", "Region", "Happiness Rank", "Happiness Score", "Standard Error", "Economy (GDP per Capita)", "Family", "Health (Life Expectancy)", "Freedom", "Trust (Government Corruption)", "Generosity", "Dystopia Residual" ],
          [ "Switzerland", "Western Europe", 1, 7.587, 0.03411, 1.39651, 1.34951, 0.94143, 0.66557, 0.41978, 0.29678, 2.51738 ],

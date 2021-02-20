@@ -1,4 +1,4 @@
-import { CTableData, IUITableData } from "./TableData.js";
+import { CTableData, IUITableData, tabledata_column } from "./TableData.js";
 import { edit } from "./TableDataEdit.js";
 
 // before = 0x10000000
@@ -28,6 +28,7 @@ export const enum enumTrigger {
    AfterLoadNew_,
    BeforeLoad_,
    AfterLoad_,
+   BeforeValidateValue_,
    BeforeSetValue_,
    AfterSetValue_,
    BeforeSetRange_,
@@ -49,27 +50,28 @@ export const enum enumTrigger {
    LAST_EVENT,                                                                 // Last event
 
    MASK = 0xffff,
-   TRIGGER_BEFORE    = 0x10000,
-   TRIGGER_AFTER     = 0x20000,
-   TRIGGER_ON        = 0x40000,
+   TRIGGER_BEFORE       = 0x10000,
+   TRIGGER_AFTER        = 0x20000,
+   TRIGGER_ON           = 0x40000,
 
-   BeforeCreate      = TRIGGER_BEFORE + BeforeCreate_,
-   AfterCreate       = TRIGGER_BEFORE + AfterCreate_,
-   BeforeLoadNew     = TRIGGER_BEFORE + BeforeLoadNew_,
-   AfterLoadNew      = TRIGGER_BEFORE + AfterLoadNew_,
-   BeforeLoad        = TRIGGER_BEFORE + BeforeLoad_,
-   AfterLoad         = TRIGGER_BEFORE + AfterLoad_,
-   BeforeSetValue    = TRIGGER_BEFORE + BeforeSetValue_,
-   AfterSetValue     = TRIGGER_AFTER  + AfterSetValue_,
-   BeforeSetRange    = TRIGGER_BEFORE + BeforeSetRange_,
-   AfterSetRange     = TRIGGER_AFTER  + AfterSetRange_,
-   BeforeSetRow      = TRIGGER_BEFORE + BeforeSetRow_,
-   AfterSetRow       = TRIGGER_AFTER  + AfterSetRow_,
-   BeforeRemoveRow   = TRIGGER_BEFORE + BeforeRemoveRow_,
-   AfterRemoveRow    = TRIGGER_AFTER  + AfterRemoveRow_,
+   BeforeCreate         = TRIGGER_BEFORE + BeforeCreate_,
+   AfterCreate          = TRIGGER_BEFORE + AfterCreate_,
+   BeforeLoadNew        = TRIGGER_BEFORE + BeforeLoadNew_,
+   AfterLoadNew         = TRIGGER_BEFORE + AfterLoadNew_,
+   BeforeLoad           = TRIGGER_BEFORE + BeforeLoad_,
+   AfterLoad            = TRIGGER_BEFORE + AfterLoad_,
+   BeforeValidateValue  = TRIGGER_BEFORE + BeforeValidateValue_,
+   BeforeSetValue       = TRIGGER_BEFORE + BeforeSetValue_,
+   AfterSetValue        = TRIGGER_AFTER  + AfterSetValue_,
+   BeforeSetRange       = TRIGGER_BEFORE + BeforeSetRange_,
+   AfterSetRange        = TRIGGER_AFTER  + AfterSetRange_,
+   BeforeSetRow         = TRIGGER_BEFORE + BeforeSetRow_,
+   AfterSetRow          = TRIGGER_AFTER  + AfterSetRow_,
+   BeforeRemoveRow      = TRIGGER_BEFORE + BeforeRemoveRow_,
+   AfterRemoveRow       = TRIGGER_AFTER  + AfterRemoveRow_,
 
-   OnSetValueError   = TRIGGER_ON     + OnSetValueError_,
-   OnResize          = TRIGGER_ON     + OnResize_,
+   OnSetValueError      = TRIGGER_ON     + OnSetValueError_,
+   OnResize             = TRIGGER_ON     + OnResize_,
 }
 
 /**
@@ -77,13 +79,14 @@ export const enum enumTrigger {
  * 
  */
 export type EventDataTable = {
-   iEvent?: number,            // event number
-   iEventAll?: number,         // all event data
-   iReason?: number,           // reason for event
+   column?: tabledata_column,  // column information
    data?: CTableData,          // table data object
    dataUI?: IUITableData,      // ui table data object
+   iEvent?: number,            // event number
+   iEventAll?: number,         // all event data
    edit?: edit.CEdit,          // Edit control
-   element?: HTMLElement,      // if elements is involved in event
+   eElement?: HTMLElement,     // if elements is involved in event
+   iReason?: number,           // reason for event
 }
 
 
