@@ -37,6 +37,8 @@ export const enum enumTrigger {
    AfterSetRow_,
    BeforeRemoveRow_,
    AfterRemoveRow_,
+   BeforeSetCellError_,
+   AfterSetCellError_,
 
    OnSetValueError_,
    OnResize_,
@@ -69,8 +71,9 @@ export const enum enumTrigger {
    AfterSetRow          = TRIGGER_AFTER  + AfterSetRow_,
    BeforeRemoveRow      = TRIGGER_BEFORE + BeforeRemoveRow_,
    AfterRemoveRow       = TRIGGER_AFTER  + AfterRemoveRow_,
+   BeforeSetCellError   = TRIGGER_BEFORE + BeforeSetCellError_,
+   AfterSetCellError    = TRIGGER_AFTER  + AfterSetCellError_,
 
-   OnSetValueError      = TRIGGER_ON     + OnSetValueError_,
    OnResize             = TRIGGER_ON     + OnResize_,
 }
 

@@ -74,6 +74,7 @@ namespace details {
       convert?: ((value: unknown, aCell: [number, number]) => unknown), // convert logic, external or regex
       max?: number,     // max value for value, if string it is max number of characters, if number it has the max value
       min?:number,      // Same as max but opposite
+      pattern?: string, // reges pattern to verify that value is ok
       required?: number,// if value is required
       verify?: string | ((value: string) => boolean), // regex string or method to verify value
    };
@@ -249,7 +250,7 @@ export class CTableData {
     * @param {unknown} _Value value to validate against rules in format
     * @param oFormat 
     */
-   static ValidateValue( _Value: unknown, oFormat: details.format | details.column, eType?: enumValueType ): boolean|[boolean,(string|string[])?] {
+   static ValidateValue( _Value: unknown, oFormat: details.format | details.column, eType?: enumValueType ): boolean | [boolean|unknown,(string|string[]|unknown)?] {
       let aError: [boolean?,string?];
 
       if((<details.column>oFormat).format) {
@@ -259,6 +260,7 @@ export class CTableData {
 
       if( !eType ) eType = <number>CTableData.GetJSType( typeof _Value );
 
+      const _Old = _Value;
       _Value = CTableData.ConvertValue( _Value, eType );
 
       for(const [sKey, _rule] of Object.entries(oFormat)) {
@@ -275,12 +277,16 @@ export class CTableData {
                   ((eType & enumValueType.group_number) && _Value < _rule)
                ) aError = [false,sKey];
                break;
+            case "pattern" :
+               if((new RegExp(_rule, 'g')).test(_Value.toString()) === false) aError = [false,sKey];
+               break;
             case "required" : 
                if( _Value === void 0 || _Value === null ) aError = [false,sKey];
                break;
          }
       }
 
+      if( !aError && _Value !== _Old ) return [_Value, _Old];
       return <[boolean,string]>aError || true;
    }
 
@@ -715,6 +721,24 @@ export class CTableData {
       if(bArray) return aReturn;                                               // return index and value for property in array
 
       return aReturn[ 0 ][ 1 ];                                                // return primitive value for property
+   }
+
+   COLUMNGetIndexForPropertyValue(sProperty: string, _Value?: unknown ): number[] {
+      let aReturn: number[] = [];
+
+      let [ s0, s1 ] = sProperty.split(".");
+
+      this.m_aColumn.forEach((c, i) => {
+         if( 
+            (s1 && c[s0][s1] === _Value) ||
+             (c[s0] === _Value)
+          ) {
+            const iIndex = this._index_in_ui( i );
+            if( iIndex >= 0 ) aReturn.push( iIndex );
+         }
+      });
+
+      return aReturn;
    }
 
    static GetPropertyValue(aSource: any, _Index: boolean | number | string | number[] | string[], _Property: string | string[], _Raw?: boolean | ((value: string|number) => any) ): unknown | [ string | number, unknown ][] {
@@ -1387,6 +1411,19 @@ export class CTableData {
          }
       }
 
+      return -1;
+   }
+
+   /**
+    * Return (ui) index from raw column index. UI index is index for object that uses table data to store data
+    * @param iIndex raw column index in `m_aColumn`
+    */
+   _index_in_ui(iIndex: number): number {
+      if(!this.m_aColumnIndex) return iIndex;
+      let i = this.m_aColumnIndex.length;
+      while(--i >= 0) {
+         if(this.m_aColumnIndex[ i ] === iIndex) return i;
+      }
       return -1;
    }
 

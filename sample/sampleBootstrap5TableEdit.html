@@ -84,6 +84,8 @@
          TDHappiness.COLUMNSetPropertyValue([0,1], "edit.name", "string");// set string editor for all columns
          TDHappiness.COLUMNSetPropertyValue([2,3,4,5,6,7,8,9,10,11], "edit.name", "number");// set string editor for all columns
          TDHappiness.COLUMNSetType(aTable[ 1 ]);              // set column types from second row in soursce data
+         let aColumns = TDHappiness.COLUMNGetIndexForPropertyValue("edit.name", "number");
+         TDHappiness.COLUMNSetPropertyValue(aColumns, "format.pattern", "^\\s*\\d*\\.?\\d*\\s*$");
 
 
 // Prepare data to CUITableText. In this sample we use a lot of different customization possibilities for CUITableText
@@ -96,6 +98,7 @@
             html_section_header: "thead",                   // "thead" for header section
             html_section_body: "tbody",                     // "tbody" for body section
             html_section_footer: "tfoot",                   // "tfoot" for footer section
+            class_error: "bg-danger text-white",            // error i cell value
          }
 
          // trigger logic, this will enable triggering callbacks when CUITableText call methods in CTableData
@@ -259,13 +262,17 @@
       import { CTableData, browser } from "./../lib/TableData.js";
       import { edit } from "./../lib/TableDataEdit.js";
       import { CTableDataTrigger } from "./../lib/TableDataTrigger.js";
+      import { SetTriggerName } from "./../lib/TableDataTriggerNames.js";
       import { CUITableText } from "./../lib/UITableText.js";
+
 
       window.edit = edit;
       window.CTableData = CTableData;
       window.CTableData_browser = browser;
       window.CUITableText = CUITableText;
       window.CTableDataTrigger = CTableDataTrigger;
+
+      SetTriggerName();
    </script>
 
    <!--

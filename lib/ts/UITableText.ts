@@ -463,7 +463,10 @@ export class CUITableText implements IUITableData {
          bOk = oTrigger.Trigger( enumTrigger.BeforeValidateValue, oTriggerData, oTriggerData.edit.GetValueStack() ); 
          if( bOk === false ) return;
       }
-      const _result = CTableData.ValidateValue( value, oColumn );              // validate value
+      let _result = CTableData.ValidateValue( value, oColumn );              // validate value
+
+      // if returning array, check for modified value first. If modified then first value in array isn't boolean and first and second value differs.
+      if(Array.isArray(_result) && _result[ 0 ] !== false && _result[ 0 ] !== value) { value = _result[ 0 ]; _result = true; }
 
       if(_result === true || _result[0] === true ) {
          if( this.m_aValueError.length > 0 ) this.RemoveCellError( iRow, iColumn );// remove error for this value if it was set before
@@ -480,6 +483,10 @@ export class CUITableText implements IUITableData {
          if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.AfterSetValue, oTriggerData, oTriggerData.edit.GetValueStack() ); }
       }
       else {
+         if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.BeforeSetCellError, oTriggerData, oTriggerData.edit.GetValueStack() ); 
+            if( bOk === false ) return;
+         }
+
          if(this.SetCellError(iRow, iColumn, value, _result[ 1 ], oTriggerData) === true) {
             this.data.CELLSetValue(iDataRow, iDataColumn, value);
          }
@@ -495,7 +502,6 @@ export class CUITableText implements IUITableData {
          return;
       }
 
-      const oTrigger = this.trigger;      // Get trigger object with trigger logic
       let iRow: number, iColumn: number;  // index for row and column in UI
       if(Array.isArray(_Row) && _Row.length === 2) {                           // check for [row, column] parameter
          value = _Column;
@@ -523,10 +529,7 @@ export class CUITableText implements IUITableData {
          aError = this.m_aValueError[this.m_aValueError.length - 1];
       }
 
-      if( oTrigger ) { 
-         let bRender = oTrigger.Trigger( enumTrigger.OnSetValueError, oTriggerData, aError ); 
-         if( bRender !== false && bFound === false ) this.render_value_error();
-      }
+      this.render_value_error();
 
       return bSetValue;
    }
@@ -1262,6 +1265,7 @@ export class CUITableText implements IUITableData {
    }
 
    render_value_error( aValueError?: [ number, number, unknown, unknown ] | [ number, number, unknown, unknown ][] ) {
+      let oColumn: tabledata_column;
       if(Array.isArray(aValueError)) {
          if( Array.isArray( aValueError[ 0 ] ) === false ) aValueError = <[ number, number, unknown, unknown ][]>[ aValueError ];
       }
@@ -1270,10 +1274,25 @@ export class CUITableText implements IUITableData {
       let sClass: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_error");// cell class for error
       let sClassValue: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_value_error");// value class for error
       if(sClass || sClassValue) {
+
+         let bCall = this._has_render_callback( "askErrorValue", "body" );     // ask for external render calls
+
          let aClass = sClass ? sClass.split(" ") : null;
          let aClassValue = sClassValue ? sClassValue.split(" ") : null;
          for(let i = 0; i < iErrorLLength; i++) {
-            let eCell = this.ELEMENTGetCell(<[ number, number ]><unknown>aValueError[ i ], "body" );
+            let bRender = true;
+            const aError = <[ number, number ]><unknown>aValueError[ i ];
+            let eCell = this.ELEMENTGetCell(aError, "body" );
+
+            if(bCall) {                                                        // external rendering ?
+               oColumn = this.data.COLUMNGet( this._column_in_data( aError[ 1 ] ) );
+               for(let j = 0; j < this.m_acallRender.length; j++) {
+                  let b = this.m_acallRender[j].call(this, "beforeErrorValue", aError, eCell, oColumn );
+                  if( b === false ) bRender = false;
+               }
+               if( bRender === false ) continue;
+            }
+
             if(sClass && eCell.classList.contains(aClass[ 0 ]) === false) {    // compare if first class in array is set to element
                //eCell.className += " " + sClass;
                eCell.className = (eCell.className + " " + sClass).trim();
@@ -1286,6 +1305,9 @@ export class CUITableText implements IUITableData {
                   e.className = (e.className + " " + sClassValue).trim();
                }
             }
+
+            // external rendering?
+            if( bCall ) this.m_acallRender.forEach((call) => { call.call(this, "afterErrorValue", aError, eCell, oColumn ); });
          }
       }
    }
