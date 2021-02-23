@@ -118,7 +118,7 @@ export class CUITableText implements IUITableData {
    m_eComponent: HTMLElement; // Element that acts as container to table, sections can exist outside container but default is within
    m_oEdits: edit.CEdits;     // Component that handles edit logic
    m_sId: string;             // Unique id for source data 
-   m_aInput: [ number, number, HTMLElement ]; // data for active input
+   m_aInput: [ number, number, HTMLElement, number, number ]; // data for active input
    m_sName: string;           // name for UI object, this can be used to make it easier to find ui class in collections
    m_iOpenEdit: number;       // number of input elements opened.
    m_aOrder: [ number | string, number ][];// Order for result, if external order than pic order from  data table
@@ -177,7 +177,7 @@ export class CUITableText implements IUITableData {
       this.m_eComponent    = null;
       this.m_oEdits        = o.edits || null;
       this.m_sId           = o.id || CUITableText.s_sWidgetName + (new Date()).getUTCMilliseconds() + ++CUITableText.s_iIdNext;
-      this.m_aInput        = o.edit ? [ -1, -1, null ] : null;
+      this.m_aInput        = o.edit ? [ -1, -1, null, -1, -1 ] : null;
       this.m_sName         = o.name || "";
       this.m_iOpenEdit     = 0;
       this.m_aOrder        = [];
@@ -611,11 +611,13 @@ export class CUITableText implements IUITableData {
       let o: { [key: string]: string|number } = {};
       if( this.m_iRowCountMax >= 0 ) o.max = this.m_iRowCountMax;              // if max rows returned is set
 
+      if(this.m_aInput) { this.m_aInput[ 0 ] = -1; this.m_aInput[ 1 ] = -1; }
       let aBody = this.data.GetData(o);
       this.render_body(aBody, this.create_body(aBody[0]));
 
       this.render_selected();
 
+      this.INPUTSet();
       if(this.m_aInput) this.render_input();
       if(this.m_aValueError.length) this.render_value_error();
    }
@@ -937,16 +939,6 @@ export class CUITableText implements IUITableData {
 
       let eSection = this.GetSection(sSection);
       let eCell = this.ELEMENTGetRow( iRow, eSection );
-      /*
-      let eCell = eSection.firstElementChild;                                  // Position at row
-
-      let i = iRow;
-      while(--i >= 0 && eCell) {
-         if( (<HTMLElement>eCell).dataset.type !== "row" ) i++;                // no row ?
-         eCell = eCell.nextElementSibling;
-      }
-      */
-
       if(eCell) {
          eCell = <HTMLElement>eCell.firstElementChild;
          let i = iColumn;
@@ -992,17 +984,35 @@ export class CUITableText implements IUITableData {
 
    /**
     * Set active input cell. Only one input cell can be active at any time.
-    * @param {number} iR
-    * @param {number} iC
+    * @param {number} iR row index in ui
+    * @param {number} iC column index in ui
+    *//**
+    * Set active input cell. Only one input cell can be active at any time.
+    * @param {[ number, number]} aRC array with first position is row index and second position is column index
+    *//**
+    * Calling INPUTSet with no parameter will try to update input position from position in table data
     */
    INPUTSet(iR: number, iC: number): void;
    INPUTSet(aRC: [ number, number] ): void;
-   INPUTSet(_1: any, iC?: number): void {
-      if( Array.isArray(_1) ) { 
-         iC = _1[0];
-         _1 = _1[0];
+   INPUTSet(): void;
+   INPUTSet(_1?: any, iC?: number): void {
+      if(Array.isArray(_1)) {
+         iC = _1[ 1 ]; // set column first because when setting row the array is destroyed
+         _1 = _1[ 0 ];
       }
-      this.m_aInput = [_1, iC, this.ELEMENTGetCell(_1, iC)];
+      else if(_1 === undefined) {
+         if( !this.m_aInput || this.m_aInput[3] === -1 ) return;              // if no input or if row in table data is -1 then no active input and just skip this.
+
+         const iR = this._row_in_ui(this.m_aInput[ 3 ]);
+         if(iR === -1) { this.m_aInput = null; return;  }
+
+         this.m_aInput[ 0 ] = iR
+         this.m_aInput[ 1 ] = this._column_in_ui( this.m_aInput[4] );
+         this.m_aInput[ 2 ] = this.ELEMENTGetCell( <[number,number]><unknown>this.m_aInput );
+         return;
+      }
+
+      this.m_aInput = [_1, iC, this.ELEMENTGetCell(_1, iC), this._row_in_data(_1), this._column_in_data(iC) ];
    }
 
    INPUTMove(e: enumMove, bRender?: boolean) {
@@ -1029,8 +1039,9 @@ export class CUITableText implements IUITableData {
       if(iR < 0) iR = 0;
       else if(iR >= this.m_iRowCount) iR = this.m_iRowCount - 1;
 
-      let eElement = this.ELEMENTGetCell(iR,iC);
-      this.m_aInput = [ iR, iC, eElement ];
+      //let eElement = this.ELEMENTGetCell(iR,iC);
+      //this.m_aInput = [ iR, iC, eElement ];
+      this.INPUTSet( iR, iC );
 
       if(bRender === true) this.Render("body");
    }
@@ -1572,7 +1583,7 @@ export class CUITableText implements IUITableData {
          if(sType === "click") {
             let aCell: [ number, number, unknown ] = this.GetRowCol(<HTMLElement>e.srcElement);
             if(aCell && this.m_aInput && (aCell[ 0 ] !== this.m_aInput[ 0 ] || aCell[ 1 ] !== this.m_aInput[ 1 ])) {
-               this.m_aInput = <[ number, number, HTMLElement ]>aCell;
+               this.INPUTSet( <[number,number]><unknown>aCell );
                this.INPUTMove(enumMove.validate, true);
             }
          }

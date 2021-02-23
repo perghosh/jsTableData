@@ -225,8 +225,9 @@
          if( typeof sName !== "string" ) return;
 
          let eSection = window.TTHappiness.GetSection(oEventData.eElement);
-         TDEventList.ROWAppend([ ++window.iEventCount, sName, eSection.dataset.section ]);
-         TTEventList.create_body();
+
+         TDEventList.ROWAppend([ ++window.iEventCount, sName, eSection.dataset.section ]); // Add row to table data for events
+         //TTEventList.create_body();
          TTEventList.Render();
 
          switch(sName) {
