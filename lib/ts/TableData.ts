@@ -900,7 +900,7 @@ export class CTableData {
                else {
                   _Old.push([ _Position, column[ s0 ] ]);
                   if(!Array.isArray(_Value) || bArray === false) {
-                     if( typeof _Value === "object" ) Object.assign( column[ s0 ], _Value );
+                     if( typeof _Value === "object" && !Array.isArray(_Value) && _Value !== null ) Object.assign( column[ s0 ], _Value );
                      else column[ s0 ] = _Value;
                   }
                   else column[ s0 ] = _Value[i];
@@ -920,7 +920,7 @@ export class CTableData {
             else {
                _Old.push([ _Position, column[ s0 ] ]);
                if(!Array.isArray(_Value) || bArray === false) {
-                  if( typeof _Value === "object" ) Object.assign( column[ s0 ], _Value );
+                  if( typeof _Value === "object" && !Array.isArray(_Value) && _Value !== null ) Object.assign( column[ s0 ], _Value );
                   else column[ s0 ] = _Value;
                }
                else column[ s0 ] = _Value[i];
