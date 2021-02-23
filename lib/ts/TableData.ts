@@ -72,9 +72,10 @@ export interface IUITableData {
 namespace details {
    export type format = {
       convert?: ((value: unknown, aCell: [number, number]) => unknown), // convert logic, external or regex
+      const?: number|boolean,// value cannot be corrected. if not set then table data tries to correct value if wrong   
       max?: number,     // max value for value, if string it is max number of characters, if number it has the max value
       min?:number,      // Same as max but opposite
-      pattern?: string, // reges pattern to verify that value is ok
+      pattern?: string|string[], // regex pattern to verify that value is ok
       required?: number,// if value is required
       verify?: string | ((value: string) => boolean), // regex string or method to verify value
    };
@@ -261,7 +262,9 @@ export class CTableData {
       if( !eType ) eType = <number>CTableData.GetJSType( typeof _Value );
 
       const _Old = _Value;
-      _Value = CTableData.ConvertValue( _Value, eType );
+      if(!(<details.format>oFormat).const) {
+         _Value = CTableData.ConvertValue(_Value, eType);
+      }
 
       for(const [sKey, _rule] of Object.entries(oFormat)) {
          switch(sKey) {
@@ -278,10 +281,14 @@ export class CTableData {
                ) aError = [false,sKey];
                break;
             case "pattern" :
-               if((new RegExp(_rule, 'g')).test(_Value.toString()) === false) aError = [false,sKey];
+               let a = _rule;
+               if( !Array.isArray(a) ) a = [a];
+               for(let i = 0; i < a.length; i++) {
+                  if((new RegExp(a[ i ], 'g')).test(_Value.toString()) === false) { aError = [ false, sKey ]; break; }
+               }
                break;
             case "required" : 
-               if( _Value === void 0 || _Value === null ) aError = [false,sKey];
+               if( _Value === void 0 || _Value === null || _Value === "" ) aError = [false,sKey];
                break;
          }
       }
@@ -892,7 +899,10 @@ export class CTableData {
                }
                else {
                   _Old.push([ _Position, column[ s0 ] ]);
-                  if( !Array.isArray(_Value) || bArray === false ) column[ s0 ] = _Value;
+                  if(!Array.isArray(_Value) || bArray === false) {
+                     if( typeof _Value === "object" ) Object.assign( column[ s0 ], _Value );
+                     else column[ s0 ] = _Value;
+                  }
                   else column[ s0 ] = _Value[i];
                }
             });
@@ -909,7 +919,10 @@ export class CTableData {
             }
             else {
                _Old.push([ _Position, column[ s0 ] ]);
-               if( !Array.isArray(_Value) || bArray === false ) column[ s0 ] = _Value;
+               if(!Array.isArray(_Value) || bArray === false) {
+                  if( typeof _Value === "object" ) Object.assign( column[ s0 ], _Value );
+                  else column[ s0 ] = _Value;
+               }
                else column[ s0 ] = _Value[i];
             }
          }

@@ -85,7 +85,8 @@
          TDHappiness.COLUMNSetPropertyValue([2,3,4,5,6,7,8,9,10,11], "edit.name", "number");// set string editor for all columns
          TDHappiness.COLUMNSetType(aTable[ 1 ]);              // set column types from second row in soursce data
          let aColumns = TDHappiness.COLUMNGetIndexForPropertyValue("edit.name", "number");
-         TDHappiness.COLUMNSetPropertyValue(aColumns, "format.pattern", "^\\s*\\d*\\.?\\d*\\s*$");
+         //TDHappiness.COLUMNSetPropertyValue(aColumns, "format.pattern", "^\\s*\\d*\\.?\\d*\\s*$");
+         TDHappiness.COLUMNSetPropertyValue(aColumns, "format", { pattern: ["^\\s*\\d*\\.?\\d*\\s*$"], const: true, required: true });
 
 
 // Prepare data to CUITableText. In this sample we use a lot of different customization possibilities for CUITableText
