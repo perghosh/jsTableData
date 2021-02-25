@@ -1085,8 +1085,7 @@ export class CUITableText implements IUITableData {
          if(oEdit !== null) {
             let eCell = this.ELEMENTGetCell(iRow, iC);
             if(this.is_state(enumState.HtmlValue)) {
-               let e = eCell.matches("[data-edit]") || eCell.querySelector("[data-edit]");// try to find element with attribute data_edit
-               if(!e) e = eCell.querySelector("[data-value]");                 // no data-edit, then take data-value
+               let e = eCell.matches("[data-value]") || eCell.querySelector("[data-value]");// try to find element with attribute valute
                eCell = <HTMLElement>e || eCell;
             }
             this.m_oEdits.Activate([ iDataRow, iDataColumn, iRow, iC], eCell);

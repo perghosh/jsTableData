@@ -126,7 +126,6 @@ function TABLE_set_label( sType, v, e, oColumn ) {
    }
 }
 
-var sDataSource = "ww";
 function TABLE_toggle_data( sSelectData ) {
    let TDTest = window.tabledataTest;
 

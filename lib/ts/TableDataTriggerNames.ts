@@ -17,7 +17,14 @@ export function SetTriggerName() {
       [enumTrigger.BeforeRemoveRow_,"BeforeRemoveRow"],
       [enumTrigger.AfterRemoveRow_,"AfterRemoveRow"],
       [enumTrigger.BeforeSetCellError_,"BeforeSetCellError"],
-      [enumTrigger.AfterSetCellError_,"AfterSetCellError"]
+      [enumTrigger.AfterSetCellError_,"AfterSetCellError"],
+
+      [enumTrigger.UpdateDataNew,"UpdateDataNew"],
+      [enumTrigger.UpdateData,"UpdateData"],
+      [enumTrigger.UpdateRowNew,"UpdateRowNew"],
+      [enumTrigger.UpdateRowDelete,"UpdateRowDelete"],
+      [enumTrigger.UpdateRow,"UpdateRow"],
+      [enumTrigger.UpdateCell,"UpdateCell"],
    ];
 
    CTableDataTrigger.SetTriggerName( aTrigger );
