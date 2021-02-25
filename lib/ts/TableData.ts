@@ -94,7 +94,8 @@ namespace details {
       alias?: string,      // alias or label name for field
       edit?: {
          name?: string,    // edit control name used for column
-         edit?: boolean,   // if edit is allowed or not
+         edit?: boolean|number,// if edit is allowed or not
+         element?: boolean|number,// Use existing  element (don't create edit element).
       },
       extra?: any,         // custom data
       format?: details.format,

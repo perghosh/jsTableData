@@ -618,7 +618,7 @@ export class CUITableText implements IUITableData {
       this.render_selected();
 
       this.INPUTSet();
-      if(this.m_aInput) this.render_input();
+      if(this.m_aInput && this.m_aInput[0] !== -1) this.render_input();
       if(this.m_aValueError.length) this.render_value_error();
    }
 
@@ -1168,6 +1168,9 @@ export class CUITableText implements IUITableData {
 
 
       if(typeof _1 === "boolean") {
+         let _Selected: string | string[] = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_cell_input") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_selected");let sClassSelected: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_cell_input") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_selected");
+         if( _Selected ) _Selected = _Selected.split(" ");
+         else return;
          let eSection = this.GetSection("body", true);
          if( eSection === null ) return;
          let eRow = <HTMLElement>eSection.firstElementChild;
@@ -1175,7 +1178,7 @@ export class CUITableText implements IUITableData {
             let eColumn: HTMLElement = <HTMLElement>eRow.firstElementChild;
             while(eColumn) {
                let e = this.ELEMENTGetCellValue(eColumn);
-               e.className = sClass || "";
+               _Selected.forEach(s => { e.classList.remove(s); });
 
                eColumn = <HTMLElement>eColumn.nextElementSibling;
             }
@@ -1207,11 +1210,12 @@ export class CUITableText implements IUITableData {
          eRow.dataset.row = iRow.toString();
          let eColumn: HTMLElement = <HTMLElement>eRow.firstElementChild;
          for(var i = 0; i < this.m_iColumnCount; i++) {
+            const oColumn = this.data.COLUMNGet( this._column_in_data( i ) );
             let sValue = aRow[ i ];
             if( bCall ) { 
                let bRender = true;
                for(let j = 0; j < this.m_acallRender.length; j++) {
-                  let b = this.m_acallRender[j].call(this, "beforeCellValue", sValue, eColumn, this.data.COLUMNGet( this._column_in_data( i ) ) );
+                  let b = this.m_acallRender[j].call(this, "beforeCellValue", sValue, eColumn, oColumn );
                   if( b === false ) bRender = false;
                }
                if( bRender === false ) continue;
@@ -1220,9 +1224,14 @@ export class CUITableText implements IUITableData {
             let e = this.ELEMENTGetCellValue(eColumn);                         // get cell value element
             if(sClass) e.classList.add(sClass);                                //
             if(Object.keys(aStyle[ i ][1]).length > 0) Object.assign(e.style, aStyle[ i ][1]);
-            if(sValue !== null && sValue != void 0) e.innerText = sValue.toString();
-            else e.innerText = " ";
-            if( bCall ) this.m_acallRender.forEach((call) => { call.call(this, "afterCellValue", sValue, eColumn, this.data.COLUMNGet( this._column_in_data( i ) ) ); });
+            
+            if(sValue !== null && sValue != void 0) {
+               if("value" in e) { (<HTMLElement>e).setAttribute("value", sValue.toString()); }
+               else e.innerText = sValue.toString();
+            }
+            else if( e.hasAttribute("value") === false ) e.innerText = " ";
+
+            if(bCall) this.m_acallRender.forEach((call) => { call.call(this, "afterCellValue", sValue, eColumn, this.data.COLUMNGet(this._column_in_data(i))); });
 
             eColumn = <HTMLElement>eColumn.nextElementSibling;                 // next column element in row
          }
@@ -1243,8 +1252,14 @@ export class CUITableText implements IUITableData {
 
       let sValue = this.data.CELLGetValue(this._row_in_data(_Row), this._column_in_data(iColumn));
 
-      if(sValue !== null && sValue != void 0) eElement.innerText = sValue.toString();
-      else eElement.innerText = " ";
+      if(sValue !== null && sValue != void 0) {
+         if("value" in eElement) { (<HTMLElement>eElement).setAttribute("value", sValue.toString()); }
+         else eElement.innerText = sValue.toString();
+      }
+      else {
+         if("value" in eElement) { (<HTMLElement>eElement).setAttribute("value", ""); }
+         else eElement.innerText = " ";
+      }
    }
 
    render_selected(aSelected?: [number,number][]) {
@@ -1388,7 +1403,7 @@ export class CUITableText implements IUITableData {
                let eSink: HTMLElement;
                if( (<any>e.target).tagName === "INPUT" || (<any>e.target).tagName === "TEXTAREA") {
                   let oEdit = this.m_oEdits.GetEdit( (<HTMLElement>e.target) );// try to get edit object for edit element
-                  if(oEdit.IsMoveKey(e.keyCode, e) === false) { return; }
+                  if(!oEdit || oEdit.IsMoveKey(e.keyCode, e) === false) { return; }
                   eSink = self.m_aInput[2];
                }
                else eSink = <HTMLElement>e.currentTarget;
@@ -1621,11 +1636,19 @@ export class CUITableText implements IUITableData {
             else if((<KeyboardEvent>e).keyCode === 27) eMove = enumMove.disable;
             if(eMove) { 
                if( this.m_iOpenEdit > 0 ) {                                    // any open edit elements?
+                  let oEdit = this.edits.GetEdit(<HTMLElement>e.srcElement) || this.edits.GetEdit(<[number,number]><unknown>this.m_aInput);
+                  if(oEdit && oEdit.IsModified() === true) {                               // Is value modified
+                     let bOk: boolean = true;
+                     let _Value = oEdit.GetValue();
+                     this.SetCellValue( oEdit.GetPositionRelative(), _Value, {iReason: enumReason.Edit,edit:oEdit, eElement: <HTMLElement>e.srcElement } );
+                  }
+
                   if( eMove == enumMove.disable ) this.INPUTDeactivate( false );
-                  else this.INPUTDeactivate();                                      // close all edits
+                  else this.INPUTDeactivate();                                 // close all edits
                   this.GetSection("body").focus({preventScroll: true});        // Set focus to body, closing edit elements will make it loose focus
                }
                this.INPUTMove(eMove, true);
+               this.INPUTActivate();
             }
             else if(this.m_oEdits && (<KeyboardEvent>e).keyCode >= 32) {       // space and above
                let oEdit = this.m_oEdits.GetEdit(this._column_in_data(this.m_aInput[1]));// Get edit for column (second value in input array)
@@ -1635,7 +1658,6 @@ export class CUITableText implements IUITableData {
                         this.INPUTActivate();
                      }
                   }
-                  //console.log("ACTIVATE!!!!!!");
                }
             }
          }
@@ -1645,12 +1667,24 @@ export class CUITableText implements IUITableData {
             }
          }
          else if(sType === "focus") {
-
+            if(this.m_aInput ) {
+               const a = this.GetRowCol( <HTMLElement>e.srcElement );
+               if(a && (a[ 1 ] != this.m_aInput[ 1 ] || a[ 0 ] != this.m_aInput[ 0 ])) {
+                  let oEdit = this.edits.GetEdit(<[number,number]><unknown>this.m_aInput);
+                  if(oEdit && oEdit.IsModified() === true) {
+                     let _Value = oEdit.GetValue();
+                     this.SetCellValue(oEdit.GetPositionRelative(), _Value, { iReason: enumReason.Edit, edit: oEdit, eElement: <HTMLElement>e.srcElement });
+                  }
+                  this.INPUTDeactivate();
+                  this.INPUTActivate( a[0], a[1], true );
+               }
+            }
+            
          }
          else if(sType === "focusout") {
-            if((<HTMLElement>e.srcElement).dataset.input === "1") {
-               let oEdit = this.edits.GetEdit(<HTMLElement>e.srcElement);
-               if(oEdit.IsModified() === true) {                               // Is value modified
+            if((<HTMLElement>e.srcElement).dataset.input === "1" || (<HTMLElement>e.srcElement).matches("[data-value]")) {
+               let oEdit = this.edits.GetEdit(<HTMLElement>e.srcElement) || this.edits.GetEdit(<[number,number]><unknown>this.m_aInput);
+               if(oEdit && oEdit.IsModified() === true) {                               // Is value modified
                   let bOk: boolean = true;
                   let _Value = oEdit.GetValue();
                   this.INPUTDeactivate()

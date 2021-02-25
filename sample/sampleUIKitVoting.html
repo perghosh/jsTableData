@@ -1,0 +1,168 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta charset="utf-8" />
+   <title>UIKit table sample to vote</title>
+   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.6.16/dist/css/uikit.min.css" />
+
+</head>
+<body>
+
+   <div class="uk-section uk-section-default">
+      <div class="uk-section uk-section-default">
+         <div class="uk-container">
+
+            <div class="uk-card uk-card-body uk-card-default uk-card-hover">
+               <h3 class="uk-card-title">Skapa konto</h3>
+               <p id="idLogin"></p>
+            </div>
+
+
+         </div>
+      </div>
+   </div>
+
+   <script>
+// https://getuikit.com/assets/uikit/tests/      
+      function PAGE_Setup() {
+
+         class CApplication {
+            constructor() {
+               this.m_oEditors = edit.CEditors.GetInstance();               
+            }
+
+            Initialize() {
+               let oEditors = this.m_oEditors;
+               oEditors.Add("string", edit.CEditInput);
+               oEditors.Add("password", edit.CEditPassword);
+               oEditors.Add("checkbox", edit.CEditCheckbox);
+               oEditors.Add("select", edit.CEditSelect);
+               oEditors.Add("text", edit.CEditTextarea);
+            }
+
+            CreateLogin( eRoot, aLoginData ) {
+               if( typeof eRoot === "string" ) eRoot = document.getElementById(eRoot);
+
+               let TDLogin = new CTableData();
+               TDLogin.ReadArray(aLogon);
+               TDLogin.COLUMNSetPropertyValue([ 0, 1, 2 ], "edit.edit", true);
+               TDLogin.COLUMNSetPropertyValue( 0, "edit.name", "string");
+               TDLogin.COLUMNSetPropertyValue( 1, "edit.name", "string");
+               TDLogin.COLUMNSetPropertyValue( 2, "edit.name", "password");
+
+               TDLogin.COLUMNSetPropertyValue( [0, 1, 2] , "alias", [ "Namn", "E-mail", "Lösenord" ]);
+               TDLogin.COLUMNSetPropertyValue( true , "edit.element", 1 );
+
+               let oStyle = {
+                  class_section: "uitabletext_login", class_value_error: "error_value",
+                  html_value: `
+<div class="uk-margin-small">            
+   <input data-label='1' data-value='1' class="uk-input" type="text" placeholder="" tabindex="-1">
+   <div data-description='1'></div>
+   <div class='uk-text-danger' data-error='1'></div>
+</div>
+`   
+               };
+
+               let options = {
+                  parent: eRoot,                                                // container
+                  section: [ "title", "body", "statusbar" ],
+                  style: oStyle,
+                  table: TDLogin,                                               // source data
+                  name: "login",                                                // name to access UI table in CTableData
+                  edit: 1,                                                      // enable edit
+                  callback_render: ( sType, _value, eElement, oColumn ) => {
+                     /*
+                     if(sType === "afterCellValue") {
+                        let eLabel = eElement.querySelector("[data-label]");
+                        eLabel.innerText = oColumn.alias;
+                     }
+                     */
+                  }
+               }; 
+
+               let TTLogin = new CUITableText(options);
+               TDLogin.UIAppend(TTLogin);
+
+               TTLogin.Render();
+               //LOGIN_PrepareSections( TTLogin );
+               TTLogin.GetSection("body").focus();
+
+               this.m_oTTLogin = TTLogin;
+            }
+         } // class CApplication
+
+         window.app = new CApplication();
+         window.app.Initialize();
+         window.app.CreateLogin( "idLogin" );
+      }
+
+
+   </script>
+
+   <!--
+   | Init page
+   -->
+   <script>
+      document.addEventListener('DOMContentLoaded', function() {
+         PAGE_Setup();
+         //PAGE_SetupLogin();
+         //PAGE_Setup();
+      });
+   </script>
+
+
+   <!--
+    | Load needed components to manage login data
+   -->
+   <script type="module">
+      import { CTableData, browser } from "./../lib/TableData.js";
+      import { edit } from "./../lib/TableDataEdit.js";
+      import { CTableDataTrigger } from "./../lib/TableDataTrigger.js";
+      import { SetTriggerName } from "./../lib/TableDataTriggerNames.js";
+      import { CUITableText } from "./../lib/UITableText.js";
+
+
+      window.edit = edit;
+      window.CTableData = CTableData;
+      window.CTableData_browser = browser;
+      window.CUITableText = CUITableText;
+      window.CTableDataTrigger = CTableDataTrigger;
+
+      SetTriggerName();
+   </script>
+
+   <!--
+    | Source data for login test page
+   -->
+   <script>
+
+      var aLogon = [
+         [ "Namn", "E-Mejl", "Lösenord" ],
+         [ "1", "2", "3" ]
+      ];
+
+      var aPoll01 = [
+         [ "Value", "Beskrivning" ],
+         [ 0, "Centerpartiet" ],
+         [ 0, "Kristdemokraterna" ],
+         [ 0, "Liberalerna" ],
+         [ 0, "Moderaterna" ],
+         [ 0, "Miljöpartiet" ],
+         [ 0, "Socialdemokraterna" ],
+         [ 0, "Sverigedemokraterna" ],
+         [ 0, "Vänsterpartiet" ],
+         [ 0, "Annat" ]
+      ];
+
+      var aPoll02 = [
+         [ "Value", "Beskrivning" ],
+         [ 0, "Ja" ],
+         [ 0, "Nej" ],
+         [ 0, "Ja till 5%" ]
+      ];
+   </script>
+
+</body>
+</html>
