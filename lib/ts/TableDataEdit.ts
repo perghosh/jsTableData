@@ -241,15 +241,16 @@ export namespace edit {
     *
     */
    export class CEdit {
+      m_oColumn: tabledata_column;      // Column information from table data
+      m_oEdits: CEdits;                 // Owning edit manager
       m_eElement: HTMLElement;
       m_sName: string;                  // Control name
-      m_oEdits: CEdits;                 // Owning edit manager
+      m_aMoveKey: number[];             // keys to pass for movement
       m_sOldParentPosition: string      // save old position value
-      m_iState: number;                 // input state
       m_sOldValue: string;
       m_aPosition: [ number, number ];  // Physical position in table data
       m_aPositionRelative: [ number, number ];// Relative position in ui element
-      m_oColumn: tabledata_column;      // Column information from table data
+      m_iState: number;                 // input state
 
       constructor(o: details.construct_edit) {
          this.m_oEdits = o.edits;       // set container (CEdits)
@@ -282,6 +283,12 @@ export namespace edit {
          }
          return this.m_eElement;
       }
+
+      /**
+       * Set keys that is passed over for movement or if undefefined keys are reset to tab and enter.
+       * @param {number[]} [aKey] Keys used to pass over to component for movement
+       */
+      SetMoveKey( aKey?: number[] ): void { this.m_aMoveKey = aKey; }
 
       SetListener() {
          if( this.IsListener() === true ) return;
@@ -349,8 +356,20 @@ export namespace edit {
          return this.m_sOldValue !== _value;
       }
       IsOpen(): boolean { return (this.m_iState & enumInputState.Open) === enumInputState.Open; }
-      IsMoveKey(i: number, e?: any): boolean {
-         if( i === 9 || i === 13) return true;
+
+      /**
+       * Ask if key is used to move from edit
+       * @param  {number}  iKey number for key
+       * @return {boolean}  true if key is valid move key
+       */
+      IsMoveKey(iKey: number): boolean {
+         if( this.m_aMoveKey ) {
+            let i = this.m_aMoveKey.length;
+            while( --i >= 0 ) {
+               if( this.m_aMoveKey[i] === iKey ) return true;
+            }
+         }
+         else if( iKey === 9 || iKey === 13) return true;
          return false;
       }
 
@@ -389,6 +408,7 @@ export namespace edit {
       }
 
       GetValue(): string {
+         if( !this.m_eElement ) return null;
          let _value = (<HTMLInputElement>this.m_eElement).value;
          return _value;
       }
@@ -436,6 +456,7 @@ export namespace edit {
       //Compare(e: HTMLElement): boolean { return super.Compare(e); }
 
       GetValue(): string {
+         if( !this.m_eElement ) return null;
          let _value = (<HTMLInputElement>this.m_eElement).value;
          return _value;
       }
@@ -478,6 +499,7 @@ export namespace edit {
       }
 
       GetValue(): string {
+         if( !this.m_eElement ) return null;
          let _value = (<HTMLInputElement>this.m_eElement).value;
          return _value;
       }
@@ -530,6 +552,7 @@ export namespace edit {
       }
 
       GetValue(): string {
+         if( !this.m_eElement ) return null;
          let _value = "";
          if( (<HTMLInputElement>this.m_eElement).checked ) _value = (<HTMLInputElement>this.m_eElement).value;
          return _value;
@@ -584,6 +607,7 @@ export namespace edit {
       }
 
       GetValue(): string|unknown {
+         if( !this.m_eElement ) return null;
          if( this.m_iState & enumInputState.Canceled ) return false;
          if( (<HTMLSelectElement>this.m_eElement).selectedIndex === -1 ) return null;
          let _text = (<HTMLSelectElement>this.m_eElement).options[(<HTMLSelectElement>this.m_eElement).selectedIndex].text;
@@ -632,6 +656,7 @@ export namespace edit {
       }
 
       GetValue(): string {
+         if( !this.m_eElement ) return null;
          let _value = (<HTMLInputElement>this.m_eElement).value;
          return _value;
       }

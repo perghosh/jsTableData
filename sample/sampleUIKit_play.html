@@ -1,0 +1,328 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta charset="utf-8" />
+   <title>UIKit table sample to vote</title>
+   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.6.16/dist/css/uikit.min.css" />
+   <style type="text/css">
+      .uitabletext th {
+         cursor: pointer;
+      }
+
+      .uitabletext .marker {
+         top:  0px;
+         right: 2em;
+         position: absolute;
+      }
+
+      .sort-ascending { 
+         vertical-align: middle; 
+         content: url("data:image/svg+xml, %3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath d='M7.247 4.86l-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z'/%3e%3c/svg%3e"); 
+      }
+
+      .sort-descending {
+         vertical-align: middle;
+         content: url("data:image/svg+xml, %3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3e%3c/svg%3e");
+      }
+   
+      tbody { 
+         outline: none; 
+      }
+   </style>
+
+</head>
+<body>
+
+   <div class="uk-section uk-section-default">
+      <div class="uk-section uk-section-default">
+         <div class="uk-container">
+
+            <div class="uk-card uk-card-body uk-card-default uk-card-hover">
+               <h3 class="uk-card-title">Movies</h3>
+               <p id="idTable"></p>
+            </div>
+
+
+         </div>
+      </div>
+   </div>
+
+   <script>
+// https://getuikit.com/assets/uikit/tests/      
+      function PAGE_Setup() {
+
+         class CApplication {
+            constructor() {
+               this.m_oEditors = edit.CEditors.GetInstance();               
+            }
+
+            Initialize() {
+               let oEditors = this.m_oEditors;
+               oEditors.Add("string", edit.CEditInput);
+               oEditors.Add("password", edit.CEditPassword);
+               oEditors.Add("checkbox", edit.CEditCheckbox);
+               oEditors.Add("select", edit.CEditSelect);
+               oEditors.Add("text", edit.CEditTextarea);
+               oEditors.Add("number", edit.CEditNumber);
+            }
+
+            CreateTable( eRoot, aSource ) {
+               if( typeof eRoot === "string" ) eRoot = document.getElementById(eRoot);
+
+               let TDData = new CTableData();
+               TDData.ReadArray(aSource);
+               TDData.COLUMNSetType(TDData.ROWGet(1));
+               TDData.COLUMNSetPropertyValue([ 0, 1, 2 ], "edit.edit", true);
+               TDData.COLUMNSetPropertyValue( 0, "edit.name", "number");
+               TDData.COLUMNSetPropertyValue( 1, "edit.name", "number");
+               TDData.COLUMNSetPropertyValue( 2, "edit.name", "string");
+
+               TDData.COLUMNSetPropertyValue( [0, 1, 2] , "alias", [ "Year", "Score", "Title" ]);
+               TDData.COLUMNSetPropertyValue( true , "edit.element", 1 );
+               TDData.COLUMNSetPropertyValue( [0,1], "format", { pattern: ["^\\s*\\d*\\s*$"], const: true, required: true });
+               TDData.COLUMNSetPropertyValue( 0, "format.min", 1950 );
+               TDData.COLUMNSetPropertyValue( 0, "format.max", 2100 );
+
+
+               let oTrigger = new CTableDataTrigger({ table: TDData, trigger: CALLBACK_TableData }); 
+
+               let oStyle = {
+                  html_group: "table.uk-table uk-table-small uitabletext",                // "table" element and class table
+                  html_row: "tr",                           // "tr" element for each row
+                  html_cell_header: "th",                   // "th" for column headers
+                  html_cell: "td",                          // "td" for cells
+                  html_section_header: "thead",             // "thead" for header section
+                  html_section_body: "tbody",               // "tbody" for body section
+                  html_section_footer: "tfoot",             // "tfoot" for footer section
+                  class_section: "uitabletext_table", 
+                  class_value_error: "error_value",
+                  class_error: "uk-text-danger",            // error i cell value
+                  html_value: `
+<div class="" style="margin: 0px 2px;">            
+   <input data-label='1' data-value='1' class="uk-input" type="text" style="margin: 0px;">
+   <div data-description='1'></div>
+   <div class='uk-text-danger' data-error='1' style="text-align: right;"></div>
+</div>
+`   
+               };
+
+               let options = {
+                  parent: eRoot,                                                // container
+                  section: [ "title", "table.header", "table.body", "statusbar" ],
+                  style: oStyle,
+                  table: TDData,                                               // source data
+                  name: "table",                                                // name to access UI table in CTableData
+                  edit: 1,                                                      // enable edit
+                  trigger: oTrigger,                                            // set trigger object, this will enable triggers
+                  callback_render: ( sType, _value, eElement, oColumn ) => {
+                     /*
+                     if(sType === "afterCellValue") {
+                        let eLabel = eElement.querySelector("[data-label]");
+                        eLabel.innerText = oColumn.alias;
+                     }
+                     */
+                  },
+                  callback_action: function(sType, e, sSection) {
+                     if(sType === "click" && sSection === "header") {
+                        let aColumn = this.COLUMNGet(e.srcElement);
+                        if(aColumn) {
+                           this.Sort(aColumn[ 0 ], true);
+                           this.Render();
+                           let eSection = this.GetSection("header");
+                           let aTH = eSection.querySelectorAll("th");
+                           aTH.forEach((e) => {
+                              Object.assign(e.style, { backgroundColor: "#fff", position: "sticky", top: "0px" });
+                           });
+                        }
+                     }
+                  },
+                  callback_render: function( sName, v, eElement, c ) {
+                     if( sName === "afterHeaderValue" ) {
+                        let iSort = c.state?.sort;
+                        if( iSort ) {
+                           let eI = document.createElement("i");
+                           if( iSort === 1 ) eI.className = "marker sort-ascending";
+                           else eI.className = "marker sort-descending";
+                           eElement.appendChild(eI);
+                        }
+                     }
+                     else if( sName === "askCellValue" ) return false;
+                  }
+               }; 
+
+               let TTData = new CUITableText(options);
+
+               // Set movement keys for edit in columns
+               TTData.edits.GetEdit(0).SetMoveKey( [9,13,38,40] );
+               TTData.edits.GetEdit(1).SetMoveKey( [9,13,38,40] );
+               TTData.edits.GetEdit(2).SetMoveKey( [9,13,38,40] );
+
+               TDData.UIAppend(TTData);
+
+               TTData.Render();
+               //LOGIN_PrepareSections( TTLogin );
+               TTData.GetSection("body").focus();
+
+               this.m_oTData = TTData;
+            }
+
+
+
+         } // class CApplication
+
+         /**
+          * Callback for events managed by CTableDataTrigger
+          * @param {EventDataTable} oEventData standard event data
+          * @param {any} e This is dependent on the event.
+          */
+         function CALLBACK_TableData(oEventData, v ) {                            
+            let sName = CTableDataTrigger.GetTriggerName( oEventData.iEvent );  console.log(sName);
+            switch( sName ) {
+            case "BeforeSetCellError":
+               let eCell = oEventData.eElement.closest("td");
+               let _type = oEventData.information;
+               eCell.querySelector("[data-error]").innerText = _type[1];
+               break;
+
+            }
+         }
+
+         window.app = new CApplication();
+         window.app.Initialize();
+         window.app.CreateTable( "idTable", aSource );
+      }
+
+
+   </script>
+
+   <!--
+   | Init page
+   -->
+   <script>
+      document.addEventListener('DOMContentLoaded', function() {
+         PAGE_Setup();
+         //PAGE_SetupLogin();
+         //PAGE_Setup();
+      });
+   </script>
+
+
+   <!--
+    | Load needed components to manage login data
+   -->
+   <script type="module">
+      import { CTableData, browser } from "./../lib/TableData.js";
+      import { edit } from "./../lib/TableDataEdit.js";
+      import { CTableDataTrigger } from "./../lib/TableDataTrigger.js";
+      import { SetTriggerName } from "./../lib/TableDataTriggerNames.js";
+      import { CUITableText } from "./../lib/UITableText.js";
+
+
+      window.edit = edit;
+      window.CTableData = CTableData;
+      window.CTableData_browser = browser;
+      window.CUITableText = CUITableText;
+      window.CTableDataTrigger = CTableDataTrigger;
+
+      SetTriggerName();
+   </script>
+
+   <!--
+    | Source data for login test page
+   -->
+   <script>
+var aSource = [
+["Year", "Score", "Title"],
+[1968,  86, "Greetings"],
+[1970,  17, "Bloody Mama"],
+[1970,  73, "Hi, Mom!"],
+[1971,  40, "Born to Win"],
+[1973,  98, "Mean Streets"],
+[1973,  88, "Bang the Drum Slowly"],
+[1974,  97, "The Godfather, Part II"],
+[1976,  41, "The Last Tycoon"],
+[1976,  99, "Taxi Driver"],
+[1977,  47, "1900"],
+[1977,  67, "New York, New York"],
+[1978,  93, "The Deer Hunter"],
+[1980,  97, "Raging Bull"],
+[1981,  75, "True Confessions"],
+[1983,  90, "The King of Comedy"],
+[1984,  89, "Once Upon a Time in America"],
+[1984,  60, "Falling in Love"],
+[1985,  98, "Brazil"],
+[1986,  65, "The Mission"],
+[1987, 100, "Dear America: Letters Home From Vietnam"],
+[1987,  80, "The Untouchables"],
+[1987,  78, "Angel Heart"],
+[1988,  96, "Midnight Run"],
+[1989,  64, "Jacknife"],
+[1989,  47, "We're No Angels"],
+[1990,  88, "Awakenings"],
+[1990,  29, "Stanley & Iris"],
+[1990,  96, "Goodfellas"],
+[1991,  76, "Cape Fear"],
+[1991,  69, "Mistress"],
+[1991,  65, "Guilty by Suspicion"],
+[1991,  71, "Backdraft"],
+[1992,  87, "Thunderheart"],
+[1992,  67, "Night and the City"],
+[1993,  75, "This Boy's Life"],
+[1993,  78, "Mad Dog and Glory"],
+[1993,  96, "A Bronx Tale"],
+[1994,  39, "Mary Shelley's Frankenstein"],
+[1995,  80, "Casino"],
+[1995,  86, "Heat"],
+[1996,  74, "Sleepers"],
+[1996,  38, "The Fan"],
+[1996,  80, "Marvin's Room"],
+[1997,  85, "Wag the Dog"],
+[1997,  87, "Jackie Brown"],
+[1997,  72, "Cop Land"],
+[1998,  68, "Ronin"],
+[1998,  38, "Great Expectations"],
+[1999,  69, "Analyze This"],
+[1999,  43, "Flawless"],
+[2000,  43, "The Adventures of Rocky & Bullwinkle"],
+[2000,  84, "Meet the Parents"],
+[2000,  41, "Men of Honor"],
+[2001,  73, "The Score"],
+[2001,  33, "15 Minutes"],
+[2002,  48, "City by the Sea"],
+[2002,  27, "Analyze That"],
+[2003,   4, "Godsend"],
+[2004,  35, "Shark Tale"],
+[2004,  38, "Meet the Fockers"],
+[2005,   4, "The Bridge of San Luis Rey"],
+[2005,  46, "Rent"],
+[2005,  13, "Hide and Seek"],
+[2006,  54, "The Good Shepherd"],
+[2007,  21, "Arthur and the Invisibles"],
+[2007,  76, "Captain Shakespeare"],
+[2008,  19, "Righteous Kill"],
+[2008,  51, "What Just Happened?"],
+[2009,  46, "Everybody's Fine"],
+[2010,  72, "Machete"],
+[2010,  10, "Little Fockers"],
+[2010,  50, "Stone"],
+[2011,  25, "Killer Elite"],
+[2011,   7, "New Year's Eve"],
+[2011,  70, "Limitless"],
+[2012,  92, "Silver Linings Playbook"],
+[2012,  51, "Being Flynn"],
+[2012,  29, "Red Lights"],
+[2013,  46, "Last Vegas"],
+[2013,   7, "The Big Wedding"],
+[2013,  29, "Grudge Match"],
+[2013,  11, "Killing Season"],
+[2014,   9, "The Bag Man"],
+[2015,  60, "Joy"],
+[2015,  26, "Heist"],
+[2015,  61, "The Intern"],
+[2016,  11, "Dirty Grandpa"]
+];
+   </script>
+
+</body>
+</html>

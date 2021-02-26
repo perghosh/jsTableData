@@ -483,7 +483,9 @@ export class CUITableText implements IUITableData {
          if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.AfterSetValue, oTriggerData, oTriggerData.edit.GetValueStack() ); }
       }
       else {
-         if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.BeforeSetCellError, oTriggerData, oTriggerData.edit.GetValueStack() ); 
+         if( oTrigger ) { 
+            oTriggerData.information = _result;
+            bOk = oTrigger.Trigger( enumTrigger.BeforeSetCellError, oTriggerData, oTriggerData.edit.GetValueStack() ); 
             if( bOk === false ) return;
          }
 
@@ -1402,7 +1404,7 @@ export class CUITableText implements IUITableData {
                let eSink: HTMLElement;
                if( (<any>e.target).tagName === "INPUT" || (<any>e.target).tagName === "TEXTAREA") {
                   let oEdit = this.m_oEdits.GetEdit( (<HTMLElement>e.target) );// try to get edit object for edit element
-                  if(!oEdit || oEdit.IsMoveKey(e.keyCode, e) === false) { return; }
+                  if(!oEdit || oEdit.IsMoveKey(e.keyCode) === false) { return; }
                   eSink = self.m_aInput[2];
                }
                else eSink = <HTMLElement>e.currentTarget;
@@ -1686,8 +1688,8 @@ export class CUITableText implements IUITableData {
                if(oEdit && oEdit.IsModified() === true) {                               // Is value modified
                   let bOk: boolean = true;
                   let _Value = oEdit.GetValue();
-                  this.INPUTDeactivate()
                   this.SetCellValue( oEdit.GetPositionRelative(), _Value, {iReason: enumReason.Edit,edit:oEdit, eElement: <HTMLElement>e.srcElement } );
+                  this.INPUTDeactivate()
 //                  if(!this.trigger) this.SetCellValue(oEdit.GetPosition(), oEdit.GetValue(), undefined, { iReason: enumReason.Edit,edit:oEdit));
 //                  else this.trigger.CELLSetValue({ iReason: enumReason.Edit, dataUI: this }, oEdit.GetValueStack(), oEdit.GetPosition(), oEdit.GetValue());
 /*
