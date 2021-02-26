@@ -1641,7 +1641,7 @@ export class CUITableText implements IUITableData {
                   if(oEdit && oEdit.IsModified() === true) {                               // Is value modified
                      let bOk: boolean = true;
                      let _Value = oEdit.GetValue();
-                     this.SetCellValue( oEdit.GetPositionRelative(), _Value, {iReason: enumReason.Edit,edit:oEdit, eElement: <HTMLElement>e.srcElement } );
+                     this.SetCellValue( oEdit.GetPositionRelative(), _Value, {iReason: enumReason.Edit,edit:oEdit, eElement: <HTMLElement>e.srcElement, browser_event: sType } );
                   }
 
                   if( eMove == enumMove.disable ) this.INPUTDeactivate( false );
@@ -1674,7 +1674,7 @@ export class CUITableText implements IUITableData {
                   let oEdit = this.edits.GetEdit(<[number,number]><unknown>this.m_aInput);
                   if(oEdit && oEdit.IsModified() === true) {
                      let _Value = oEdit.GetValue();
-                     this.SetCellValue(oEdit.GetPositionRelative(), _Value, { iReason: enumReason.Edit, edit: oEdit, eElement: <HTMLElement>e.srcElement });
+                     this.SetCellValue(oEdit.GetPositionRelative(), _Value, { iReason: enumReason.Edit, edit: oEdit, eElement: <HTMLElement>e.srcElement, browser_event: sType });
                   }
                   this.INPUTDeactivate();
                   this.INPUTActivate( a[0], a[1], true );
@@ -1688,7 +1688,7 @@ export class CUITableText implements IUITableData {
                if(oEdit && oEdit.IsModified() === true) {                               // Is value modified
                   let bOk: boolean = true;
                   let _Value = oEdit.GetValue();
-                  this.SetCellValue( oEdit.GetPositionRelative(), _Value, {iReason: enumReason.Edit,edit:oEdit, eElement: <HTMLElement>e.srcElement } );
+                  this.SetCellValue( oEdit.GetPositionRelative(), _Value, {iReason: enumReason.Edit,edit:oEdit, eElement: <HTMLElement>e.srcElement, browser_event: sType } );
                   this.INPUTDeactivate()
 //                  if(!this.trigger) this.SetCellValue(oEdit.GetPosition(), oEdit.GetValue(), undefined, { iReason: enumReason.Edit,edit:oEdit));
 //                  else this.trigger.CELLSetValue({ iReason: enumReason.Edit, dataUI: this }, oEdit.GetValueStack(), oEdit.GetPosition(), oEdit.GetValue());

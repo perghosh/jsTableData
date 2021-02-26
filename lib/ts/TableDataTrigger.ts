@@ -90,7 +90,8 @@ export type EventDataTable = {
    edit?: edit.CEdit,          // Edit control
    eElement?: HTMLElement,     // if elements is involved in event
    iReason?: number,           // reason for event
-   information?: unknown,     // event specific information
+   information?: unknown,      // event specific information
+   browser_event?: string      // if event in browser is involved
 }
 
 

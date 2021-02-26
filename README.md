@@ -6,6 +6,11 @@ jsTableData is a JavaScript table library designed to manage and render table da
 Most components that manages table data, mix design and data. And that makes them a lot harder to customize.  
 jsTableData do not mix design and data. UI objects use information from [`CTableData`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/TableData.ts). 
 
+
+## Docs
+[Documentation, how to configure is found here](http://goorep.se:1001/changelog/report/rSelect/PAGE_result.htm?alias=guest&set=api&rows=25&query=Book+pages&$$TArticleBook1.ArticleBookK=7140&link=[["9F1E006D78894848838A0970E2FF0BE9zoom"%2C"Object1"%2C7140]%2C["9F60D5FEDE8E41CC986C10147F0AD2F7zoom"%2C"TArticleBook1"%2C7140]%2C["71C91DEE3C5A4FDC8EC1114C7C18033Bzoom"%2C"TArticleBook1"%2C7140]])
+
+
 ### Important files
 - [`TableData.ts`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/TableData.ts) has source data logic 
 - Edit table data uses edit objects from [`TableDataEdit.ts`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/TableDataEdit.ts).
