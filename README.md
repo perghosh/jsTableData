@@ -1,6 +1,6 @@
 # jsTableData - JavaScript table framework
 
-jsTableData is a JavaScript table library is designed to manage and render table data as flexible as possible.
+jsTableData is a JavaScript table library designed to manage and render table data as flexible as possible.
 
 ### How
 Most components that manages table data, mix design and data. And that makes them a lot harder to customize.  
