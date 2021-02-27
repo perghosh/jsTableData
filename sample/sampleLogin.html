@@ -41,6 +41,7 @@ body {
    line-height: 1.5;
    background-color: #fff;
 }
+
    </style>
 </head>
 <body>
@@ -64,18 +65,20 @@ body {
          eEditors.Add("checkbox", edit.CEditCheckbox);
          eEditors.Add("select", edit.CEditSelect);
          eEditors.Add("text", edit.CEditTextarea);
+         eEditors.Add("range", edit.CEditRange);
 
          let TDLogin = new CTableData();
          window.global.TDLogin = TDLogin;
          TDLogin.ReadObjects(aLogin);
 
          // convigure input fields and set type of input controls
-         TDLogin.COLUMNSetPropertyValue([ 0, 1, 3, 4, 5 ], "edit.edit", true);
+         TDLogin.COLUMNSetPropertyValue([ 0, 1, 3, 4, 5, 6 ], "edit.edit", true);
          TDLogin.COLUMNSetPropertyValue( 0, "edit.name", "string");
          TDLogin.COLUMNSetPropertyValue( 1, "edit.name", "password");
          TDLogin.COLUMNSetPropertyValue( 3, "edit.name", "checkbox");
          TDLogin.COLUMNSetPropertyValue( 4, "edit.name", "select");
          TDLogin.COLUMNSetPropertyValue( 5, "edit.name", "text");
+         TDLogin.COLUMNSetPropertyValue( 6, "edit.name", "range");
 
          TDLogin.COLUMNSetPropertyValue( 2 , "position.hide", 1);
 
@@ -84,6 +87,7 @@ body {
          TDLogin.COLUMNSetPropertyValue( 3 , "alias", "Guest");
          TDLogin.COLUMNSetPropertyValue( "country", "alias", "Country");
          TDLogin.COLUMNSetPropertyValue( "comment", "alias", "Comment");
+         TDLogin.COLUMNSetPropertyValue( "age", "alias", "Age");
          TDLogin.COLUMNSetPropertyValue( "comment", "style", { minHeight: "6em", overflowX: "auto" });
 
          TDLogin.COLUMNSetPropertyValue( "name", "format.min", 3 );
@@ -97,6 +101,9 @@ body {
          TDLogin.COLUMNSetPropertyValue( ["name", "password"], "format.required", true );
 
          TDLogin.COLUMNSetPropertyValue("country", "list", [ [ 1, "Sweden" ], [ 2, "Norway" ], [ 3, "Finland" ], [ 4, "Denmark" ], [ 1, "Iceland" ] ] );
+
+         TDLogin.COLUMNSetPropertyValue( "age", "format.min", 10 );
+         TDLogin.COLUMNSetPropertyValue( "age", "format.max", 110 );
 
 
 
@@ -215,7 +222,8 @@ body {
             "hide_this": null,
             "guest": null,
             "country": ["Finland", 3],
-            "comment": null
+            "comment": null,
+            "age": null
          }
       ];
 

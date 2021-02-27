@@ -128,14 +128,6 @@
                   name: "table",                                                // name to access UI table in CTableData
                   edit: 1,                                                      // enable edit
                   trigger: oTrigger,                                            // set trigger object, this will enable triggers
-                  callback_render: ( sType, _value, eElement, oColumn ) => {
-                     /*
-                     if(sType === "afterCellValue") {
-                        let eLabel = eElement.querySelector("[data-label]");
-                        eLabel.innerText = oColumn.alias;
-                     }
-                     */
-                  },
                   callback_action: function(sType, e, sSection) {
                      if(sType === "click" && sSection === "header") {
                         let aColumn = this.COLUMNGet(e.srcElement);
@@ -179,7 +171,11 @@
                TTData.GetSection("title").innerHTML = `
 <div class="uk-margin uk-card uk-card-body uk-card-primary uk-card-hover">
 <h3 class="uk-card-title">Using UIKit framework with jsTableData</h3>
-<p>This table are using existing INPUT elements to edit table data.<br>Sorting is enabled, edit is enabled with some error checks.</p>
+<p>
+This table are using existing INPUT elements to edit table data.<br>
+Sorting is enabled, edit is enabled with some error checks.<br>
+1950 >= YEAR <= 2100, YEAR and SCORE has to be integer values.
+</p>
 </div>               
 `;
 

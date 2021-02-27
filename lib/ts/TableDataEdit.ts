@@ -187,8 +187,8 @@ export namespace edit {
          }
 
          if(bDeactivate === true && this.m_oEditActive) {
-            let bOk = this.Deactivate();
-            if(bOk === false) return bOk;
+            let iOk = this.Deactivate();
+            if(iOk === -1) return false;
          }
 
          let oEdit = <edit.CEdit>this.m_aColumn[ iColumn ];                                        console.assert(oEdit !== null, `No edit for column index ${iColumn}`);
@@ -202,7 +202,8 @@ export namespace edit {
          return true;
       }
 
-      Deactivate( _Column?: boolean|number, callIf?: (( aNewValue: details.value_stack, CEdit ) => boolean) ): boolean {
+      Deactivate( _Column?: boolean|number, callIf?: (( aNewValue: details.value_stack, CEdit ) => boolean) ): number {
+         let iCount = 0;
          let bChange = true;
          let aColumn: edit.CEdit[];
          if(typeof _Column === "number") {
@@ -221,11 +222,14 @@ export namespace edit {
                if( callIf && callIf( oEdit.GetValueStack(), oEdit ) === false ) bDeactivate = false;
             }
 
-            if( bDeactivate === true && oEdit.IsOpen() ) oEdit.Close();
+            if(bDeactivate === true && oEdit.IsOpen()) {
+               oEdit.Close();
+               iCount++;
+            }
             else oEdit.SetClose();
          }
 
-         return true;
+         return iCount;
       }
 
       /**
@@ -279,7 +283,7 @@ export namespace edit {
             Object.assign(this.m_eElement.style, { display: "none", position: "absolute", boxSizing: "border-box" });
             this.m_eElement.dataset.input = "1";
             <HTMLElement>_2.appendChild(this.m_eElement);
-            this.SetListener();
+            //this.SetListener();
          }
          return this.m_eElement;
       }
@@ -344,7 +348,12 @@ export namespace edit {
       GetPosition(): [ number, number ] { return this.m_aPosition; }
       GetPositionRelative(): [ number, number ] { return this.m_aPositionRelative; }
 
-      GetValue(): string|unknown { return ""; }
+      GetValue( bUpdate?: boolean ): string|unknown {
+         if( !this.m_eElement ) return null;
+         let _value = (<HTMLInputElement>this.m_eElement).value;
+         if( bUpdate === true ) this._update_old_value();
+         return _value;
+      }
       GetValueStack(): details.value_stack { return null; }
 
       SetValue(_value: any) { }
@@ -373,10 +382,13 @@ export namespace edit {
          return false;
       }
 
-      SetClose(): void { this.m_iState &= ~enumInputState.Open; }
+      SetClose(): void { 
+         this.m_iState &= ~enumInputState.Open; 
+      }
       SetFocus(): void { this.m_eElement.focus(); }
 
       Close(eSupport?: HTMLElement) {
+         this._update_old_value();
          if( this.IsElement() === false ) {
             this.m_eElement.parentElement.style.position = this.m_sOldParentPosition;
             this.m_eElement.style.display = "none";
@@ -392,6 +404,11 @@ export namespace edit {
          if(this.IsElement() === false && this.m_eElement) this.m_eElement.remove();
          this.m_eElement = null;
       }
+
+      _update_old_value() {
+         if( !this.m_eElement ) return;
+         this.m_sOldValue = (<HTMLInputElement>this.m_eElement).value;
+      }
    }
 
    export class CEditInput extends CEdit {
@@ -405,12 +422,6 @@ export namespace edit {
          if( e ) e.type = "text";
 
          return e;
-      }
-
-      GetValue(): string {
-         if( !this.m_eElement ) return null;
-         let _value = (<HTMLInputElement>this.m_eElement).value;
-         return _value;
       }
 
       GetValueStack(): details.value_stack { return [ this.m_aPosition, this.m_aPositionRelative, this.GetValue(), this.m_sOldValue]; }
@@ -453,13 +464,6 @@ export namespace edit {
          return e;
       }
 
-      //Compare(e: HTMLElement): boolean { return super.Compare(e); }
-
-      GetValue(): string {
-         if( !this.m_eElement ) return null;
-         let _value = (<HTMLInputElement>this.m_eElement).value;
-         return _value;
-      }
 
       GetValueStack(): details.value_stack { return [ this.m_aPosition, this.m_aPositionRelative, this.GetValue(), this.m_sOldValue]; }
 
@@ -496,12 +500,6 @@ export namespace edit {
          let e: HTMLInputElement = <HTMLInputElement>super.Create("INPUT", eParent);
          if( e ) e.type = "password";
          return e;
-      }
-
-      GetValue(): string {
-         if( !this.m_eElement ) return null;
-         let _value = (<HTMLInputElement>this.m_eElement).value;
-         return _value;
       }
 
       GetValueStack(): details.value_stack { return [ this.m_aPosition, this.m_aPositionRelative, this.GetValue(), this.m_sOldValue]; }
@@ -551,10 +549,11 @@ export namespace edit {
          this.m_iState |= enumInputState.Open;
       }
 
-      GetValue(): string {
+      GetValue( bUpdate?: boolean ): string|unknown {
          if( !this.m_eElement ) return null;
          let _value = "";
          if( (<HTMLInputElement>this.m_eElement).checked ) _value = (<HTMLInputElement>this.m_eElement).value;
+         if( bUpdate === true ) this._update_old_value();
          return _value;
       }
 
@@ -606,12 +605,13 @@ export namespace edit {
          return e;
       }
 
-      GetValue(): string|unknown {
+      GetValue( bUpdate?: boolean ): string|unknown {
          if( !this.m_eElement ) return null;
          if( this.m_iState & enumInputState.Canceled ) return false;
          if( (<HTMLSelectElement>this.m_eElement).selectedIndex === -1 ) return null;
          let _text = (<HTMLSelectElement>this.m_eElement).options[(<HTMLSelectElement>this.m_eElement).selectedIndex].text;
          let _value = (<HTMLSelectElement>this.m_eElement).value;
+         if( bUpdate === true ) this.m_sOldValue = _value;
          return [_text, _value];
       }
 
@@ -655,12 +655,6 @@ export namespace edit {
          return e;
       }
 
-      GetValue(): string {
-         if( !this.m_eElement ) return null;
-         let _value = (<HTMLInputElement>this.m_eElement).value;
-         return _value;
-      }
-
       GetValueStack(): details.value_stack { return [ this.m_aPosition, this.m_aPositionRelative, this.GetValue(), this.m_sOldValue]; }
 
       SetPosition(aPosition: [ number, number ], aPositionRelative?: [ number, number ]): void {
@@ -688,6 +682,47 @@ export namespace edit {
 
    }
 
+    export class CEditRange extends CEdit {
+      constructor(o: details.construct_edit) {
+         super(o);
+      }
+
+      Create(_1: any): HTMLInputElement {
+         let eParent: HTMLElement = _1;
+         let e: HTMLInputElement = <HTMLInputElement>super.Create("INPUT", eParent);
+         if(e) {
+            e.type = "range";
+
+            let oFormat = this.m_oColumn.format;
+            e.setAttribute("min", oFormat.min.toString() );
+            e.setAttribute("max", oFormat.max.toString() );
+         }
+         return e;
+      }
+
+      GetValueStack(): details.value_stack { return [ this.m_aPosition, this.m_aPositionRelative, this.GetValue(), this.m_sOldValue]; }
+
+      SetPosition(aPosition: [ number, number ], aPositionRelative?: [ number, number ]): void {
+         super.SetPosition(aPosition, aPositionRelative);
+      }
+
+      SetValue(_Value: unknown) {
+         if(typeof _Value === "number" ) _Value = _Value.toString();
+         if(typeof _Value !== "string" ) {
+            if(_Value === null) _Value = "";
+            else if( typeof _Value === "number" || typeof _Value === "object" ) _Value = _Value.toString();
+            if(typeof _Value !== "string") _Value = "";
+         }
+
+         this.m_sOldValue = <string>_Value;
+         (<HTMLInputElement>this.m_eElement).value = <string>_Value;
+      }
+
+      Open(eParent: HTMLElement, sValue?: string, oPosition?: DOMRect) {
+         eParent.innerText = "";
+         super.Open( eParent, sValue, oPosition );
+      }
+   }
 
 
 }

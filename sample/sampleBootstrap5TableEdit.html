@@ -60,7 +60,7 @@
       </div>
    </div>
 
-   <div id="idEventList" style="position: absolute; top: 0; right:0;"></div>
+   <div id="idEventList" style="position: absolute; top: 0; right:0; background-color: var(--bs-white); opacity: 0.5;"></div>
 
    <hr />
    <textarea id="idXml" style="display: none; height: 50px; width: 100%;"></textarea>
@@ -226,7 +226,9 @@
 
          let eSection = window.TTHappiness.GetSection(oEventData.eElement);
 
-         TDEventList.ROWAppend([ ++window.iEventCount, sName, eSection.dataset.section ]); // Add row to table data for events
+         let sEventName = eSection.dataset.section;
+         sEventName += oEventData.browser_event ? "." + oEventData.browser_event : "";
+         TDEventList.ROWAppend([ ++window.iEventCount, sName, sEventName ]); // Add row to table data for events
          //TTEventList.create_body();
          TTEventList.Render();
 

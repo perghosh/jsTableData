@@ -1098,19 +1098,19 @@ export class CUITableText implements IUITableData {
       if(bInput === true) this.INPUTSet( iRow, iColumn );
    }
 
-   INPUTDeactivate(_Row?: number|boolean, _Column?: number | number[]): boolean {
-      let bOk = true;
+   INPUTDeactivate(_Row?: number|boolean, _Column?: number | number[]): number {
+      let iCount = 0;
       if(_Row === void 0) {
 
       }
 
       if(this.m_oEdits) {
          if( _Row === false ) this.m_oEdits.Deactivate( false );
-         bOk = this.m_oEdits.Deactivate();
-         if( bOk === true ) this.m_iOpenEdit = 0;                              // Edit controls closed, set to 0
+         iCount = this.m_oEdits.Deactivate();
+         if( iCount !== -1 ) this.m_iOpenEdit = 0;                             // Edit controls closed, set to 0
       }
 
-      return bOk;
+      return iCount;
    }
 
    // 
@@ -1646,6 +1646,7 @@ export class CUITableText implements IUITableData {
 
                   if( eMove == enumMove.disable ) this.INPUTDeactivate( false );
                   else this.INPUTDeactivate();                                 // close all edits
+                  this.render_value(oEdit.GetPositionRelative());
                   this.GetSection("body").focus({preventScroll: true});        // Set focus to body, closing edit elements will make it loose focus
                }
                this.INPUTMove(eMove, true);
@@ -1655,7 +1656,7 @@ export class CUITableText implements IUITableData {
                let oEdit = this.m_oEdits.GetEdit(this._column_in_data(this.m_aInput[1]));// Get edit for column (second value in input array)
                if(oEdit !== null) {
                   if(oEdit.IsOpen() === false) {
-                     if( this.INPUTDeactivate() === true ) {
+                     if( this.INPUTDeactivate() !== -1 ) {
                         this.INPUTActivate();
                      }
                   }
@@ -1663,7 +1664,7 @@ export class CUITableText implements IUITableData {
             }
          }
          else if(sType === "dblclick" && this.m_aInput) {                      // open editor if any on double click
-            if( this.INPUTDeactivate() === true ) {
+            if( this.INPUTDeactivate() !== -1 ) {
                this.INPUTActivate();
             }
          }
@@ -1675,6 +1676,7 @@ export class CUITableText implements IUITableData {
                   if(oEdit && oEdit.IsModified() === true) {
                      let _Value = oEdit.GetValue();
                      this.SetCellValue(oEdit.GetPositionRelative(), _Value, { iReason: enumReason.Edit, edit: oEdit, eElement: <HTMLElement>e.srcElement, browser_event: sType });
+                     this.render_value(oEdit.GetPositionRelative());
                   }
                   this.INPUTDeactivate();
                   this.INPUTActivate( a[0], a[1], true );
@@ -1690,14 +1692,7 @@ export class CUITableText implements IUITableData {
                   let _Value = oEdit.GetValue();
                   this.SetCellValue( oEdit.GetPositionRelative(), _Value, {iReason: enumReason.Edit,edit:oEdit, eElement: <HTMLElement>e.srcElement, browser_event: sType } );
                   this.INPUTDeactivate()
-//                  if(!this.trigger) this.SetCellValue(oEdit.GetPosition(), oEdit.GetValue(), undefined, { iReason: enumReason.Edit,edit:oEdit));
-//                  else this.trigger.CELLSetValue({ iReason: enumReason.Edit, dataUI: this }, oEdit.GetValueStack(), oEdit.GetPosition(), oEdit.GetValue());
-/*
-                  if(!this.trigger) this.data.CELLSetValue(oEdit.GetPosition(), oEdit.GetValue());
-                  else this.trigger.CELLSetValue({ iReason: enumReason.Edit, dataUI: this }, oEdit.GetValueStack(), oEdit.GetPosition(), oEdit.GetValue());
-*/
-
-                  if(bOk) this.render_value(oEdit.GetPositionRelative());
+                  this.render_value(oEdit.GetPositionRelative());
                }
             }
          }
