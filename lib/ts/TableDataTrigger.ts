@@ -14,6 +14,7 @@ var ResizeObserver: any;
 export const enum enumReason {
    Edit = 0x0001,
    Browser = 0x0002,
+   Command = 0x0004,
 }
 
 /**
@@ -22,19 +23,23 @@ export const enum enumReason {
 export const enum enumTrigger {
    BEGIN = 0,
    Unknown_ = 0,
-   BeforeCreate_ = 1,
-   AfterCreate_,
-   BeforeLoadNew_,
-   AfterLoadNew_,
-   BeforeLoad_,
-   AfterLoad_,
-   BeforeValidateValue_,
+   BeforeCreate_ = 1,                                                          // Before main object is created (complete class)
+   AfterCreate_,                                                               // After main object is created
+   BeforeDestroy_,                                                             // Before loading new data
+   AfterDestroy_,                                                              // After loading new data
+   BeforeLoadNew_,                                                             // Before loading new data
+   AfterLoadNew_,                                                              // After loading new data
+   BeforeLoad_,                                                                // Before loading same type of data
+   AfterLoad_,                                                                 // After loading same type of data
+   BeforeValidateValue_,                                                       // Before value is validated
    BeforeSetValue_,
    AfterSetValue_,
    BeforeSetRange_,
    AfterSetRange_,
    BeforeSetRow_,
    AfterSetRow_,
+   BeforeSetSort_,                                                             // Before set sorting, if sorting is done on server then return false and make custom steps for that
+   AfterSetSort_,                                                              // After set sorting
    BeforeRemoveRow_,
    AfterRemoveRow_,
    BeforeSetCellError_,
@@ -58,10 +63,12 @@ export const enum enumTrigger {
 
    BeforeCreate         = TRIGGER_BEFORE + BeforeCreate_,
    AfterCreate          = TRIGGER_BEFORE + AfterCreate_,
+   BeforeDestroy        = TRIGGER_BEFORE + BeforeDestroy_,
+   AfterDestroy         = TRIGGER_AFTER  + AfterDestroy_,
    BeforeLoadNew        = TRIGGER_BEFORE + BeforeLoadNew_,
-   AfterLoadNew         = TRIGGER_BEFORE + AfterLoadNew_,
+   AfterLoadNew         = TRIGGER_AFTER  + AfterLoadNew_,
    BeforeLoad           = TRIGGER_BEFORE + BeforeLoad_,
-   AfterLoad            = TRIGGER_BEFORE + AfterLoad_,
+   AfterLoad            = TRIGGER_AFTER  + AfterLoad_,
    BeforeValidateValue  = TRIGGER_BEFORE + BeforeValidateValue_,
    BeforeSetValue       = TRIGGER_BEFORE + BeforeSetValue_,
    AfterSetValue        = TRIGGER_AFTER  + AfterSetValue_,
@@ -69,6 +76,8 @@ export const enum enumTrigger {
    AfterSetRange        = TRIGGER_AFTER  + AfterSetRange_,
    BeforeSetRow         = TRIGGER_BEFORE + BeforeSetRow_,
    AfterSetRow          = TRIGGER_AFTER  + AfterSetRow_,
+   BeforeSetSort        = TRIGGER_BEFORE + BeforeSetSort_,
+   AfterSetSort         = TRIGGER_AFTER  + AfterSetSort_,
    BeforeRemoveRow      = TRIGGER_BEFORE + BeforeRemoveRow_,
    AfterRemoveRow       = TRIGGER_AFTER  + AfterRemoveRow_,
    BeforeSetCellError   = TRIGGER_BEFORE + BeforeSetCellError_,

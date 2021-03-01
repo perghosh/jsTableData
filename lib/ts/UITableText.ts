@@ -13,14 +13,16 @@
  */
 
 
-import { CTableData, enumMove, IUITableData, tabledata_column } from "./TableData.js";
+import { CTableData, enumMove, IUITableData, tabledata_column, tabledata_position } from "./TableData.js";
 import { edit } from "./TableDataEdit.js";
 import { CTableDataTrigger, enumTrigger, enumReason, EventDataTable } from "./TableDataTrigger.js";
 
 const enum enumState {
-   HtmlValue = 0x0001,   // Value in table has a small dom tree and we need to query for the element holding value
-   SetDirtyRow = 0x0002, // When value in row is change, set row to dirty
-   SetHistory = 0x0004,  // Record changes in history
+   HtmlValue   = 0x0001,   // Value in table has a small dom tree and we need to query for the element holding value
+   SetDirtyRow = 0x0002,   // When value in row is change, set row to dirty
+   SetHistory  = 0x0004,   // Record changes in history
+   SetValue    = 0x0008,   // Try to set value if property is found in element.
+
 }
 
 namespace details {
@@ -42,6 +44,7 @@ namespace details {
          value?: string,
       },
       settings?: { layout?: string },
+      state?: number,            // states on how CUITableData is behaving, check enumState
       style?: {
          header?: string,
          value?: string,
@@ -57,7 +60,9 @@ namespace details {
          html_cell?: string,
          html_cell_header?: string,
          html_cell_footer?: string,
-         html_row?: string,
+         html_row?: string | string[],
+         html_row_body?: string | string[],                 // html element used to render rows in body
+         html_row_body_extra?: string | string[],           // html element used when extra rows is used
          html_value?: string,
          html_section_header?: string,
          html_section_body?: string,
@@ -115,6 +120,7 @@ export class CUITableText implements IUITableData {
    m_acallRender: ((sType: string, e: EventDataTable, sSection: string, oColumn: any) => boolean)[];
    m_iColumnCount: number;    // Number of columns shown, this may not match number of columns in table data
    m_aColumnPhysicalIndex: number[]; // index for column in table data
+   m_aColumnPosition: tabledata_position[];
    m_eComponent: HTMLElement; // Element that acts as container to table, sections can exist outside container but default is within
    m_oEdits: edit.CEdits;     // Component that handles edit logic
    m_sId: string;             // Unique id for source data 
@@ -158,8 +164,7 @@ export class CUITableText implements IUITableData {
       class_error: "error",
    };
 
-   stati
-
+   
    constructor(options: details.construct) {
       const o: details.construct = options || {};
 
@@ -187,7 +192,7 @@ export class CUITableText implements IUITableData {
       this.m_iRowCountMax  = o.max || -1;
       this.m_aSection      = o.section || [ "toolbar", "title", "header", "body", "footer", "statusbar" ]; // sections "header" and "body" are required
       this.m_aSelected     = [];
-      this.m_iState        = 0;
+      this.m_iState        = o.state || 0;
       this.m_oTableData    = o.table || null;
       this.m_oTableDataTrigger = o.trigger || null;
 
@@ -607,6 +612,12 @@ export class CUITableText implements IUITableData {
       this.m_aColumnPhysicalIndex = [];
       aHeader.forEach((a:any) => { this.m_aColumnPhysicalIndex.push(a[ 0 ]); });
 
+      this.m_aColumnPosition = [];
+      let aPosition: [number,tabledata_position][] = <[number,tabledata_position][] >this.data.COLUMNGetPropertyValue( this.m_aColumnPhysicalIndex, "position" );
+      aPosition.forEach( aP => {
+         this.m_aColumnPosition.push( aP[1] );
+      });
+
       this.m_iColumnCount = aHeader.length;                                    // Set total column count
       this.render_header(<[ number, [ string, string ] ][]>aHeader);
 
@@ -675,6 +686,14 @@ export class CUITableText implements IUITableData {
     */
    Sort(_Sort?: number | string | [number|string][], bToggle?: boolean, bAdd?: boolean) {
       let aSort = Array.isArray(_Sort) === false ? [ _Sort ] : <[ number | string ][]>_Sort; // if not array then convert to array
+      let bOk: boolean;
+
+      const oTrigger = this.trigger;
+      if( oTrigger ) { 
+         bOk = oTrigger.Trigger(enumTrigger.BeforeSetSort, {iReason: enumReason.Command, dataUI: this }, arguments ); 
+         if( bOk === false ) return;
+      }
+
 
       this.data.COLUMNSetPropertyValue(true, "state.sort", 0);                 // clear sort
 
@@ -701,6 +720,8 @@ export class CUITableText implements IUITableData {
       this.m_aOrder.forEach((_Column) => {
          this.data.COLUMNSetPropertyValue(_Column[ 0 ], "state.sort", _Column[ 1 ]);
       })
+
+      if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.AfterSetSort, {iReason: enumReason.Command, dataUI: this }, arguments ); }
    }
 
    Destroy() {
@@ -775,7 +796,8 @@ export class CUITableText implements IUITableData {
             eColumn = <HTMLElement>eColumn.nextElementSibling;
          }
 
-         eRow = eRow.nextElementSibling;
+         //eRow = eRow.nextElementSibling;
+         while( (eRow = eRow.nextElementSibling) !== null && (<HTMLElement>eRow).dataset.record !== "1" );
       }
 
       return aWidth;
@@ -910,11 +932,17 @@ export class CUITableText implements IUITableData {
       let eSection = typeof _Section === "string"? this.GetSection(_Section) : _Section;
       let i = iRow;
       let eRow = eSection.firstElementChild;                                   // Position at row
-      if( (<HTMLElement>eRow).dataset.type !== "row" ) i++;                    // no row ?
+
+      if( (<HTMLElement>eRow).dataset.record !== "1" ) i++;                     // no row ?
       while(--i >= 0 && eRow) {
-         if( (<HTMLElement>eRow).dataset.type !== "row" ) i++;                 // no row ?
+         if( (<HTMLElement>eRow).dataset.record !== "1" ) i++;                  // no row ?
          eRow = eRow.nextElementSibling;
       }
+
+      if( (<HTMLElement>eRow).dataset.type !== "row" ) {
+         eRow = eRow.querySelector('[data-type="row"]');
+      }
+
       return <HTMLElement>eRow;
    }
 
@@ -1166,7 +1194,7 @@ export class CUITableText implements IUITableData {
       let aResult: [ unknown[][], number[] ];
       let sClass: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_value") || "";
       let aStyle = <unknown[]>this.data.COLUMNGetPropertyValue(this.m_aColumnPhysicalIndex, "style"); // position data for columns
-
+      const bSetValue = this.is_state( enumState.SetValue );                    // If try to set value for html element, when you have INPUT elements in column.
 
       if(typeof _1 === "boolean") {
          let _Selected: string | string[] = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_cell_input") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_selected");let sClassSelected: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_cell_input") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_selected");
@@ -1208,35 +1236,49 @@ export class CUITableText implements IUITableData {
 
       this.m_aRowBody.forEach((aRow, iIndex: number) => {
          let iRow = this.m_aRowPhysicalIndex[ iIndex ], s, o;
-         eRow.dataset.row = iRow.toString();
-         let eColumn: HTMLElement = <HTMLElement>eRow.firstElementChild;
+         let eR = eRow;
+         eR.dataset.row = iRow.toString();
+         if( eR.dataset.type !== "row" ) {
+            eR = eR.querySelector('[data-type="row"]');     console.assert( eR !== null, "No row element for column cells." ); 
+         }
+         let eColumn: HTMLElement = <HTMLElement>eR.firstElementChild;
          for(var i = 0; i < this.m_iColumnCount; i++) {
-            const oColumn = this.data.COLUMNGet( this._column_in_data( i ) );
+            // const oColumn = this.data.COLUMNGet( this._column_in_data( i ) );
+            const oPosition = this.m_aColumnPosition[ i ];
             let sValue = aRow[ i ];
             if( bCall ) { 
                let bRender = true;
                for(let j = 0; j < this.m_acallRender.length; j++) {
-                  let b = this.m_acallRender[j].call(this, "beforeCellValue", sValue, eColumn, oColumn );
+                  let b = this.m_acallRender[j].call(this, "beforeCellValue", sValue, eColumn, oPosition );
                   if( b === false ) bRender = false;
                }
                if( bRender === false ) continue;
             }
             
-            let e = this.ELEMENTGetCellValue(eColumn);                         // get cell value element
-            if(sClass) e.classList.add(sClass);                                //
-            if(Object.keys(aStyle[ i ][1]).length > 0) Object.assign(e.style, aStyle[ i ][1]);
-            
-            if(sValue !== null && sValue != void 0) {
-               if("value" in e) { (<HTMLElement>e).setAttribute("value", sValue.toString()); }
-               else e.innerText = sValue.toString();
+            if( !oPosition.row ) {                                              // place value on record row ?
+               let e = this.ELEMENTGetCellValue(eColumn);                       // get cell value element
+               if(sClass) e.classList.add(sClass);                              //
+               if(Object.keys(aStyle[ i ][1]).length > 0) Object.assign(e.style, aStyle[ i ][1]);
+
+               if( bSetValue === false ) {
+                  if(sValue !== null && sValue != void 0) e.innerText = sValue.toString();
+                  else if( e.hasAttribute("value") === false ) e.innerText = " ";
+               }
+               else {
+                  if(sValue !== null && sValue != void 0) {
+                     if("value" in e) { (<HTMLElement>e).setAttribute("value", sValue.toString()); }
+                     else e.innerText = sValue.toString();
+                  }
+                  else if( e.hasAttribute("value") === false ) e.innerText = " ";
+               }
+
+               if(bCall) this.m_acallRender.forEach((call) => { call.call(this, "afterCellValue", sValue, eColumn, oPosition); });
+               eColumn = <HTMLElement>eColumn.nextElementSibling;                 // next column element in row
             }
-            else if( e.hasAttribute("value") === false ) e.innerText = " ";
 
-            if(bCall) this.m_acallRender.forEach((call) => { call.call(this, "afterCellValue", sValue, eColumn, this.data.COLUMNGet(this._column_in_data(i))); });
-
-            eColumn = <HTMLElement>eColumn.nextElementSibling;                 // next column element in row
          }
-         eRow = <HTMLElement>eRow.nextElementSibling;
+         //eRow = <HTMLElement>eRow.nextElementSibling;
+         while( (eRow = <HTMLElement>eRow.nextElementSibling) !== null && (<HTMLElement>eRow).dataset.record !== "1" );
       })
       return eSection;
    }
@@ -1372,16 +1414,18 @@ export class CUITableText implements IUITableData {
             eParent = eGroup;                                                  // group is parent to section
          }
 
-         let sHtmlSection = "section";
+         let _HtmlSection: string|string[] = "section";                        // default section element name is "section"
          switch(sName) {
-            case "header": sHtmlSection = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_section_header") || sHtmlSection; break;
-            case "body": sHtmlSection = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_section_body") || sHtmlSection; break;
-            case "footer": sHtmlSection = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_section_footer") || sHtmlSection; break;
+            case "header": _HtmlSection = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_section_header") || _HtmlSection; break;
+            case "body": _HtmlSection = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_section_body") || _HtmlSection; break;
+            case "footer": _HtmlSection = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_section_footer") || _HtmlSection; break;
          }
 
-         let eSection = document.createElement(sHtmlSection);                  // create section
-         eSection.dataset.section = sName;                                     // set section name, used to access section
-         eSection.dataset.widget = CUITableText.s_sWidgetName;
+         const aSectionElement = this._create_section( _HtmlSection, sName );
+         let eSection = aSectionElement[1];
+//         let eSection = document.createElement(sHtmlSection);                  // create section
+//         eSection.dataset.section = sName;                                     // set section name, used to access section
+//         eSection.dataset.widget = CUITableText.s_sWidgetName;
          
          if(sName === "body") eSection.tabIndex = -1;                          // tab index on body to enable keyboard movement
 
@@ -1479,7 +1523,7 @@ export class CUITableText implements IUITableData {
 
       let sClass: string;
       let iCount = aHeader.length;
-      let sHtmlRow: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row") || "div";
+      let _HtmlRow = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_header") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row") || "div";
       let sStyle: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "header") || "";
       let sHtml: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_cell_header");
       if(!sHtml) sHtml = "span";
@@ -1488,20 +1532,21 @@ export class CUITableText implements IUITableData {
          if(a.length > 1) [ sHtml, sClass ] = a;
       }
       
-      let eRow = document.createElement(sHtmlRow);
-      eRow.dataset.type = "row";                                               // "row" for header
-      let iDiv = iCount;
+      let aRow = this._create_row( _HtmlRow );
+      //let iDiv = iCount;
       aHeader.forEach((a, i) => {
          let eSpan = document.createElement(sHtml);
 
          eSpan.style.cssText = sStyle;
          if(sClass) eSpan.className = sClass;
 
-         eRow.appendChild(eSpan);
-         if(eSpan) eRow.appendChild(eSpan);
+         aRow[1].appendChild(eSpan);
+
+         //eRow.appendChild(eSpan);
+         //if(eSpan) eRow.appendChild(eSpan);
       });
 
-      eSection.appendChild(eRow);
+      eSection.appendChild(aRow[0]);
       return eSection;
    }
 
@@ -1519,7 +1564,8 @@ export class CUITableText implements IUITableData {
 
       let sClass: string;
       let sStyle: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "value") || null;
-      let sHtmlRow: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row") || "div";
+      let _HtmlRow = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row") || "div";
+      let _HtmlExtraRow = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body_extra") || _HtmlRow;
       let sHtmlCell: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_cell") || "span"; // span is default for cell
       let sHtmlValue: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_value");
       if( typeof sHtmlValue === "string" ) sHtmlValue = sHtmlValue.trim();
@@ -1531,25 +1577,116 @@ export class CUITableText implements IUITableData {
       }
 
 
-      let aColumns = aBody[ 0 ];                                               // first row
-      let eRow = document.createElement(sHtmlRow);
-      eRow.dataset.type = "row";                                               // "row" for body
+      let aColumns = aBody[ 0 ];                                                // first row
+      let aRow = this._create_row( _HtmlRow );
+      //let eRow = document.createElement(sHtmlRow);
+      //eRow.dataset.type = "row";                                              // "row" for body
+
+      let aRows: [HTMLElement, HTMLElement][] = [ aRow ];                       // rows for each record. One recod could have column values in many rows, thats why rows are placed in array
+      for( let i = 0; i < aColumns.length; i++ ) {
+         const oPosition = this.m_aColumnPosition[i];
+         if( oPosition.row ) { // place on another row?
+            aRows.push( this._create_row_extra( _HtmlRow, oPosition ) );
+         }
+         else {
+            let eSpan = document.createElement(sHtmlCell);
+            if( sHtmlValue ) eSpan.innerHTML = sHtmlValue;
+            if(sStyle) eSpan.style.cssText = sStyle;
+            if(sClass) eSpan.className = sClass;
+            aRow[1].appendChild(eSpan);
+         }
+      }
+      /*
       let i = aColumns.length;
+      this.m_aColumnPosition
       while(--i >= 0) {
          let eSpan = document.createElement(sHtmlCell);
          if( sHtmlValue ) eSpan.innerHTML = sHtmlValue;
          if(sStyle) eSpan.style.cssText = sStyle;
          if(sClass) eSpan.className = sClass;
-         eRow.appendChild(eSpan);
+         aRow[1].appendChild(eSpan);
       }
+      */
 
       // create rows for each value
-      for(i = 0; i < this.m_iRowCount; i++) {
-         eSection.appendChild(eRow.cloneNode(true));
+      for( let i = 0; i < this.m_iRowCount; i++) {
+         for( let j = 0; j < aRows.length; j++ ) {
+            eSection.appendChild(aRows[j][0].cloneNode(true));   
+         }
       }
 
       return eSection;
    }
+
+   /**
+    * Create row or row "row-tree" of elements from string or array with strings
+    * @param {string | string[]} aRow element names for  row tree
+    */
+   _create_row( aRow: string | string[] ): [HTMLElement, HTMLElement] {
+      if( !Array.isArray( aRow ) ) aRow = [aRow];
+      let eRoot: HTMLElement = null, eRow: HTMLElement, eParent: HTMLElement;
+      for( let i = 0; i < aRow.length; i++ ) {
+         const a = aRow[i].split(".");
+         eRow = document.createElement(a[0]);
+         if( eParent ) eParent.appendChild( eRow );
+         if( a.length > 1 ) { eRow.className = a[1]; }
+
+         if( eRoot === null ) {
+            eRoot = eRow;
+         }
+         eParent = eRow;
+      }
+
+      eRow.dataset.type = "row";
+      eRoot.dataset.record = "1";
+      return [eRoot,eRow];
+   }
+
+   _create_row_extra( aRow: string | string[], oPosition: tabledata_position ): [HTMLElement, HTMLElement] {
+      if( !Array.isArray( aRow ) ) aRow = [aRow];
+      let eRoot: HTMLElement = null, eRow: HTMLElement, eParent: HTMLElement;
+      for( let i = 0; i < aRow.length; i++ ) {
+         const a = aRow[i].split(".");
+         eRow = document.createElement(a[0]);
+         if( eParent ) eParent.appendChild( eRow );
+         if( a.length > 1 ) { eRow.className = a[1]; }
+
+         if( eRoot === null ) {
+            eRoot = eRow;
+         }
+         eParent = eRow;
+      }
+
+      eRow.dataset.type = "sub";
+      eRow.dataset.offset_row = oPosition.row.toString();
+      return [eRoot,eRow];
+   }
+
+   /**
+    * Create row or row "row-tree" of elements from string or array with strings
+    * @param {string | string[]} aRow element names for  row tree
+    */
+   _create_section( aSection: string | string[], sName: string ): [HTMLElement, HTMLElement] {
+      if( !Array.isArray( aSection ) ) aSection = [aSection];
+      let eRoot: HTMLElement = null, eSection: HTMLElement, eParent: HTMLElement;
+      for( let i = 0; i < aSection.length; i++ ) {
+         const a = aSection[i].split(".");
+         eSection = document.createElement(a[0]);
+         if( eParent ) eParent.appendChild( eSection );
+         if( a.length > 1 ) { eSection.className = a[1]; }
+
+         if( eRoot === null ) {
+            eRoot = eSection;
+            eRoot.dataset.section_root = "1";
+         }
+         eRoot = eSection;
+         eRoot.dataset.widget = CUITableText.s_sWidgetName;
+      }
+
+      eSection.dataset.section = sName;
+      return [eRoot,eSection];
+   }
+
 
    _has_create_callback(sName, v: EventDataTable, sSection, call?: ((sType: string, v: any, e: HTMLElement) => boolean)): boolean {
       let a = call ? [call] : this.m_acallCreate;

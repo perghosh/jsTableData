@@ -121,13 +121,14 @@
                };
 
                let options = {
-                  parent: eRoot,                                                // container
+                  parent: eRoot,                                               // container
                   section: [ "title", "table.header", "table.body", "statusbar" ],
                   style: oStyle,
+                  state: 0x0008,
                   table: TDData,                                               // source data
-                  name: "table",                                                // name to access UI table in CTableData
-                  edit: 1,                                                      // enable edit
-                  trigger: oTrigger,                                            // set trigger object, this will enable triggers
+                  name: "table",                                               // name to access UI table in CTableData
+                  edit: 1,                                                     // enable edit
+                  trigger: oTrigger,                                           // set trigger object, this will enable triggers
                   callback_action: function(sType, e, sSection) {
                      if(sType === "click" && sSection === "header") {
                         let aColumn = this.COLUMNGet(e.srcElement);

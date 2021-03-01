@@ -86,6 +86,14 @@ namespace details {
       name?: string,    // name for type
    };
 
+   export type position = {
+      index?: number,
+      col?: number,     // in what column, this is for input forms
+      hide?: number|boolean,// if true ore one value like 1 or more this columns is hidden
+      page?: number,    // when forms with pages are used, this has the page columns is placed
+      row?: number,     // index to row. if table then 0 is same row as main row. negative numbers are above, positive numbers are below. in forms it has the index for row
+   };
+
 
    /**
     * column type describes each property for columns in table (or form) data
@@ -109,13 +117,7 @@ namespace details {
       style?: {
          [key: string]: string,
       },
-      position?: {         // position information
-         index?: number,
-         col?: number,     // in what column, this is for input forms
-         hide?: number|boolean,// if true ore one value like 1 or more this columns is hidden
-         page?: number,    // when forms with pages are used, this has the page columns is placed
-         row?: number,     // index to row. if table then 0 is same row as main row. negative numbers are above, positive numbers are below. in forms it has the index for row
-      },
+      position?: details.position,
       rule?: {
          no_sort?: boolean,// column is not allowed to be sorted
       },
@@ -142,6 +144,7 @@ namespace details {
 }
 
 export type tabledata_column = details.column;
+export type tabledata_position = details.position;
 
 /**
  * 
@@ -884,7 +887,7 @@ export class CTableData {
          else {
             if(_Raw === true) column = this.m_aColumn[ _Position ];
             else column = this._column(_Position);
-         }
+         }                                                  console.assert( column !== undefined, "No column for position: " + _Position.toString() );
 
          if(Array.isArray(_Property)) {
             _Property.forEach((s,i) => {
@@ -916,7 +919,11 @@ export class CTableData {
             }
             if(typeof s1 === "string") {
                _Old.push([ _Position, column[ s0 ][ s1 ] ]);
-               column[ s0 ][ s1 ] = _Value;
+               if(!Array.isArray(_Value) || bArray === false) {
+                  if( typeof _Value === "object" && !Array.isArray(_Value) && _Value !== null ) Object.assign( column[ s0 ][ s1 ], _Value );
+                  else column[ s0 ][ s1 ] = _Value;
+               }
+               else column[ s0 ][ s1 ] = _Value[i];
             }
             else {
                _Old.push([ _Position, column[ s0 ] ]);
@@ -963,23 +970,25 @@ export class CTableData {
          }
 
          let oColumn = this.COLUMNGet(iColumn);
-         const s = typeof v;
-         if(s !== "object") {
-            oColumn.type.group = s;
-            oColumn.type.type = <number>CTableData.GetJSType(s);
-            if(s === "number") oColumn.style.textAlign = "right";
-         }
-         else {
-            let eType: enumValueType = (<details.type>v).type || enumValueType.unknown;
-            if(eType === enumValueType.unknown) {
-               oColumn.type.type = <number>CTableData.GetType( (<details.type>v).name );
-               oColumn.type.name = (<details.type>v).name;
+         if( oColumn ) {
+            const s = typeof v;
+            if(s !== "object") {
+               oColumn.type.group = s;
+               oColumn.type.type = <number>CTableData.GetJSType(s);
+               if(s === "number") oColumn.style.textAlign = "right";
             }
-            else if( !(<details.type>v).name ) {
-               oColumn.type.name = <string>CTableData.GetType( (<details.type>v).type );
-            }
+            else {
+               let eType: enumValueType = (<details.type>v).type || enumValueType.unknown;
+               if(eType === enumValueType.unknown) {
+                  oColumn.type.type = <number>CTableData.GetType( (<details.type>v).name );
+                  oColumn.type.name = (<details.type>v).name;
+               }
+               else if( !(<details.type>v).name ) {
+                  oColumn.type.name = <string>CTableData.GetType( (<details.type>v).type );
+               }
 
-            if( !(<details.type>v).group ) oColumn.type.group = <string>CTableData.GetJSType( (<details.type>v).type );
+               if( !(<details.type>v).group ) oColumn.type.group = <string>CTableData.GetJSType( (<details.type>v).type );
+            }
          }
       });
    }
