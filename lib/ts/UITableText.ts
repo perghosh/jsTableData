@@ -8,12 +8,12 @@
  * - ROW-methods: row logic
  
  
- 
+   https://hacks.mozilla.org/category/es6-in-depth/ 
  
  */
 
 
-import { CTableData, enumMove, IUITableData, tabledata_column, tabledata_position } from "./TableData.js";
+import { CTableData, CRowRows, enumMove, IUITableData, tabledata_column, tabledata_position, tabledata_format } from "./TableData.js";
 import { edit } from "./TableDataEdit.js";
 import { CTableDataTrigger, enumTrigger, enumReason, EventDataTable } from "./TableDataTrigger.js";
 
@@ -62,7 +62,9 @@ namespace details {
          html_cell_footer?: string,
          html_row?: string | string[],
          html_row_body?: string | string[],                 // html element used to render rows in body
-         html_row_body_extra?: string | string[],           // html element used when extra rows is used
+         html_row_body_before?: string | string[],          // html element used when extra rows is added before main row
+         html_row_body_after?: string | string[],           // html element used when extra rows is added after main row
+         html_row_body_container?: string | string[],       // html element used if body rows are in a container element
          html_value?: string,
          html_section_header?: string,
          html_section_body?: string,
@@ -119,6 +121,7 @@ export class CUITableText implements IUITableData {
    m_acallCreate: ((sType: string, e: EventDataTable, sSection: string) => boolean)[];
    m_acallRender: ((sType: string, e: EventDataTable, sSection: string, oColumn: any) => boolean)[];
    m_iColumnCount: number;    // Number of columns shown, this may not match number of columns in table data
+   m_aColumnFormat: tabledata_format[];
    m_aColumnPhysicalIndex: number[]; // index for column in table data
    m_aColumnPosition: tabledata_position[];
    m_eComponent: HTMLElement; // Element that acts as container to table, sections can exist outside container but default is within
@@ -160,7 +163,6 @@ export class CUITableText implements IUITableData {
       class_input: "input",
       class_section: "uitabletext section",
       class_selected: "selected",
-      class_value: "value",
       class_error: "error",
    };
 
@@ -387,15 +389,23 @@ export class CUITableText implements IUITableData {
          eCell = eRow;
          eRow = eRow.parentElement;
       }
-
       if(eRow === null) return null;
 
-      let iR: number = 0;
+      while(eRow && eRow.dataset.row === undefined) {
+         eRow = eRow.parentElement;
+      }
+      if(eRow === null) return null;
+      let iR: number = parseInt( eRow.dataset.row, 10 );
+
+      let e: Element;
+
+/*
       let e = eRow.previousElementSibling;
       while(e) {
          iR++;
          e = e.previousElementSibling;
       }
+*/      
 
       //let iR = (eRow.dataset.row) ? parseInt(eRow.dataset.row, 10) : 0;
       let iC: number = 0;
@@ -617,6 +627,13 @@ export class CUITableText implements IUITableData {
       aPosition.forEach( aP => {
          this.m_aColumnPosition.push( aP[1] );
       });
+
+      this.m_aColumnFormat = [];
+      let aFormat: [number,tabledata_format][] = <[number,tabledata_format][] >this.data.COLUMNGetPropertyValue( this.m_aColumnPhysicalIndex, "format" );
+      aFormat.forEach( aF => {
+         this.m_aColumnFormat.push( aF[1] );
+      });
+
 
       this.m_iColumnCount = aHeader.length;                                    // Set total column count
       this.render_header(<[ number, [ string, string ] ][]>aHeader);
@@ -920,13 +937,20 @@ export class CUITableText implements IUITableData {
     * @param {HTMLElement} eElement element that sections is returned for.
     */
    ELEMENTGetSection(eElement: HTMLElement): HTMLElement {
-      while(eElement && eElement.tagName !== "SECTION" && eElement.getAttribute("data-section") === null ) {
-         eElement = eElement .parentElement;
+      while(eElement && eElement.dataset.section === undefined ) {
+         eElement = eElement.parentElement;
       }
       if(eElement) return eElement;
       throw "null section, have table been redrawn?";
    }
 
+   /**
+    * Tries to get specified row from section. This is done by lookin for elements with the attribute
+    * data-record="1". The data-record marks the main row element for each row in table data.
+    * @param  {number}             iRow     index for row element returned
+    * @param  {string|HTMLElement} _Section section row is looked for
+    * @return {HTMLElement}                 row element for specified row if found
+    */
    ELEMENTGetRow(iRow: number, _Section?: string|HTMLElement): HTMLElement {
       _Section = _Section || "body";
       let eSection = typeof _Section === "string"? this.GetSection(_Section) : _Section;
@@ -984,8 +1008,8 @@ export class CUITableText implements IUITableData {
     * @returns {HTMLElement} element to value or null if not found
     */
    ELEMENTGetCellValue( e: HTMLElement ): HTMLElement {
-      if(this.is_state(enumState.HtmlValue) && e) {
-         e = e.querySelector("[data-value]");
+      if(e && (this.is_state(enumState.HtmlValue) || e.firstElementChild) ) {
+         e = e.querySelector("[data-value]") || e;
       }
       return e;
    }
@@ -1114,8 +1138,8 @@ export class CUITableText implements IUITableData {
          let oEdit = this.m_oEdits.GetEdit(iDataColumn);
          if(oEdit !== null) {
             let eCell = this.ELEMENTGetCell(iRow, iC);
-            if(this.is_state(enumState.HtmlValue)) {
-               let e = eCell.matches("[data-value]") || eCell.querySelector("[data-value]");// try to find element with attribute valute
+            if(this.is_state(enumState.HtmlValue) || eCell.firstElementChild) {
+               let e = eCell.matches("[data-value]") || eCell.querySelector("[data-value]");// try to find element with attribute data-value
                eCell = <HTMLElement>e || eCell;
             }
             this.m_oEdits.Activate([ iDataRow, iDataColumn, iRow, iC], eCell);
@@ -1295,12 +1319,17 @@ export class CUITableText implements IUITableData {
 
       let sValue = this.data.CELLGetValue(this._row_in_data(_Row), this._column_in_data(iColumn));
 
+      let bValue = false;
+      const s = eElement.tagName;
+      if(s === "INPUT" || s === "TEXTAREA" || s === "METER") bValue = true;
+
       if(sValue !== null && sValue != void 0) {
-         if("value" in eElement) { (<HTMLElement>eElement).setAttribute("value", sValue.toString()); }
+         if(bValue) { (<HTMLElement>eElement).setAttribute("value", sValue.toString()); }
          else eElement.innerText = sValue.toString();
       }
       else {
-         if("value" in eElement) { (<HTMLElement>eElement).setAttribute("value", ""); }
+         const s = eElement.tagName;
+         if(bValue) { (<HTMLElement>eElement).setAttribute("value", ""); }
          else eElement.innerText = " ";
       }
    }
@@ -1565,28 +1594,119 @@ export class CUITableText implements IUITableData {
       let sClass: string;
       let sStyle: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "value") || null;
       let _HtmlRow = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row") || "div";
-      let _HtmlExtraRow = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body_extra") || _HtmlRow;
+      let _HtmlBefore = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body_before") || _HtmlRow;
+      let _HtmlAfter = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body_after") || _HtmlRow;
+      let _HtmlContainer = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body_container");
       let sHtmlCell: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_cell") || "span"; // span is default for cell
       let sHtmlValue: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_value");
       if( typeof sHtmlValue === "string" ) sHtmlValue = sHtmlValue.trim();
       this.set_state( sHtmlValue, enumState.HtmlValue );                       // set state if cell is a dom tree or not
-      if(!sHtmlCell) sHtmlCell = "span";                                               // span is default element for values
+      if(!sHtmlCell) sHtmlCell = "span";                                       // span is default element for values
       if( sHtmlCell.indexOf(".") !== -1 ) {
          let a = sHtmlCell.split(".");
-         if(a.length > 1) [ sHtmlCell, sClass ] = a;                               // element for value, this can be element name and class if format is in "element_name.class_names" like "span.value".
+         if(a.length > 1) [ sHtmlCell, sClass ] = a;                           // element for value, this can be element name and class if format is in "element_name.class_names" like "span.value".
       }
 
+      let aRowColumn: number[];
 
-      let aColumns = aBody[ 0 ];                                                // first row
-      let aRow = this._create_row( _HtmlRow );
+      let set_row_attr = (eRow: HTMLElement, iRow: number, aColumn: number[], sCell: string, sValue: string, sStyle: string, sClass: string ) => {
+         eRow.dataset.r = iRow.toString();
+         eRow.dataset.c = "C" + aColumn.join(",C") + ",";
+
+         aColumn.forEach(i => { 
+            let e = document.createElement(sHtmlCell);
+            const oFormat = this.m_aColumnFormat[ i ];
+            if( typeof oFormat.html === "string" ) e.innerHTML = oFormat.html;
+            else if( sHtmlValue ) e.innerHTML = sHtmlValue;
+            if(sStyle) e.style.cssText = sStyle;
+            eRow.appendChild( e );
+         });
+      };
+
+
+      // ## oRowRows is a temporary CRowRows object used to make it easier to create the markup tree for row in browser
+      const oRowRows = this.data.GetRowRows();                                 // get temporary CRowRows object, do not store this. Works only as CTableData isn't modified
+
+      let eFragment = document.createDocumentFragment();                       // fragment used to collect markup that is added to table, markup is cloned into page
+      let eContainer: HTMLElement | DocumentFragment;
+      let aRowMain = this._create_row( _HtmlRow );
+      let aContainer: [HTMLElement, HTMLElement];
+      if(_HtmlContainer) {
+         aContainer = this._create_container( _HtmlContainer );
+         eContainer = aContainer[1];
+         eFragment.appendChild( aContainer[0] );
+      }
+      else { eContainer = eFragment; }                                         // rows without container, set container to fragment
+
+
+
+      //let aColumns = aBody[ 0 ];                                             // first row
       //let eRow = document.createElement(sHtmlRow);
-      //eRow.dataset.type = "row";                                              // "row" for body
+      //eRow.dataset.type = "row";                                             // "row" for body
 
-      let aRows: [HTMLElement, HTMLElement][] = [ aRow ];                       // rows for each record. One recod could have column values in many rows, thats why rows are placed in array
+      let iLevelIndex = 0;
+      const aRowLevel = oRowRows.GetRowLevel();
+
+      while( aRowLevel[ iLevelIndex ] < 0 ) {                                  // rows before main row
+         let aRow = this._create_row( _HtmlBefore );
+         oRowRows.SetRowElement( iLevelIndex, aRow[1] );
+         set_row_attr( aRow[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), sHtmlCell, sHtmlValue, sStyle, sClass );
+         iLevelIndex++;
+      }
+
+      oRowRows.SetRowElement( iLevelIndex, aRowMain[1] );                      // main row
+      set_row_attr( aRowMain[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), sHtmlCell, sHtmlValue, sStyle, sClass );
+      iLevelIndex++;
+
+      if(aRowLevel[ iLevelIndex ] > 0) {                                       // rows after main row
+         let aRow = this._create_row( _HtmlAfter );
+         oRowRows.SetRowElement( iLevelIndex, aRow[1] );
+         set_row_attr( aRow[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), sHtmlCell, sHtmlValue, sStyle, sClass );
+         iLevelIndex++;
+      }
+
+      // ## Build row tree
+      if(!aContainer) {                                                        // no container ?
+         aContainer = [null, eSection];                                        // if no container, then section will be container for all rows. This is used when row exists in html tables
+         aRowMain[1].dataset.record = "1";                                     // Set main row to record when no container element is used
+      }
+
+      // Connect rows with container
+      let iTo = oRowRows.length;
+      for(let i = 0; i < iTo; i++) {
+         eContainer.appendChild( oRowRows.GetRowElement( i ) );
+      }
+
+      // Create rows by cloning them into body
+      for( let i = 0; i < this.m_iRowCount; i++) {
+         eSection.appendChild( eFragment.cloneNode(true) );
+
+
+/*
+         for( let j = 0; j < aRows.length; j++ ) {
+            eSection.appendChild(aRows[j][1].cloneNode(true));   
+         }
+         */
+      }
+
+      /*
+      let aColumn = oRowRows.GetRowColumns( oRowRows.GetRowIndex() );
+      aColumn.forEach(iIndex => { 
+         let eSpan = document.createElement(sHtmlCell);
+         if( sHtmlValue ) eSpan.innerHTML = sHtmlValue;
+         if(sStyle) eSpan.style.cssText = sStyle;
+         if(sClass) eSpan.className = sClass;
+         aRow[1].appendChild(eSpan);
+      });
+
+
+
+      let aRows: [HTMLElement, HTMLElement][] = [ aRow ];                      // rows for each record. One recod could have column values in many rows, thats why rows are placed in array
       for( let i = 0; i < aColumns.length; i++ ) {
          const oPosition = this.m_aColumnPosition[i];
          if( oPosition.row ) { // place on another row?
-            aRows.push( this._create_row_extra( _HtmlRow, oPosition ) );
+            //this._create_row_extra( _HtmlExtraRow, oPosition, aRows );
+            //aRows.push( this._create_row_extra( _HtmlRow, oPosition,  ) );
          }
          else {
             let eSpan = document.createElement(sHtmlCell);
@@ -1596,31 +1716,49 @@ export class CUITableText implements IUITableData {
             aRow[1].appendChild(eSpan);
          }
       }
-      /*
-      let i = aColumns.length;
-      this.m_aColumnPosition
-      while(--i >= 0) {
-         let eSpan = document.createElement(sHtmlCell);
-         if( sHtmlValue ) eSpan.innerHTML = sHtmlValue;
-         if(sStyle) eSpan.style.cssText = sStyle;
-         if(sClass) eSpan.className = sClass;
-         aRow[1].appendChild(eSpan);
-      }
-      */
 
       // create rows for each value
       for( let i = 0; i < this.m_iRowCount; i++) {
          for( let j = 0; j < aRows.length; j++ ) {
-            eSection.appendChild(aRows[j][0].cloneNode(true));   
+            eSection.appendChild(aRows[j][1].cloneNode(true));   
          }
       }
+      */
 
       return eSection;
    }
 
    /**
+    * Create container for each row or row "row-tree" of elements from string or array with strings
+    * @param {string | string[]} aContainer element names for  row tree
+    */
+   _create_container( aContainer: string | string[] ): [HTMLElement, HTMLElement] {
+      if( !Array.isArray( aContainer ) ) aContainer = [aContainer];
+      let eRoot: HTMLElement = null, eRow: HTMLElement, eParent: HTMLElement;
+      for( let i = 0; i < aContainer.length; i++ ) {
+         const sRow = aContainer[i].trim();
+         if( sRow[0] === "<" ) {                            // markup template ?
+
+         }
+         const a = aContainer[i].split(".");
+         eRow = document.createElement(a[0]);
+         if( eParent ) eParent.appendChild( eRow );
+         if( a.length > 1 ) { eRow.className = a[1]; }
+
+         if( eRoot === null ) {
+            eRoot = eRow;
+         }
+         eParent = eRow;
+      }
+
+      eRoot.dataset.record = "1";
+      return [eRoot,eRow];
+   }
+
+
+   /**
     * Create row or row "row-tree" of elements from string or array with strings
-    * @param {string | string[]} aRow element names for  row tree
+    * @param {string | string[]} aRow element names for row tree
     */
    _create_row( aRow: string | string[] ): [HTMLElement, HTMLElement] {
       if( !Array.isArray( aRow ) ) aRow = [aRow];
@@ -1638,29 +1776,61 @@ export class CUITableText implements IUITableData {
       }
 
       eRow.dataset.type = "row";
-      eRoot.dataset.record = "1";
       return [eRoot,eRow];
    }
 
-   _create_row_extra( aRow: string | string[], oPosition: tabledata_position ): [HTMLElement, HTMLElement] {
+   /**
+    * Types of row layouts that are managed
+    * 1: <main row>
+    *      <extra>
+    *        <extra>
+    *          <column row>
+    *          
+    * 2: <main row><columns ...
+    *    <extra row><columns ...
+    *    
+    * If extra  rows are placed in same tree as the main row then first item in `aRow` has a number
+    * that is used to walk main tree to get parent for extra row.
+    * @param aRow
+    * @param oPosition
+    */
+   _create_row_extra( aRow: string | (number|string)[], oPosition: tabledata_position, aRows: [HTMLElement, HTMLElement][] ): [number, HTMLElement, HTMLElement] {
+      const eRecordRoot: HTMLElement = aRows[0][1];   // main record element row
       if( !Array.isArray( aRow ) ) aRow = [aRow];
       let eRoot: HTMLElement = null, eRow: HTMLElement, eParent: HTMLElement;
       for( let i = 0; i < aRow.length; i++ ) {
-         const a = aRow[i].split(".");
-         eRow = document.createElement(a[0]);
-         if( eParent ) eParent.appendChild( eRow );
-         if( a.length > 1 ) { eRow.className = a[1]; }
-
-         if( eRoot === null ) {
-            eRoot = eRow;
+         const row = aRow[i];
+         if(typeof row === "number") {                                        // travel root tree to generate row?
+            eParent = eRoot || eRecordRoot;
+            let j = row;
+            while( --j >= 0 ) {
+               eParent = <HTMLElement>eParent.firstElementChild;               console.assert( eParent !== null, "Parent error, make sure correct number of parent exists: total = " + row + ", failed at: " + (j+1) );
+            }
          }
-         eParent = eRow;
+         else {
+            const a = row.split(".");
+            eRow = document.createElement(a[ 0 ]);
+            if(eParent) eParent.appendChild(eRow);
+            if(a.length > 1) { eRow.className = a[ 1 ]; }
+
+            if(eRoot === null) {
+               eRoot = eRow;
+            }
+            eParent = eRow;
+         }
       }
 
-      eRow.dataset.type = "sub";
-      eRow.dataset.offset_row = oPosition.row.toString();
-      return [eRoot,eRow];
+      eRow.dataset.type = "row";                                               // set "data-type"
+      eRow.dataset.position_row = oPosition.row.toString();                    // set "data-position_row"
+      return [oPosition.row, eRoot, eRow];
    }
+
+/*
+ * Row attributes
+ * data-type = row : all rows that has columns. If getting row from clicked element this is the first element to search for
+ * data-record = main row for record. this is the root for complete row in result
+ * data-position_row = position.row
+ */
 
    /**
     * Create row or row "row-tree" of elements from string or array with strings
@@ -1677,7 +1847,7 @@ export class CUITableText implements IUITableData {
 
          if( eRoot === null ) {
             eRoot = eSection;
-            eRoot.dataset.section_root = "1";
+            eRoot.dataset.root = "1";
          }
          eRoot = eSection;
          eRoot.dataset.widget = CUITableText.s_sWidgetName;

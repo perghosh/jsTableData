@@ -1,5 +1,29 @@
 ﻿<!DOCTYPE html>
 
+<!--
+<article class="row nfl" data-record="1">
+   <ul data-type="row">
+   </ul>
+   <ul class="more-content" data-type="row" position_row="1">
+   </ul>
+</article>
+
+SAMPLE
+<article class="row nfl" data-record="1">
+   <ul data-type="row" position_row="-1">
+      <li data-cell="-1,6"></li>
+   </ul>
+   <ul data-type="row">
+   </ul>
+   <ul class="more-content" data-type="row" position_row="1">
+      <li data-cell="1,5"></li>
+      <li data-cell="1,7"></li>
+   </ul>
+</article>
+
+
+   -->
+
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
    <meta charset="utf-8" />
@@ -309,7 +333,7 @@
             color: rgba(255, 255, 255, 0.9);
          }
       }
-    </style>
+   </style>
 </head>
 <body>
    <div id="idTableNew" class="wrapper"></div>
@@ -479,7 +503,7 @@
 
          class CApplication {
             constructor() {
-               this.m_oEditors = edit.CEditors.GetInstance();               
+               this.m_oEditors = edit.CEditors.GetInstance();
             }
 
             Initialize() {
@@ -489,18 +513,19 @@
                oEditors.Add("number", edit.CEditNumber);
             }
 
-            CreateTable( eRoot, aSource ) {
-               if( typeof eRoot === "string" ) eRoot = document.getElementById(eRoot);
+            CreateTable(eRoot, aSource) {
+               if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
 
                let TDData = new CTableData();
                TDData.ReadArray(aSource);
                TDData.COLUMNSetType(TDData.ROWGet(1));
                TDData.COLUMNSetPropertyValue(true, "edit.edit", true);
-               TDData.COLUMNSetPropertyValue([ 0, 1, 2, 3, 4, 5 ], "edit.name", [ "string", "number", "number", "number", "number","string"]);
+               TDData.COLUMNSetPropertyValue([ 0, 1, 2, 3, 4, 5 ], "edit.name", [ "string", "number", "number", "number", "number", "string" ]);
+               TDData.COLUMNSetPropertyValue(0, "format.html", "<a href='#' data-value='1'></a>" );
 
-               TDData.COLUMNSetPropertyValue( 5, "position.row", 1  );
+               TDData.COLUMNSetPropertyValue(5, "position.row", 1);
 
-               let oTrigger = new CTableDataTrigger({ table: TDData, trigger: CALLBACK_TableData }); 
+               let oTrigger = new CTableDataTrigger({ table: TDData, trigger: CALLBACK_TableData });
 
                let oStyle = {
                   html_group: "section.wrapper",            // "table" element and class table
@@ -510,8 +535,10 @@
                   html_section_header: "main.row title",    // "thead" for header section
                   html_section_body: "section",             // "tbody" for body section
                   html_row_header: [ "main.row title", "ul" ],
-                  html_row_body: [ "section.row-fadeIn-wrapper", "article.row fadeIn nfl","ul"],
-                  class_section: "uitabletext_table", 
+                  html_row_body: [ "ul" ],
+                  html_row_body_after: [ "ul.more-content" ],
+                  html_row_body_container: [ "section.row-fadeIn-wrapper", "article.row fadeIn nfl" ],
+                  class_section: "uitabletext_table",
                   class_value_error: "error_value",
                   class_error: ""            // error i cell value
                };
@@ -552,7 +579,7 @@
                      else if( sName === "askCellValue" ) return false;
                   }
                   */
-               }; 
+               };
 
                let TTData = new CUITableText(options);
 
@@ -571,21 +598,21 @@
           * @param {EventDataTable} oEventData standard event data
           * @param {any} e This is dependent on the event.
           */
-         function CALLBACK_TableData(oEventData, v ) {                            
-            let sName = CTableDataTrigger.GetTriggerName( oEventData.iEvent );  console.log(sName);
-            switch( sName ) {
-            case "BeforeSetCellError":
-               let eCell = oEventData.eElement.closest("td");
-               let _type = oEventData.information;
-               eCell.querySelector("[data-error]").innerText = _type[1];
-               break;
+         function CALLBACK_TableData(oEventData, v) {
+            let sName = CTableDataTrigger.GetTriggerName(oEventData.iEvent); console.log(sName);
+            switch(sName) {
+               case "BeforeSetCellError":
+                  let eCell = oEventData.eElement.closest("td");
+                  let _type = oEventData.information;
+                  eCell.querySelector("[data-error]").innerText = _type[ 1 ];
+                  break;
 
             }
          }
 
          window.app = new CApplication();
          window.app.Initialize();
-         window.app.CreateTable("idTableNew", aData );
+         window.app.CreateTable("idTableNew", aData);
       }
 
 
@@ -624,19 +651,19 @@
 
    <script>
       var aData = [
-["Sport","Entry $","Entries","Max","Time","Description"],
-["NFL",50,12,48,2,"This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!"],
-["NFL",5,45,100,3,"This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!"],
-["NFL",50,12,48,12,"This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!"],
-["MLB",10,1,10,1,"This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!"],
-["MLB",5,48,120,12,"This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!"],
-["NHL",50,12,48,12,"This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!"],
-["PGA",50,12,48,11,"This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!"],
-["PGA",50,12,48,11,"This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!"],
-["PGA",50,12,48,11,"This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!"],
-["MLB",10,1,10,1,"This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!"]
-];
-      
+         [ "Sport", "Entry $", "Entries", "Max", "Time", "Description" ],
+         [ "NFL", 50, 12, 48, 2, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],
+         [ "NFL", 5, 45, 100, 3, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],
+         [ "NFL", 50, 12, 48, 12, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],
+         [ "MLB", 10, 1, 10, 1, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],
+         [ "MLB", 5, 48, 120, 12, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],
+         [ "NHL", 50, 12, 48, 12, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],
+         [ "PGA", 50, 12, 48, 11, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],
+         [ "PGA", 50, 12, 48, 11, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],
+         [ "PGA", 50, 12, 48, 11, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],
+         [ "MLB", 10, 1, 10, 1, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ]
+      ];
+
 
    </script>
 

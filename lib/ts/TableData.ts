@@ -73,6 +73,7 @@ namespace details {
    export type format = {
       convert?: ((value: unknown, aCell: [number, number]) => unknown), // convert logic, external or regex
       const?: number|boolean,// value cannot be corrected. if not set then table data tries to correct value if wrong   
+      html?: string|number|boolean,// value is html formated, do not insert as text, use HTML. if string then this is column specific elements.
       max?: number,     // max value for value, if string it is max number of characters, if number it has the max value
       min?:number,      // Same as max but opposite
       pattern?: string|string[], // regex pattern to verify that value is ok
@@ -114,7 +115,7 @@ namespace details {
          fk?: number,      // if column is a foreign key
       }
       name?: string,       // field name, same name as in database?
-      style?: {
+      style?: {            // styling for column
          [key: string]: string,
       },
       position?: details.position,
@@ -144,7 +145,9 @@ namespace details {
 }
 
 export type tabledata_column = details.column;
+export type tabledata_format = details.format;
 export type tabledata_position = details.position;
+
 
 /**
  * 
@@ -481,6 +484,15 @@ export class CTableData {
       aKey = aKey || this.m_aDirtyRow;
       // aColumn = aColumn || implement columns from properties
       return CTableData._get_data_for_keys( aKey, this.m_aBody, aColumn );
+   }
+
+   /**
+    * Return `CRowRows` object that has raw data on how to design row values.
+    */
+   GetRowRows(): CRowRows {
+      let aRows = this._collect_row_design();
+      let oRR = new CRowRows(aRows);
+      return oRR;
    }
 
    Sort( aBody: unknown[][] ) {
@@ -1672,8 +1684,98 @@ export class CTableData {
    }
 
 
+   /**
+    * */
+   _collect_row_design(): [ [number,number,HTMLElement], number[] ][] {
+      let aRow: [ [number,number,HTMLElement], number[] ][] = [ [ [0,0,null], [] ] ];// array used to collect information for each row, format described [ [row index, row priority ], [column indexes...] ] 
+
+      let i = this.m_aColumn.length;
+
+      this.m_aColumn.forEach((oC, i) => {
+         const position = oC.position;
+         if(position.row) {
+            let bPushed = false;
+            let i = aRow.length;
+            while(--i >= 0) {
+               if(position.row === aRow[ i ][ 0 ][ 0 ]) {                      // compare to row index in [ [row index, row priority ], [column indexes...] ]
+                  aRow[0][1].push( position.index );                           // push column to row
+                  bPushed = true;
+               }
+            }
+
+            if(bPushed === false) {                                            // row wasn't found, add it
+               aRow.push( [ [position.row, 1, null], [position.index] ] );
+            }
+         }
+         else if(position.hide !== true) {
+            aRow[0][1].push( position.index );                                 // aRow[0] always has the main row
+         }
+      });
+
+
+      // row design is now collected, time to sort it if it contains more than one row (no need to sort if only one).
+      if(aRow.length > 0) {
+         aRow.sort( (a,b) => {
+            return a[0][0] - b[0][0];                                          // sort based on row index.
+         });
+      }
+
+      return aRow;
+   }
+}
+
+/**
+ * CRowRows is used to collect information about the layout for each row in CTableData.
+ * This is important when component working with CTableData needs to render
+ * */
+export class CRowRows {
+   m_aRows: [ [number,number,HTMLElement], number[] ][]; // array used to collect information for each row, format described [ [row index, row level ], [column indexes...] ] 
+   constructor( aRows: [ [number,number,HTMLElement], number[] ][] ) {
+      this.m_aRows = aRows;
+   }
+
+   /**
+    * Return number of rows that is needed to generate for one record(row) in table
+    */
+   get length(): number { return this.m_aRows.length; }
+
+   GetRowLevel(iIndex?: number): number | number[] {
+      if( typeof iIndex === "number") return this.m_aRows[iIndex][0][1];
+
+      let a: number[] = [];
+      for(let i = 0; i < this.m_aRows.length; i++) { a.push(<number>this.GetRowLevel(i)); }
+      return a;
+   }
+
+   /**
+    * Return row element for index
+    * @param {number} iIndex index to row element is returned for
+    */
+   GetRowElement(iIndex: number): HTMLElement {
+      return this.m_aRows[iIndex][0][2];
+   }
+
+   /**
+    * Return column indexes for row, these are relative positioned indexes from CTableData and should
+    * match position for component that uses it
+    * @param {number} iIndex index for row.
+    */
+   GetRowColumns(iIndex: number): number[] {
+      return this.m_aRows[iIndex][1];
+   }
+
+   /**
+    * Set root element for row
+    * @param {number} iIndex index for row element is set
+    * @param {HTMLElement} eRow root element for row
+    */
+   SetRowElement(iIndex: number, eRow: HTMLElement) {
+      this.m_aRows[iIndex][0][2] = eRow;
+   }
+   
 
 }
+
 
 // BLOG
 // https://marcradziwill.com/blog/mastering-javascript-high-performance/
