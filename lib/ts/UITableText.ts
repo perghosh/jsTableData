@@ -1206,6 +1206,7 @@ export class CUITableText implements IUITableData {
       let bCall = this._has_render_callback( "askHeaderValue", "header" );
 
       let eRow = <HTMLElement>eSection.firstElementChild;
+      eRow.dataset.row = "0";
       if( eRow.dataset.type !== "row" ) {
          eRow = eRow.querySelector('[data-type="row"]');    console.assert( eRow !== null, "No row element for header cells." ); 
       }
