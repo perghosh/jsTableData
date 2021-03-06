@@ -1,6 +1,10 @@
 ﻿<!DOCTYPE html>
 
 <!--
+https://onaircode.com/responsive-table-html-css-examples/
+-->
+
+<!--
 <article class="row nfl" data-record="1">
    <ul data-type="row">
    </ul>
@@ -41,6 +45,11 @@ SAMPLE
       .nfl a, .mlb a, .nhl a, .pga a {
          text-decoration: none;
          transition: color 0.2s ease-out;
+      }
+
+      li.selected {
+         border: 1px rgba(100,100,100, 0.9) solid;
+
       }
 
       .nfl a {
@@ -100,7 +109,7 @@ SAMPLE
       /* rows */
       .row {
          padding: 20px 0;
-         height: 30px;
+         height: 25px;
          font-size: 0;
          position: relative;
          overflow: hidden;
@@ -110,7 +119,7 @@ SAMPLE
 
          .row:hover {
             background-color: rgba(26, 26, 26, 0.9);
-            height: 65px;
+            height: 70px;
          }
 
       @media only screen and (max-width: 767px) {
@@ -534,10 +543,10 @@ SAMPLE
                   html_cell: "li",                          // "td" for cells
                   html_section_header: "main.row title",    // "thead" for header section
                   html_section_body: "section",             // "tbody" for body section
-                  html_row_header: [ "main.row title", "ul" ],
+                  html_row_header: [ "ul" ],
                   html_row_body: [ "ul" ],
                   html_row_body_after: [ "ul.more-content" ],
-                  html_row_body_container: [ "section.row-fadeIn-wrapper", "article.row fadeIn nfl" ],
+                  html_row_body_container: [ "section", "article.row nfl" ],
                   class_section: "uitabletext_table",
                   class_value_error: "error_value",
                   class_error: ""            // error i cell value
@@ -651,7 +660,7 @@ SAMPLE
 
    <script>
       var aData = [
-         [ "Sport", "Entry $", "Entries", "Max", "Time", "Description" ],
+         [ "Sport", "Entry $", "# Entries", "Max", "Time", "Description" ],
          [ "NFL", 50, 12, 48, 2, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],
          [ "NFL", 5, 45, 100, 3, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],
          [ "NFL", 50, 12, 48, 12, "This 1665-player contest boasts a $300,000.00 prize pool and pays out the top 300 finishing positions. First place wins $100,000.00. Good luck!" ],

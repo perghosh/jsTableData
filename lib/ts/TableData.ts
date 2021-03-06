@@ -655,6 +655,20 @@ export class CTableData {
    }
 
    /**
+    * Update matching index for objects that uses table data based on property values that marks columns as hidden or disabled
+    */
+   COLUMNUpdatePositionIndex() {
+      let iIndex = 0;
+      this.m_aColumn.forEach((c,i) => { 
+         if( c.position.hide ) c.position.index = -1;
+         else {
+            c.position.index = iIndex;
+            iIndex++;
+         }
+      });
+   }
+
+   /**
     * Count columns and return how many.
     * This can also count column with properties, like how many key columns there are.
     * The property sent is name for object property that is investigated. Some properties have child object so the syntax for finding a key is
@@ -1707,7 +1721,7 @@ export class CTableData {
                aRow.push( [ [position.row, 1, null], [position.index] ] );
             }
          }
-         else if(position.hide !== true) {
+         else if(!position.hide) {
             aRow[0][1].push( position.index );                                 // aRow[0] always has the main row
          }
       });
@@ -1758,10 +1772,14 @@ export class CRowRows {
    /**
     * Return column indexes for row, these are relative positioned indexes from CTableData and should
     * match position for component that uses it
-    * @param {number} iIndex index for row.
+    * @param {number} [iIndex] index for row. if row isn't specified then return columns for row 0 which is the main row.
     */
-   GetRowColumns(iIndex: number): number[] {
-      return this.m_aRows[iIndex][1];
+   GetRowColumns(iIndex?: number): number[] {
+      if( typeof iIndex === "number" ) return this.m_aRows[iIndex][1];
+      for(let i = 0; i < this.m_aRows.length; i++) {
+         if( this.m_aRows[i][0][1] === 0 ) return this.m_aRows[i][1];
+      }                                                                        console.assert(false,"columns not found in CRowRows, check code");
+      return null;
    }
 
    /**

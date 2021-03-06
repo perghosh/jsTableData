@@ -133,9 +133,10 @@ export class CUITableText implements IUITableData {
    m_aOrder: [ number | string, number ][];// Order for result, if external order than pic order from  data table
    m_eParent: HTMLElement;    // parent element in DOM that owns component
    m_aRowBody: unknown[][];   // values show in table
-   m_aRowPhysicalIndex: number[];// array with numbers for row index in table data object. This is to point the physical position for data
    m_iRowCount: number;       // Number of rows shown
    m_iRowCountMax: number;    // Max number of rows shown
+   m_aRowPhysicalIndex: number[];// array with numbers for row index in table data object. This is to point the physical position for data
+   m_oRowRows: CRowRows;      // CRowRows is used to manage the layout for each row i CTableData
    m_aSelected: [ number, number ][]; // Cell that are  selected, [row, column]
    //m_oSettings: { layout?: string };// Various settings for table text
    m_iState: number;          // Holds internal state for UI table.
@@ -399,20 +400,16 @@ export class CUITableText implements IUITableData {
 
       let e: Element;
 
-/*
-      let e = eRow.previousElementSibling;
-      while(e) {
-         iR++;
-         e = e.previousElementSibling;
-      }
-*/      
 
       //let iR = (eRow.dataset.row) ? parseInt(eRow.dataset.row, 10) : 0;
       let iC: number = 0;
-      e = eCell.previousElementSibling;
-      while(e) {
-         iC++;
-         e = e.previousElementSibling;
+      if( eCell.dataset.c ) iC = parseInt( eCell.dataset.c, 10 );
+      else {
+         e = eCell.previousElementSibling;
+         while(e) {
+            iC++;
+            e = e.previousElementSibling;
+         }
       }
 
       e = this.ELEMENTGetSection(eRow);
@@ -608,14 +605,14 @@ export class CUITableText implements IUITableData {
       // return alias and name properties from table data, used for header to column
       if(typeof sSection === "string") {
          if(sSection === "body") {
-            this.render_body(true);
+            this.render_body_restore();
          }
 
          return;
       }
 
       let aHeader = <[ string | number, unknown ][]>this.data.COLUMNGetPropertyValue(true, [ "alias", "name" ], (column) => {
-         if(column.position.hide === 1) return false;
+         if(column.position.hide) return false;
          return true;
       });
 
@@ -634,8 +631,21 @@ export class CUITableText implements IUITableData {
          this.m_aColumnFormat.push( aF[1] );
       });
 
+      this.m_oRowRows = this.data.GetRowRows();
+
+
 
       this.m_iColumnCount = aHeader.length;                                    // Set total column count
+
+      const oRowRows = this.m_oRowRows;
+      let aHeaderColumns = oRowRows.GetRowColumns();
+      let a = [];
+      for(let i = 0; i < aHeaderColumns.length; i++) {
+         a.push( aHeader[ aHeaderColumns[i] ] );
+      }
+      aHeader = a;
+
+
       this.render_header(<[ number, [ string, string ] ][]>aHeader);
 
       let o: { [key: string]: string|number } = {};
@@ -951,7 +961,7 @@ export class CUITableText implements IUITableData {
     * @param  {string|HTMLElement} _Section section row is looked for
     * @return {HTMLElement}                 row element for specified row if found
     */
-   ELEMENTGetRow(iRow: number, _Section?: string|HTMLElement): HTMLElement {
+   ELEMENTGetRow(iRow: number, _Section?: string|HTMLElement): HTMLElement | [HTMLElement,NodeList] {
       _Section = _Section || "body";
       let eSection = typeof _Section === "string"? this.GetSection(_Section) : _Section;
       let i = iRow;
@@ -964,7 +974,7 @@ export class CUITableText implements IUITableData {
       }
 
       if( (<HTMLElement>eRow).dataset.type !== "row" ) {
-         eRow = eRow.querySelector('[data-type="row"]');
+         return [<HTMLElement>eRow, eRow.querySelectorAll('[data-type="row"]')];
       }
 
       return <HTMLElement>eRow;
@@ -992,14 +1002,27 @@ export class CUITableText implements IUITableData {
 
 
       let eSection = this.GetSection(sSection);
-      let eCell = this.ELEMENTGetRow( iRow, eSection );
-      if(eCell) {
-         eCell = <HTMLElement>eCell.firstElementChild;
+      let _Cell = this.ELEMENTGetRow( iRow, eSection );
+      if( Array.isArray( _Cell ) === false ) {
+         _Cell = <HTMLElement>(<HTMLElement>_Cell).firstElementChild;
          let i = iColumn;
-         while(--i >= 0 && eCell) eCell = <HTMLElement>eCell.nextElementSibling;
+         while(--i >= 0 && _Cell) _Cell = <HTMLElement>(<HTMLElement>_Cell).nextElementSibling;
+         return <HTMLElement>_Cell;
       }
 
-      return <HTMLElement>eCell;
+      // Find row where cell is found
+      const aRow = _Cell[1];
+      let i = aRow.length;
+      const  sCIndex = "C" + iColumn + ",";
+      while( --i >= 0 ) {
+         const sColumns = aRow[i].dataset.c;
+         if( sColumns && sColumns.indexOf( sCIndex ) !== -1  ) {               // found row where column is?
+            _Cell = aRow[i].querySelector('[data-c="'+iColumn+'"]');
+            return <HTMLElement>_Cell;
+         }
+      }
+                                                            console.assert(false, "You are trying to reach a cell [row: "+iRow+", col:"+iColumn+"] that do not exist in row.")
+      return null;
    }
 
    /**
@@ -1174,12 +1197,18 @@ export class CUITableText implements IUITableData {
     * @param aHeader
     */
    render_header(aHeader: [ number, [ string, string ] ][]): HTMLElement {
-      let eSection = this.create_header(aHeader);
+      let eSection = this.GetSection("header", true);
+      if( !eSection ) return null;
+
+      this.create_header(aHeader);
       if( !eSection ) return null;
 
       let bCall = this._has_render_callback( "askHeaderValue", "header" );
 
       let eRow = <HTMLElement>eSection.firstElementChild;
+      if( eRow.dataset.type !== "row" ) {
+         eRow = eRow.querySelector('[data-type="row"]');    console.assert( eRow !== null, "No row element for header cells." ); 
+      }
       let eSpan: HTMLElement = <HTMLElement>eRow.firstElementChild;
       const iCount = aHeader.length;
       for( let i = 0; i < iCount; i++ ) {
@@ -1206,6 +1235,7 @@ export class CUITableText implements IUITableData {
       return eSection;
    }
 
+
    /**
     * Render body, body is where values from table are shown
     * @param {[ unknown[][], number[] ]} aResult Result is a two array values in array. First is 
@@ -1216,35 +1246,9 @@ export class CUITableText implements IUITableData {
    render_body(_1: any, eSection?: HTMLElement ) {
       eSection = eSection || this.GetSection("body");
       let aResult: [ unknown[][], number[] ];
-      let sClass: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_value") || "";
+      //let sClass: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_value") || "";
       let aStyle = <unknown[]>this.data.COLUMNGetPropertyValue(this.m_aColumnPhysicalIndex, "style"); // position data for columns
       const bSetValue = this.is_state( enumState.SetValue );                    // If try to set value for html element, when you have INPUT elements in column.
-
-      if(typeof _1 === "boolean") {
-         let _Selected: string | string[] = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_cell_input") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_selected");let sClassSelected: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_cell_input") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_selected");
-         if( _Selected ) _Selected = _Selected.split(" ");
-         else return;
-         let eSection = this.GetSection("body", true);
-         if( eSection === null ) return;
-         let eRow = <HTMLElement>eSection.firstElementChild;
-         while(eRow) {
-            let eColumn: HTMLElement = <HTMLElement>eRow.firstElementChild;
-            while(eColumn) {
-               let e = this.ELEMENTGetCellValue(eColumn);
-               _Selected.forEach(s => { e.classList.remove(s); });
-
-               eColumn = <HTMLElement>eColumn.nextElementSibling;
-            }
-
-            eRow = <HTMLElement>eRow.nextElementSibling;
-         }
-
-         this.render_selected();
-         if(this.m_aValueError.length) this.render_value_error();
-         if(this.m_aInput) this.render_input();
-
-         return;
-      }
 
       if( Array.isArray( _1 ) ) {
          aResult = <[ unknown[][], number[] ]>_1;
@@ -1257,10 +1261,80 @@ export class CUITableText implements IUITableData {
       let bCall = this._has_render_callback( "askCellValue", "body" );
 
       let eRow = <HTMLElement>eSection.firstElementChild;
+      if( eRow === null ) return;
+      if(eRow.dataset.record !== "1") {
+         while( (eRow = <HTMLElement>eRow.nextElementSibling) !== null && (<HTMLElement>eRow).dataset.record !== "1" ); console.assert(eRow !== null, "No rows to render body")
+      }
+
+      const oRowRows = this.m_oRowRows;
 
       this.m_aRowBody.forEach((aRow, iIndex: number) => {
          let iRow = this.m_aRowPhysicalIndex[ iIndex ], s, o;
-         let eR = eRow;
+         let eR = eRow;                                    // eRow is the main row, but row could hold many child rows with values
+         eR.dataset.row = iRow.toString();
+         for(let iR = 0; iR < oRowRows.length; iR++ ) {
+
+            if(eR.dataset.type !== "row") {
+               eR = eR.querySelector('[data-i="' + iR.toString() + '"]'); console.assert(eR !== null, "No row element for column cells.");
+            }
+            else { // rows is not places in a container, just go to next or previous row to get rows for record
+               const iRowElement = parseInt(eR.dataset.i, 10);
+               if(iRowElement !== iR) {                                        // are we not at the same row as current row in CRowRows ?
+                  if(iR < iRowElement) {                                       // do we have rows inserted before main record row ?  (iRowElement for record is then over 0)
+                     while((eR = <HTMLElement>eR.previousElementSibling) !== null && (<HTMLElement>eR).dataset.i !== iR.toString());
+                  }
+                  else {
+                     while((eR = <HTMLElement>eR.nextElementSibling) !== null && (<HTMLElement>eR).dataset.i !== iR.toString());
+                  }
+               }
+            }
+
+            const aColumn = oRowRows.GetRowColumns( iR );
+            let eColumn: HTMLElement = <HTMLElement>eR.firstElementChild;
+            const iTo = aColumn.length;
+            for(let i = 0; i < iTo; i++) {
+            //aColumn.forEach(iC => { 
+               const iC = aColumn[i];
+               let e = this.ELEMENTGetCellValue(eColumn);                   // get cell value element
+               let sValue = aRow[ iC ];
+               const oColumn = this.data.COLUMNGet( this._column_in_data( i ) );
+
+               if( bCall ) { 
+                  let bRender = true;
+                  for(let j = 0; j < this.m_acallRender.length; j++) {
+                     let b = this.m_acallRender[j].call(this, "beforeCellValue", sValue, eColumn, oColumn );
+                     if( b === false ) bRender = false;
+                  }
+                  if( bRender === false ) continue;
+               }
+
+               if(Object.keys(aStyle[ iC ][1]).length > 0) Object.assign(e.style, aStyle[ iC ][1]);
+
+               if( bSetValue === false ) {
+                  if(sValue !== null && sValue != void 0) e.innerText = sValue.toString();
+                  else if( e.hasAttribute("value") === false ) e.innerText = " ";
+               }
+               else {
+                  if(sValue !== null && sValue != void 0) {
+                     if("value" in e) { (<HTMLElement>e).setAttribute("value", sValue.toString()); }
+                     else e.innerText = sValue.toString();
+                  }
+                  else if( e.hasAttribute("value") === false ) e.innerText = " ";
+               }
+
+               if(bCall) this.m_acallRender.forEach((call) => { call.call(this, "afterCellValue", sValue, eColumn, oColumn); });
+
+               eColumn = <HTMLElement>eColumn.nextElementSibling;
+            }
+         } 
+
+         while( (eRow = <HTMLElement>eRow.nextElementSibling) !== null && (<HTMLElement>eRow).dataset.record !== "1" ); // go to next sibling root row
+      });
+
+      /*
+      this.m_aRowBody.forEach((aRow, iIndex: number) => {
+         let iRow = this.m_aRowPhysicalIndex[ iIndex ], s, o;
+         let eR = eRow;                                    // eRow is the main row, but row could hold many child rows with values
          eR.dataset.row = iRow.toString();
          if( eR.dataset.type !== "row" ) {
             eR = eR.querySelector('[data-type="row"]');     console.assert( eR !== null, "No row element for column cells." ); 
@@ -1301,11 +1375,63 @@ export class CUITableText implements IUITableData {
             }
 
          }
-         //eRow = <HTMLElement>eRow.nextElementSibling;
-         while( (eRow = <HTMLElement>eRow.nextElementSibling) !== null && (<HTMLElement>eRow).dataset.record !== "1" );
-      })
+         while( (eRow = <HTMLElement>eRow.nextElementSibling) !== null && (<HTMLElement>eRow).dataset.record !== "1" ); // go to next sibling root row
+      });
+      */
       return eSection;
    }
+
+   /**
+    * Restore states for each cell in body.
+    * If there are changes to cells in body. new cells are selected, there are errors etc. Classes that marks
+    * the state for each cell needs to be updated. This method do not change any value in cell but restore
+    * cell states to display active state for each cell.
+    */
+   render_body_restore() {
+      //let _Selected: string | string[] = 
+      let aClass: string[] = [];
+      let a = <string | string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "class_cell_input") 
+      if( a ) {
+         if( typeof a === "string" ) aClass.push( a );
+         else aClass.push(...a);
+      }
+
+      a = <string | string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "class_selected") 
+      if( a ) {
+         if( typeof a === "string" ) aClass.push( a );
+         else aClass.push(...a);
+      }
+
+      let eSection = this.GetSection("body", true);
+      if( eSection === null ) return;
+      let eRow = <HTMLElement>eSection.firstElementChild;
+      
+      while(eRow && (<HTMLElement>eRow).dataset.record === "1") {
+         let aRow = [eRow];
+         if( eRow.dataset.type !== "row" ) {
+            aRow = <HTMLElement[]><unknown>eRow.querySelectorAll('[data-type="row"]');  
+         }
+
+         aRow.forEach( eR => {
+            let eColumn: HTMLElement = <HTMLElement>eR.firstElementChild;
+            while(eColumn) {
+               let e = this.ELEMENTGetCellValue(eColumn);
+               aClass.forEach(s => { e.classList.remove(s); });
+
+               eColumn = <HTMLElement>eColumn.nextElementSibling;
+            }
+         });
+
+         eRow = <HTMLElement>eRow.nextElementSibling;
+      }
+
+      this.render_selected();
+      if(this.m_aValueError.length) this.render_value_error();
+      if(this.m_aInput) this.render_input();
+
+      return;
+   }
+
 
    /**
     * Render value in cell. Cell value is taken from table data
@@ -1334,6 +1460,10 @@ export class CUITableText implements IUITableData {
       }
    }
 
+   /**
+    * Render selected cell or cells
+    * @param {[number,number][]} [aSelected] Cells to select or if not specified then internal selected cell if any is rendered as selected.
+    */
    render_selected(aSelected?: [number,number][]) {
       aSelected = aSelected || this.selected;
       if(aSelected.length === 0) return;
@@ -1482,7 +1612,7 @@ export class CUITableText implements IUITableData {
                }
                else eSink = <HTMLElement>e.currentTarget;
 
-               while(eSink && eSink.tagName !== "SECTION" && eSink.dataset.widget !== CUITableText.s_sWidgetName) eSink = eSink.parentElement;
+               while(eSink && eSink.dataset.section === undefined && eSink.dataset.widget !== CUITableText.s_sWidgetName) eSink = eSink.parentElement;
                if(!eSink) return;
 
                self._on_action("keydown", e, eSink.dataset.section);
@@ -1497,7 +1627,7 @@ export class CUITableText implements IUITableData {
                }
 
                let eSink: HTMLElement = <HTMLElement>e.currentTarget;
-               while(eSink && eSink.tagName !== "SECTION" && eSink.dataset.widget !== CUITableText.s_sWidgetName) eSink = eSink.parentElement;
+               while(eSink && eSink.dataset.section === undefined && eSink.dataset.widget !== CUITableText.s_sWidgetName) eSink = eSink.parentElement;
                if(!eSink) return;
 
                self._on_action("focus", e, eSink.dataset.section);
@@ -1505,7 +1635,7 @@ export class CUITableText implements IUITableData {
 
             eSection.addEventListener("focusout", (e: FocusEvent) => {
                let eSink: HTMLElement = <HTMLElement>e.currentTarget;
-               while(eSink && eSink.tagName !== "SECTION" && eSink.dataset.widget !== CUITableText.s_sWidgetName) eSink = eSink.parentElement;
+               while(eSink && eSink.dataset.section === undefined && eSink.dataset.widget !== CUITableText.s_sWidgetName) eSink = eSink.parentElement;
                if(!eSink) return;
 
                self._on_action("focusout", e, eSink.dataset.section);
@@ -1514,7 +1644,7 @@ export class CUITableText implements IUITableData {
             // configure event listeners
             eSection.addEventListener("dblclick", (e: MouseEvent) => {
                let eSink: HTMLElement = <HTMLElement>e.currentTarget;
-               while(eSink && eSink.tagName !== "SECTION" && eSink.dataset.widget !== CUITableText.s_sWidgetName) eSink = eSink.parentElement;
+               while(eSink && eSink.dataset.section === undefined && eSink.dataset.widget !== CUITableText.s_sWidgetName) eSink = eSink.parentElement;
                if(!eSink) return;
 
                self._on_action("dblclick", e, eSink.dataset.section);
@@ -1562,17 +1692,11 @@ export class CUITableText implements IUITableData {
       }
       
       let aRow = this._create_row( _HtmlRow );
-      //let iDiv = iCount;
       aHeader.forEach((a, i) => {
          let eSpan = document.createElement(sHtml);
-
          eSpan.style.cssText = sStyle;
          if(sClass) eSpan.className = sClass;
-
          aRow[1].appendChild(eSpan);
-
-         //eRow.appendChild(eSpan);
-         //if(eSpan) eRow.appendChild(eSpan);
       });
 
       eSection.appendChild(aRow[0]);
@@ -1607,15 +1731,14 @@ export class CUITableText implements IUITableData {
          if(a.length > 1) [ sHtmlCell, sClass ] = a;                           // element for value, this can be element name and class if format is in "element_name.class_names" like "span.value".
       }
 
-      let aRowColumn: number[];
-
       let set_row_attr = (eRow: HTMLElement, iRow: number, aColumn: number[], sCell: string, sValue: string, sStyle: string, sClass: string ) => {
          eRow.dataset.r = iRow.toString();
          eRow.dataset.c = "C" + aColumn.join(",C") + ",";
 
          aColumn.forEach(i => { 
             let e = document.createElement(sHtmlCell);
-            const oFormat = this.m_aColumnFormat[ i ];
+            e.dataset.c = i.toString();
+            const oFormat = this.m_aColumnFormat[i];
             if( typeof oFormat.html === "string" ) e.innerHTML = oFormat.html;
             else if( sHtmlValue ) e.innerHTML = sHtmlValue;
             if(sStyle) e.style.cssText = sStyle;
@@ -1625,7 +1748,7 @@ export class CUITableText implements IUITableData {
 
 
       // ## oRowRows is a temporary CRowRows object used to make it easier to create the markup tree for row in browser
-      const oRowRows = this.data.GetRowRows();                                 // get temporary CRowRows object, do not store this. Works only as CTableData isn't modified
+      const oRowRows = this.m_oRowRows || this.data.GetRowRows();              // get temporary CRowRows object, do not store this. Works only as CTableData isn't modified
 
       let eFragment = document.createDocumentFragment();                       // fragment used to collect markup that is added to table, markup is cloned into page
       let eContainer: HTMLElement | DocumentFragment;
@@ -1638,12 +1761,6 @@ export class CUITableText implements IUITableData {
       }
       else { eContainer = eFragment; }                                         // rows without container, set container to fragment
 
-
-
-      //let aColumns = aBody[ 0 ];                                             // first row
-      //let eRow = document.createElement(sHtmlRow);
-      //eRow.dataset.type = "row";                                             // "row" for body
-
       let iLevelIndex = 0;
       const aRowLevel = oRowRows.GetRowLevel();
 
@@ -1651,17 +1768,20 @@ export class CUITableText implements IUITableData {
          let aRow = this._create_row( _HtmlBefore );
          oRowRows.SetRowElement( iLevelIndex, aRow[1] );
          set_row_attr( aRow[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), sHtmlCell, sHtmlValue, sStyle, sClass );
+         aRow[1].dataset.i = iLevelIndex.toString();
          iLevelIndex++;
       }
 
-      oRowRows.SetRowElement( iLevelIndex, aRowMain[1] );                      // main row
+      oRowRows.SetRowElement( iLevelIndex, aRowMain[1] );                       // main row
       set_row_attr( aRowMain[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), sHtmlCell, sHtmlValue, sStyle, sClass );
+      aRowMain[1].dataset.i = iLevelIndex.toString();
       iLevelIndex++;
 
-      if(aRowLevel[ iLevelIndex ] > 0) {                                       // rows after main row
+      if(aRowLevel[ iLevelIndex ] > 0) {                                        // rows after main row
          let aRow = this._create_row( _HtmlAfter );
          oRowRows.SetRowElement( iLevelIndex, aRow[1] );
          set_row_attr( aRow[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), sHtmlCell, sHtmlValue, sStyle, sClass );
+         aRow[1].dataset.i = iLevelIndex.toString();
          iLevelIndex++;
       }
 
@@ -1680,50 +1800,7 @@ export class CUITableText implements IUITableData {
       // Create rows by cloning them into body
       for( let i = 0; i < this.m_iRowCount; i++) {
          eSection.appendChild( eFragment.cloneNode(true) );
-
-
-/*
-         for( let j = 0; j < aRows.length; j++ ) {
-            eSection.appendChild(aRows[j][1].cloneNode(true));   
-         }
-         */
       }
-
-      /*
-      let aColumn = oRowRows.GetRowColumns( oRowRows.GetRowIndex() );
-      aColumn.forEach(iIndex => { 
-         let eSpan = document.createElement(sHtmlCell);
-         if( sHtmlValue ) eSpan.innerHTML = sHtmlValue;
-         if(sStyle) eSpan.style.cssText = sStyle;
-         if(sClass) eSpan.className = sClass;
-         aRow[1].appendChild(eSpan);
-      });
-
-
-
-      let aRows: [HTMLElement, HTMLElement][] = [ aRow ];                      // rows for each record. One recod could have column values in many rows, thats why rows are placed in array
-      for( let i = 0; i < aColumns.length; i++ ) {
-         const oPosition = this.m_aColumnPosition[i];
-         if( oPosition.row ) { // place on another row?
-            //this._create_row_extra( _HtmlExtraRow, oPosition, aRows );
-            //aRows.push( this._create_row_extra( _HtmlRow, oPosition,  ) );
-         }
-         else {
-            let eSpan = document.createElement(sHtmlCell);
-            if( sHtmlValue ) eSpan.innerHTML = sHtmlValue;
-            if(sStyle) eSpan.style.cssText = sStyle;
-            if(sClass) eSpan.className = sClass;
-            aRow[1].appendChild(eSpan);
-         }
-      }
-
-      // create rows for each value
-      for( let i = 0; i < this.m_iRowCount; i++) {
-         for( let j = 0; j < aRows.length; j++ ) {
-            eSection.appendChild(aRows[j][1].cloneNode(true));   
-         }
-      }
-      */
 
       return eSection;
    }
@@ -1957,7 +2034,7 @@ export class CUITableText implements IUITableData {
                   this.GetSection("body").focus({preventScroll: true});        // Set focus to body, closing edit elements will make it loose focus
                }
                this.INPUTMove(eMove, true);
-               this.INPUTActivate();
+               //this.INPUTActivate();   NOTE: acitvate or not activate edit on move keys?                   
             }
             else if(this.m_oEdits && (<KeyboardEvent>e).keyCode >= 32) {       // space and above
                let oEdit = this.m_oEdits.GetEdit(this._column_in_data(this.m_aInput[1]));// Get edit for column (second value in input array)

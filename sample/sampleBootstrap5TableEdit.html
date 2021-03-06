@@ -184,6 +184,7 @@
          window.iEventCount = 0;
          window.TDEventList = new CTableData();
          TDEventList.COLUMNAppend(["Number","Event","Section"]);
+         TDEventList.COLUMNSetPropertyValue(true, "position.index", [0, 1, 2] );
          TDEventList.COLUMNSetPropertyValue(true, "alias", ["Number", "Name", "Section"] );
          TDEventList.COLUMNSetPropertyValue( 0, "state.sort", -1 );  // sort on number in descending order
          TDEventList.COLUMNSetType( 0, 0 );  // sort on number in descending order
