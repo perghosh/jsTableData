@@ -978,8 +978,10 @@ export class CTableData {
     */
    COLUMNSetType(aType: unknown[]);
    COLUMNSetType(iIndex: number, _Type: unknown|details.type);
+   COLUMNSetType(sName: string, _Type: unknown|details.type);
    COLUMNSetType(_1: any, _2?: any) {
-      if( typeof _1 === "number" ) _1 = [_1, _2];
+      if( typeof _1 === "number" ) _1 = [[this._index(_1), _2]];
+      else if( typeof _1 === "string" ) _1 = [[this._index(_1), _2]];
       else if(_2 !== undefined && Array.isArray(_1)) {
          let a: any = [];
          _1.forEach((iColumn) => { 
@@ -997,8 +999,13 @@ export class CTableData {
 
          let oColumn = this.COLUMNGet(iColumn);
          if( oColumn ) {
-            const s = typeof v;
-            if(s !== "object") {
+            const s = typeof v;                                                // parameter type
+            if( s === "string" ) {                                             // set column type with javascript type name
+               oColumn.type.group = <string>v;
+               oColumn.type.type = <number>CTableData.GetJSType(<string>v);
+               if(v === "number") oColumn.style.textAlign = "right";
+            }
+            else if(s !== "object") {
                oColumn.type.group = s;
                oColumn.type.type = <number>CTableData.GetJSType(s);
                if(s === "number") oColumn.style.textAlign = "right";

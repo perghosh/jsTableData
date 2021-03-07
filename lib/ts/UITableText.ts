@@ -1097,7 +1097,25 @@ export class CUITableText implements IUITableData {
          return;
       }
 
-      this.m_aInput = [_1, iC, this.ELEMENTGetCell(_1, iC), this._row_in_data(_1), this._column_in_data(iC) ];
+      const a: [ number, number, HTMLElement, number, number ] = [_1, iC, this.ELEMENTGetCell(_1, iC), this._row_in_data(_1), this._column_in_data(iC) ];
+
+      let oTD: EventDataTable;
+      const oTrigger = this.trigger;                                           // Get trigger object with trigger logic
+      if( oTrigger ) { 
+         oTD = this._get_triggerdata();
+         oTD.eElement = a[2];
+         oTD.iEvent = enumTrigger.BeforeSelect;
+         oTD.information = a;
+         const bOk = oTrigger.Trigger( enumTrigger.BeforeSelect, oTD, a ); 
+         if( bOk === false ) return;
+      }
+
+      this.m_aInput = a;
+
+      if( oTrigger ) { 
+         oTD.iEvent = enumTrigger.AfterSelect;
+         oTrigger.Trigger( enumTrigger.AfterSelect, oTD, a ); 
+      }
    }
 
    INPUTMove(e: enumMove, bRender?: boolean) {
@@ -1126,7 +1144,7 @@ export class CUITableText implements IUITableData {
 
       //let eElement = this.ELEMENTGetCell(iR,iC);
       //this.m_aInput = [ iR, iC, eElement ];
-      this.INPUTSet( iR, iC );
+      if( e !== enumMove.validate ) this.INPUTSet( iR, iC );
 
       if(bRender === true) this.Render("body");
    }
@@ -2111,6 +2129,11 @@ export class CUITableText implements IUITableData {
          if(this.m_aColumnPhysicalIndex[ i ] === iIndex) return i;
       }
       return -1;
+   }
+
+   private _get_triggerdata(): EventDataTable {
+      let o: EventDataTable = { dataUI: this, data: this.data };
+      return o;
    }
 
    private _set_selected(aSelect: [ number, number ][], bAdd: boolean): void {

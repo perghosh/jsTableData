@@ -46,13 +46,20 @@ body {
 </head>
 <body>
 
-   <div  style="display: grid; height: 800px; place-items: center; overflow: auto; resize: both; width: 800px; background-color: var(--gd-info);">
+   <div style="position: relative;">
+      <div style="max-width: 80px; position: absolute; top: 0px; right: 0px; opacity: 0.5;">
+         <a href="https://github.com/perghosh/jsTableData" class="uk-navbar-item uk-logo" style="display: block; vertical-align: middle;">
+            <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin:  10px; height: 60px;"><title>GitHub repository</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg>
+         </a>
+      </div>
+   </div>
+   <div style="display: grid; height: 800px; place-items: center; overflow: auto; resize: both; width: 800px; background-color: var(--gd-info);">
       <div id="idLoginContainer" style="height: 300px; width: 500px;"></div>
    </div>
 
-<!--
- | Page logic for login
--->
+   <!--
+    | Page logic for login
+   -->
    <script>
       function PAGE_Setup() {
          window.global = {};
@@ -73,37 +80,38 @@ body {
 
          // convigure input fields and set type of input controls
          TDLogin.COLUMNSetPropertyValue([ 0, 1, 3, 4, 5, 6 ], "edit.edit", true);
-         TDLogin.COLUMNSetPropertyValue( 0, "edit.name", "string");
-         TDLogin.COLUMNSetPropertyValue( 1, "edit.name", "password");
-         TDLogin.COLUMNSetPropertyValue( 3, "edit.name", "checkbox");
-         TDLogin.COLUMNSetPropertyValue( 4, "edit.name", "select");
-         TDLogin.COLUMNSetPropertyValue( 5, "edit.name", "text");
-         TDLogin.COLUMNSetPropertyValue( 6, "edit.name", "range");
+         TDLogin.COLUMNSetPropertyValue(0, "edit.name", "string");
+         TDLogin.COLUMNSetPropertyValue(1, "edit.name", "password");
+         TDLogin.COLUMNSetPropertyValue(3, "edit.name", "checkbox");
+         TDLogin.COLUMNSetPropertyValue(4, "edit.name", "select");
+         TDLogin.COLUMNSetPropertyValue(5, "edit.name", "text");
+         TDLogin.COLUMNSetPropertyValue(6, "edit.name", "range");
 
-         TDLogin.COLUMNSetPropertyValue( 2 , "position.hide", 1);
+         TDLogin.COLUMNSetPropertyValue(2, "position.hide", 1);
 
-         TDLogin.COLUMNSetPropertyValue( 0 , "alias", "User name");
-         TDLogin.COLUMNSetPropertyValue( 1 , "alias", "Password");
-         TDLogin.COLUMNSetPropertyValue( 3 , "alias", "Guest");
-         TDLogin.COLUMNSetPropertyValue( "country", "alias", "Country");
-         TDLogin.COLUMNSetPropertyValue( "comment", "alias", "Comment");
-         TDLogin.COLUMNSetPropertyValue( "age", "alias", "Age");
-         TDLogin.COLUMNSetPropertyValue( "comment", "style", { minHeight: "6em", overflowX: "auto" });
+         TDLogin.COLUMNSetPropertyValue(0, "alias", "User name");
+         TDLogin.COLUMNSetPropertyValue(1, "alias", "Password");
+         TDLogin.COLUMNSetPropertyValue(3, "alias", "Guest");
+         TDLogin.COLUMNSetPropertyValue("country", "alias", "Country");
+         TDLogin.COLUMNSetPropertyValue("comment", "alias", "Comment");
+         TDLogin.COLUMNSetPropertyValue("age", "alias", "Age");
+         TDLogin.COLUMNSetPropertyValue("comment", "style", { minHeight: "6em", overflowX: "auto" });
 
-         TDLogin.COLUMNSetPropertyValue( "name", "format.min", 3 );
-         TDLogin.COLUMNSetPropertyValue( "password", "format.min", 8 );
-         TDLogin.COLUMNSetPropertyValue( "password", "format.convert", (v, aCell) => {
+         TDLogin.COLUMNSetPropertyValue("name", "format.min", 3);
+         TDLogin.COLUMNSetPropertyValue("password", "format.min", 8);
+         TDLogin.COLUMNSetPropertyValue("password", "format.convert", (v, aCell) => {
             v = v || "";
-            let s = (new Array(v.length + 1)).join( "x" );
+            let s = (new Array(v.length + 1)).join("x");
             return s;
          });
 
-         TDLogin.COLUMNSetPropertyValue( ["name", "password"], "format.required", true );
+         TDLogin.COLUMNSetPropertyValue([ "name", "password" ], "format.required", true);
 
-         TDLogin.COLUMNSetPropertyValue("country", "list", [ [ 1, "Sweden" ], [ 2, "Norway" ], [ 3, "Finland" ], [ 4, "Denmark" ], [ 1, "Iceland" ] ] );
+         TDLogin.COLUMNSetPropertyValue("country", "list", [ [ 1, "Sweden" ], [ 2, "Norway" ], [ 3, "Finland" ], [ 4, "Denmark" ], [ 1, "Iceland" ] ]);
 
-         TDLogin.COLUMNSetPropertyValue( "age", "format.min", 10 );
-         TDLogin.COLUMNSetPropertyValue( "age", "format.max", 110 );
+         TDLogin.COLUMNSetType("age", "number");
+         TDLogin.COLUMNSetPropertyValue("age", "format.min", 10);
+         TDLogin.COLUMNSetPropertyValue("age", "format.max", 110);
 
          TDLogin.COLUMNUpdatePositionIndex();
 
@@ -112,15 +120,15 @@ body {
          let oStyle = {
             class_section: "uitabletext_login", class_value_error: "error_value",
             html_value: `
-<div style='border-bottom: 1px dotted var(--gd-white); border-left: 1px dotted var(--gd-white); padding: 0.5em 1em;'>            
-   <div style='display: flex; align-items: stretch;'>
-      <span data-label='1' style='padding: 0px 1em 0px 0px; text-align: right; width: 75px;'></span>
-      <span data-value='1' style='flex-grow: 1; padding: 0px 2px; box-sizing: border-box;'></span>
-   </div>
-   <div data-description='1'></div>
-   <div class='error-message' data-error='1' style="display: none; margin-left: 120px; text-align:right;"></div>
-</div>   
-`   
+<div style='border-bottom: 1px dotted var(--gd-white); border-left: 1px dotted var(--gd-white); padding: 0.5em 1em;'>
+      <div style='display: flex; align-items: stretch;'>
+         <span data-label='1' style='padding: 0px 1em 0px 0px; text-align: right; width: 75px;'></span>
+         <span data-value='1' style='flex-grow: 1; padding: 0px 2px; box-sizing: border-box;'></span>
+      </div>
+      <div data-description='1'></div>
+      <div class='error-message' data-error='1' style="display: none; margin-left: 120px; text-align:right;"></div>
+</div>
+`
          }
 
          let options = {
@@ -130,7 +138,7 @@ body {
             table: TDLogin,                                               // source data
             name: "login",                                                      // name to access UI table in CTableData
             edit: 1,                                                            // endable edit
-            callback_render: ( sType, _value, eElement, oColumn ) => {
+            callback_render: (sType, _value, eElement, oColumn) => {
                if(sType === "afterCellValue") {
                   let eLabel = eElement.querySelector("[data-label]");
                   eLabel.innerText = oColumn.alias;
@@ -142,11 +150,11 @@ body {
          TDLogin.UIAppend(TTLogin);
 
          TTLogin.Render();
-         LOGIN_PrepareSections( TTLogin );
+         LOGIN_PrepareSections(TTLogin);
          TTLogin.GetSection("body").focus();
       }
 
-      function LOGIN_PrepareSections( TTLogin ) {
+      function LOGIN_PrepareSections(TTLogin) {
          let eTitle = TTLogin.GetSection("title");
          eTitle.innerHTML = "<span>Login to system</span>";
 
@@ -157,49 +165,49 @@ body {
          eButton.addEventListener("click", (e) => {
             let TDLogin = window.global.TDLogin;
             let TTLogin = TDLogin.UIGet(0);
-            let eRow = TTLogin.ELEMENTGetRow( 0 );
+            let eRow = TTLogin.ELEMENTGetRow(0);
             let a = eRow.querySelectorAll(".error-message");
-            a.forEach((e)=>{ e.style.display = "none"; })
+            a.forEach((e) => { e.style.display = "none"; })
 
-            let aError = TTLogin.ERRORGetCount() ? TTLogin.ERRORGet() : TTLogin.ROWValidate( 0 );
-            if( Array.isArray( aError ) && TTLogin.ERRORGetCount() === 0 ) TTLogin.ERRORSet( aError );
+            let aError = TTLogin.ERRORGetCount() ? TTLogin.ERRORGet() : TTLogin.ROWValidate(0);
+            if(Array.isArray(aError) && TTLogin.ERRORGetCount() === 0) TTLogin.ERRORSet(aError);
 
-            if( Array.isArray( aError ) ) {
-               aError.forEach( (aError, iIndex) => {
-                  let eCell = TTLogin.ELEMENTGetCell( aError );
+            if(Array.isArray(aError)) {
+               aError.forEach((aError, iIndex) => {
+                  let eCell = TTLogin.ELEMENTGetCell(aError);
                   if(eCell) {
                      let eError = eCell.querySelector("[data-error]");
-                     eError.innerHTML = PAGE_GetErrorDescription( aError[3] );
+                     eError.innerHTML = PAGE_GetErrorDescription(aError[ 3 ]);
                      eError.style.display = "block";
                   }
                });
             }
          });
 
-      }      
+      }
 
-      function PAGE_GetErrorDescription( sError ) {
+      function PAGE_GetErrorDescription(sError) {
          let sDescription = "Unknown error";
-         if( sError === 'min' ) sDescription = "To few characters";
-         else if( sError === 'max' ) sDescription = "To many characters";
-         else if( sError === 'required' ) sDescription = "Value is required";
+         if(sError === 'min') sDescription = "To few characters";
+         else if(sError === 'max') sDescription = "To many characters";
+         else if(sError === 'required') sDescription = "Value is required";
          return sDescription;
       }
    </script>
 
 
-<!--
- | Init page
--->
+   <!--
+    | Init page
+   -->
    <script>
       document.addEventListener('DOMContentLoaded', function() {
          PAGE_Setup();
       });
    </script>
 
-<!--
- | Load needed components to manage login data  
--->
+   <!--
+    | Load needed components to manage login data
+   -->
    <script type="module">
       import { CTableData, browser } from "./../lib/TableData.js";
       import { edit } from "./../lib/TableDataEdit.js";
@@ -213,100 +221,100 @@ body {
       window.CTableDataTrigger = CTableDataTrigger;
    </script>
 
-<!--
- | Source data for login test page
--->
+   <!--
+    | Source data for login test page
+   -->
    <script>
       var aLogin = [
-         { 
+         {
             "name": null,
             "password": null,
             "hide_this": null,
             "guest": null,
-            "country": ["Finland", 3],
+            "country": [ "Finland", 3 ],
             "comment": null,
             "age": null
          }
       ];
 
-var sCSS = `
+      var sCSS = `
 .uitabletext_login input:invalid { border-color: red; }
 
-.uitabletext_login { 
-   color: var(--gd-white);
-   display: block; 
-   outline: none; 
-   width: 100%;   
+.uitabletext_login {
+      color: var(--gd-white);
+      display: block;
+      outline: none;
+      width: 100%;
 }
 
 .uitabletext_login.uitabletext-title {
-   box-sizing: border-box; 
-   text-align: right;
-   font-size: 24px;
-   margin-bottom: 0.1em;
-   padding: 0.1em 0.1em;
+      box-sizing: border-box;
+      text-align: right;
+      font-size: 24px;
+      margin-bottom: 0.1em;
+      padding: 0.1em 0.1em;
 }
 
-.uitabletext_login.uitabletext-title > span { 
-   border-top: 1px dotted var(--gd-white); 
-   border-right: 1px dotted var(--gd-white); 
-   padding: 1px 5px;
+.uitabletext_login.uitabletext-title > span {
+      border-top: 1px dotted var(--gd-white);
+      border-right: 1px dotted var(--gd-white);
+      padding: 1px 5px;
 }
 
 .uitabletext_login.uitabletext-statusbar {
-   box-sizing: border-box; 
-   text-align: right;
-   padding: 0.1em 0.1em;
+      box-sizing: border-box;
+      text-align: right;
+      padding: 0.1em 0.1em;
 }
 
 
-.uitabletext_login .selected { 
-   border: 1px solid var(--gd-gray-light); 
-   background-color: var(--gd-primary);
+.uitabletext_login .selected {
+      border: 1px solid var(--gd-gray-light);
+      background-color: var(--gd-primary);
 }
 
-.uitabletext_login .error-message { 
-   background-color: var(--gd-danger);
-   color: (--gd-white); 
-   font-style: italic;
-   font-family: var(--gd-font-monospace);
-   margin: 5px 0px;
-   padding: 0.1em 0.5em;
-   border-radius: 4px;
+.uitabletext_login .error-message {
+      background-color: var(--gd-danger);
+      color: (--gd-white);
+      font-style: italic;
+      font-family: var(--gd-font-monospace);
+      margin: 5px 0px;
+      padding: 0.1em 0.5em;
+      border-radius: 4px;
 }
 
 
-.uitabletext_login input { 
-   outline: none; 
+.uitabletext_login input {
+      outline: none;
 }
 
-.uitabletext_login .value:hover { 
-   background-color: var(--gd-blue);
+.uitabletext_login .value:hover {
+      background-color: var(--gd-blue);
 }
 
 
 .uitabletext_login button {
-   background-color: inherit;
-   border: 1px dotted var(--gd-white);
-   border-radius: 20px;
-   color: var(--gd-white);
-   cursor: pointer;
-   font-size: 20px;
-   outline: none;
-   padding: 0.3em 1em;
+      background-color: inherit;
+      border: 1px dotted var(--gd-white);
+      border-radius: 20px;
+      color: var(--gd-white);
+      cursor: pointer;
+      font-size: 20px;
+      outline: none;
+      padding: 0.3em 1em;
 }
 
 .uitabletext_login button:focus {
-   border: 1px solid var(--gd-white);
+      border: 1px solid var(--gd-white);
 }
 
-.uitabletext_login > div > span { 
-   box-sizing: border-box; 
-   display: inline-block; 
-   margin: 1px; padding: 1px 5px; 
-   overflow: hidden; 
-   white-space: nowrap; 
-   width: 100%;
+.uitabletext_login > div > span {
+      box-sizing: border-box;
+      display: inline-block;
+      margin: 1px; padding: 1px 5px;
+      overflow: hidden;
+      white-space: nowrap;
+      width: 100%;
 }
 `;
 

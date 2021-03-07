@@ -34,6 +34,8 @@ export const enum enumTrigger {
    BeforeValidateValue_,                                                       // Before value is validated
    BeforeSetValue_,
    AfterSetValue_,
+   BeforeSelect_,
+   AfterSelect_,
    BeforeSetRange_,
    AfterSetRange_,
    BeforeSetRow_,
@@ -72,6 +74,8 @@ export const enum enumTrigger {
    BeforeValidateValue  = TRIGGER_BEFORE + BeforeValidateValue_,
    BeforeSetValue       = TRIGGER_BEFORE + BeforeSetValue_,
    AfterSetValue        = TRIGGER_AFTER  + AfterSetValue_,
+   BeforeSelect         = TRIGGER_BEFORE + BeforeSelect_,
+   AfterSelect          = TRIGGER_AFTER  + AfterSelect_,
    BeforeSetRange       = TRIGGER_BEFORE + BeforeSetRange_,
    AfterSetRange        = TRIGGER_AFTER  + AfterSetRange_,
    BeforeSetRow         = TRIGGER_BEFORE + BeforeSetRow_,

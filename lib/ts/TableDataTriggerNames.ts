@@ -13,6 +13,8 @@ export function SetTriggerName() {
       [enumTrigger.BeforeValidateValue_,"BeforeValidateValue"],
       [enumTrigger.BeforeSetValue_,"BeforeSetValue"],
       [enumTrigger.AfterSetValue_,"AfterSetValue"],
+      [enumTrigger.BeforeSelect_,"BeforeSelect"],
+      [enumTrigger.AfterSelect_,"AfterSelect"],
       [enumTrigger.BeforeSetRange_,"BeforeSetRange"],
       [enumTrigger.AfterSetRange_,"AfterSetRange"],
       [enumTrigger.BeforeSetRow_,"BeforeSetRow"],
