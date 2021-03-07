@@ -378,6 +378,9 @@ export class CUITableText implements IUITableData {
 
    /**
     * Return row and column for element
+    * method are able to return row and col from any section. Returing row and col from body section differs
+    * some compare to returning row and col from other sections. Cells in body always has data-c and parent row has data-row.
+    * Rows in other sections do not need data-c with column index.
     * @param {HTMLElement} eElement
     * @param {boolean} [bData] Cell index in table data. When hiding columns, index in ui table for 
     * column is not same as index in table data. With his parameter you get index for column in table data.
@@ -386,37 +389,42 @@ export class CUITableText implements IUITableData {
    GetRowCol(eElement: HTMLElement, bData?: boolean): [ number, number, string ] {
       let eRow = eElement;
       let eCell = eElement
-      while(eRow && eRow.dataset.type !== "row") {
-         eCell = eRow;
+      while(eRow && eRow.dataset.type !== "row") {         // Find row for element
          eRow = eRow.parentElement;
       }
       if(eRow === null) return null;
 
-      while(eRow && eRow.dataset.row === undefined) {
+      while(eRow && eRow.dataset.row === undefined) {      // Find main row, holds key to row in table data
          eRow = eRow.parentElement;
       }
       if(eRow === null) return null;
-      let iR: number = parseInt( eRow.dataset.row, 10 );
+      let iR: number = parseInt( eRow.dataset.line, 10 );  // Line in ui table
 
-      let e: Element;
+      let sSection = this.ELEMENTGetSection(eRow).dataset.section;
 
+      let e = eCell;
+      while( e && e.dataset.c === undefined && e.isEqualNode( eRow ) === false ) { // find column ?
+         e = e.parentElement;
+      }
 
-      //let iR = (eRow.dataset.row) ? parseInt(eRow.dataset.row, 10) : 0;
       let iC: number = 0;
-      if( eCell.dataset.c ) iC = parseInt( eCell.dataset.c, 10 );
-      else {
-         e = eCell.previousElementSibling;
+      if( e.dataset.c ) iC = parseInt( e.dataset.c, 10 );  // found column ?
+      else if( sSection !== "body" ) {                     // not in body ?
+         e = eCell;
+         e = <HTMLElement>e.previousElementSibling;
          while(e) {
             iC++;
-            e = e.previousElementSibling;
+            e = <HTMLElement>e.previousElementSibling;
          }
       }
+      else return null;
 
-      e = this.ELEMENTGetSection(eRow);
+      if(bData === true) {
+         iR = this._row_in_data( iR );
+         iC = this._column_in_data( iC );  // if column index should represent index in table data. 
+      }
 
-      if(bData === true) iC = this._column_in_data( iC );  // if column index should represent index in table data. 
-
-      return [ iR, iC, (<HTMLElement>e).dataset.section ];
+      return [ iR, iC, sSection ];
    }
 
    HideColumn(iColumn, bAdd?: boolean);
@@ -638,7 +646,7 @@ export class CUITableText implements IUITableData {
       this.m_iColumnCount = aHeader.length;                                    // Set total column count
 
       const oRowRows = this.m_oRowRows;
-      let aHeaderColumns = oRowRows.GetRowColumns();
+      let aHeaderColumns = oRowRows.GetRowColumns();                           // header takes columns from main row
       let a = [];
       for(let i = 0; i < aHeaderColumns.length; i++) {
          a.push( aHeader[ aHeaderColumns[i] ] );
@@ -1015,7 +1023,7 @@ export class CUITableText implements IUITableData {
       let i = aRow.length;
       const  sCIndex = "C" + iColumn + ",";
       while( --i >= 0 ) {
-         const sColumns = aRow[i].dataset.c;
+         const sColumns = aRow[i].dataset.c_row;
          if( sColumns && sColumns.indexOf( sCIndex ) !== -1  ) {               // found row where column is?
             _Cell = aRow[i].querySelector('[data-c="'+iColumn+'"]');
             return <HTMLElement>_Cell;
@@ -1207,6 +1215,7 @@ export class CUITableText implements IUITableData {
 
       let eRow = <HTMLElement>eSection.firstElementChild;
       eRow.dataset.row = "0";
+      eRow.dataset.line = "0";
       if( eRow.dataset.type !== "row" ) {
          eRow = eRow.querySelector('[data-type="row"]');    console.assert( eRow !== null, "No row element for header cells." ); 
       }
@@ -1225,8 +1234,9 @@ export class CUITableText implements IUITableData {
          }
 
          if( eSpan ) {
-            eSpan.innerText = aName[ 0 ] || aName[ 1 ];                         // alias or name
+            eSpan.innerText = aName[ 0 ] || aName[ 1 ];    // alias or name
             eSpan.title = eSpan.innerText;
+            eSpan.dataset.c = aHeader[i][0].toString();    // set column index
             if( bCall ) this.m_acallRender.forEach((call) => { call.call(this, "afterHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ) ) ); });
             eSpan = <HTMLElement>eSpan.nextElementSibling;
          }
@@ -1273,6 +1283,7 @@ export class CUITableText implements IUITableData {
          let iRow = this.m_aRowPhysicalIndex[ iIndex ], s, o;
          let eR = eRow;                                    // eRow is the main row, but row could hold many child rows with values
          eR.dataset.row = iRow.toString();
+         eR.dataset.line = iIndex.toString();
          for(let iR = 0; iR < oRowRows.length; iR++ ) {
 
             if(eR.dataset.type !== "row") {
@@ -1734,7 +1745,7 @@ export class CUITableText implements IUITableData {
 
       let set_row_attr = (eRow: HTMLElement, iRow: number, aColumn: number[], sCell: string, sValue: string, sStyle: string, sClass: string ) => {
          eRow.dataset.r = iRow.toString();
-         eRow.dataset.c = "C" + aColumn.join(",C") + ",";
+         eRow.dataset.c_row = "C" + aColumn.join(",C") + ",";
 
          aColumn.forEach(i => { 
             let e = document.createElement(sHtmlCell);
@@ -2031,7 +2042,7 @@ export class CUITableText implements IUITableData {
 
                   if( eMove == enumMove.disable ) this.INPUTDeactivate( false );
                   else this.INPUTDeactivate();                                 // close all edits
-                  this.render_value(oEdit.GetPositionRelative());
+                  if(oEdit) this.render_value(oEdit.GetPositionRelative());
                   this.GetSection("body").focus({preventScroll: true});        // Set focus to body, closing edit elements will make it loose focus
                }
                this.INPUTMove(eMove, true);

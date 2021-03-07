@@ -324,7 +324,7 @@ export namespace edit {
          }
       }
 
-      Open( eParent: HTMLElement, sValue?: string, oPosition?: DOMRect) {
+      Open( eParent: HTMLElement, sValue?: string, oPosition?: DOMRect) { 
          if(this.IsElement()) {
             this.m_eElement = eParent;
             this.SetListener();

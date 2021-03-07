@@ -224,9 +224,12 @@
          let sName = CTableDataTrigger.GetTriggerName( oEventData.iEvent );
          if( typeof sName !== "string" ) return;
 
-         let eSection = window.TTHappiness.GetSection(oEventData.eElement);
+         let sEventName = "";
 
-         let sEventName = eSection.dataset.section;
+         if(oEventData.eElement) {
+            eSection = window.TTHappiness.GetSection(oEventData.eElement);
+            sEventName = eSection.dataset.section;
+         }
          sEventName += oEventData.browser_event ? "." + oEventData.browser_event : "";
          TDEventList.ROWAppend([ ++window.iEventCount, sName, sEventName ]); // Add row to table data for events
          //TTEventList.create_body();

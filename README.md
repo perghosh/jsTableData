@@ -1,17 +1,22 @@
 # jsTableData - JavaScript table framework
 
-jsTableData is a JavaScript table library designed to manage and render table data as flexible as possible.
+jsTableData is a JavaScript table library designed to manage and render table data using existing css frameworks.
 
-### Advanced samples (orginal and with jsTableData)
-|Sample|Description|
+### Demo
+|Sample page|Description|
 |:-|:-|
-|[Table with two rows for each data row, values are shown on hover](https://perghosh.github.io/jsTableData/sample/sampleAdvancedExtraRow.html)|Table that expands on hover with mouse. <br> Edit, sorting and keyboard navigation is added to one existing design. |
+|[Table with two rows for each data row, values are shown on hover](https://perghosh.github.io/jsTableData/sample/sampleAdvancedExtraRow.html)|Advanced sample table, expand row on hover. Edit, sorting and keyboard navigation.|
+|[Enable editing in Bootstrap 5 table](https://perghosh.github.io/jsTableData/sample/sampleBootstrap5TableEdit.html)|Style table with bootstrap and edit table values with [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
+|[Login form](https://perghosh.github.io/jsTableData/sample/sampleLogin.html)|Sample login form using [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
+|[UIKit table with movie list and editing](https://perghosh.github.io/jsTableData/sample/sampleUIKit_play.html)|Style table with UIKit and create input  elements in all cells. Works with [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
+|[Simple Bootstrap 5 table](https://perghosh.github.io/jsTableData/sample/sampleBootstrap5Table.html)|Style table with bootstrap 5 with [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
 
 
 
 ### How
 Most components that manages table data, mix design and data. And that makes them a lot harder to customize.  
-jsTableData do not mix design and data. UI objects use information from [`CTableData`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/TableData.ts). 
+jsTableData do not mix design and data. Separating data and UI makes it easier to use existing css designs or quickly change design.
+However, one line is not enough to include in one page. Some lines of code are needed for inclusion in the page.
 
 
 ## Docs
@@ -25,15 +30,6 @@ jsTableData do not mix design and data. UI objects use information from [`CTable
 
 ### UI objects
 - [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts) is a flexible table renderer
-
-### Demo
-|Sample page|Description|
-|:-|:-|
-|[Enable editing in Bootstrap 5 table](https://perghosh.github.io/jsTableData/sample/sampleBootstrap5TableEdit.html)|Style table with bootstrap and edit table values with [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
-|[Login form](https://perghosh.github.io/jsTableData/sample/sampleLogin.html)|Sample login form using [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
-|[UIKit table with movie list and editing](https://perghosh.github.io/jsTableData/sample/sampleUIKit_play.html)|Style table with UIKit and create input  elements in all cells. Works with [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
-|[Simple Bootstrap 5 table](https://perghosh.github.io/jsTableData/sample/sampleBootstrap5Table.html)|Style table with bootstrap 5 with [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
-
 
 
 Development samples
