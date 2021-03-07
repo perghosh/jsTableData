@@ -15,8 +15,10 @@ jsTableData is a JavaScript table library designed to manage and render table da
 
 ### How
 Most components that manages table data, mix design and data. And that makes them a lot harder to customize.  
-jsTableData do not mix design and data. Separating data and UI makes it easier to use existing css designs or quickly change design.
-However, one line is not enough to include in one page. Some lines of code are needed for inclusion in the page.
+jsTableData do not mix UI and data. Separating data and UI makes it easier to use existing css code or quickly modify design.
+However, one line is not enough to include in page. To configure table with existing css designs will need some code.
+The benefits come when you need to adapt for advanced customizations.
+
 
 
 ## Docs
