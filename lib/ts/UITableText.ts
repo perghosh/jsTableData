@@ -1649,8 +1649,12 @@ export class CUITableText implements IUITableData {
             }, true);
 
             eSection.addEventListener("focus", (e: FocusEvent) => {
-               let eElement =  <HTMLElement>e.srcElement;
-               if(eElement.tagName === "input") {
+               let eElement =  <HTMLElement>e.srcElement; 
+
+               if(eElement.tagName === "INPUT") {
+                  const a = this.GetRowCol( eElement );
+                  if( this.m_aInput[0] === a[0] && this.m_aInput[1] === a[1] ) return;              // no need to set input if same as active input
+
                   let oEdit = this.m_oEdits.GetEdit( eElement );// try to get edit object for edit element
 
                   if( oEdit ) self.INPUTSet( oEdit.GetPositionRelative() );
