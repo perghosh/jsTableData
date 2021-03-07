@@ -393,7 +393,7 @@ SAMPLE
 
    <section id="idTable" class="wrapper">
       <h2>Original table</h2>
-      <div>This table is just static html. Original sample taken from here: </div>
+      <div>This table is just static html. Original sample taken from here: <a style="color: white;" href="https://codepen.io/ajlohman/pen/tLvdF">Table on codepen</a></div>
       <!-- Row title -->
       <main class="row title">
          <ul>
@@ -578,6 +578,14 @@ SAMPLE
                TDData.COLUMNSetPropertyValue(0, "format.html", "<a href='#' data-value='1'></a>" );
 
                TDData.COLUMNSetPropertyValue(5, "position.row", 1);
+
+               TDData.COLUMNSetPropertyValue(1,"position.convert", (v, aCell) => {
+                  return "$" + v.toString();
+               });
+
+               TDData.COLUMNSetPropertyValue(4,"position.convert", (v, aCell) => {
+                  return parseInt(v,10).toString() + ":00ET";
+               });
 
                let oTrigger = new CTableDataTrigger({ table: TDData, trigger: CALLBACK_TableData });
 

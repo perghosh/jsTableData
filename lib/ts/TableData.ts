@@ -88,9 +88,10 @@ namespace details {
    };
 
    export type position = {
-      index?: number,
       col?: number,     // in what column, this is for input forms
+      convert?: ((value: unknown, aCell: [number, number]) => unknown), // convert logic
       hide?: number|boolean,// if true ore one value like 1 or more this columns is hidden
+      index?: number,
       page?: number,    // when forms with pages are used, this has the page columns is placed
       row?: number,     // index to row. if table then 0 is same row as main row. negative numbers are above, positive numbers are below. in forms it has the index for row
    };
@@ -251,6 +252,12 @@ export class CTableData {
       }
 
       return _Value;
+   }
+
+   static StripIndex( a: [ string | number, unknown ][]  ): unknown[] {
+      let b: unknown[] = [];
+      for( let i = 0; i < a.length; i++ ) { b.push( a[i][1] ); }
+      return b;
    }
 
    /**
@@ -442,7 +449,7 @@ export class CTableData {
       let aBody: unknown[][] = this.m_aBody;
 
       let bSortOrHide = this.COLUMNHasPropertyValue(true, [ "state.sort", "position.hide" ], [ 1, -1 ]);
-      let bConvert = this.COLUMNHasPropertyValue(true, "format.convert");
+      let bConvert = this.COLUMNHasPropertyValue(true, "position.convert");
 
       // Check if sort values is needed
       let aSort: [ number, boolean, string?][] = o.sort || [];
@@ -475,7 +482,10 @@ export class CTableData {
       }
 
 
-      CTableData._get_data(aResult, aBody, iBeginRow, iEndRow, { slice: iSlice, hide: aHide.length === 0 ? null : aHide, table: this });
+      let oGetOptions: any = { slice: iSlice, hide: aHide.length === 0 ? null : aHide, table: this };
+      if(bConvert) { oGetOptions.convert = CTableData.StripIndex( <[ string | number, unknown ][]>this.COLUMNGetPropertyValue(true, "position.convert") ); }
+
+      CTableData._get_data(aResult, aBody, iBeginRow, iEndRow, oGetOptions);
 
       return aResult;
    }
@@ -1045,9 +1055,9 @@ export class CTableData {
       else { _V = aRow[ iC ]; }
 
       if( iFormat & enumFormat.Format ) {
-         iC--; // decrase column with one because first value is index key for row
-         if( this.m_aColumn[iC].format?.convert ) {
-            _V = this.m_aColumn[iC].format.convert( _V, [iR,iC] );
+         iC--; // decrease column with one because first value is index key for row
+         if( this.m_aColumn[iC].position?.convert ) {
+            _V = this.m_aColumn[iC].position.convert( _V, [iR,iC] );
          }
       }
 

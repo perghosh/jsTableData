@@ -11,7 +11,7 @@
 
 /// <reference path="TableData.ts" />
 
-import { CTableData, enumMove, tabledata_column} from "./TableData";
+import { CTableData, enumMove, enumFormat, tabledata_column} from "./TableData";
 
 export const enum enumInputState {
    Open       = 0x0001,                                     // If element is open for input
@@ -194,7 +194,7 @@ export namespace edit {
          let oEdit = <edit.CEdit>this.m_aColumn[ iColumn ];                                        console.assert(oEdit !== null, `No edit for column index ${iColumn}`);
 
          oEdit.SetPosition([ iRow, iColumn ], [ iRowRelative, iColumnRelative] );                  // set position in table data and relative for ui control.
-         let sValue = <string>this.data.CELLGetValue( iRow, iColumn );
+         let sValue = <string>this.data.CELLGetValue( iRow, iColumn, enumFormat.All );
          let oRect = eElement.getBoundingClientRect();
          //oEdit.Show(oRect, sValue);
          oEdit.Open(eElement, sValue, oRect);
