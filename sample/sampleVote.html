@@ -1,0 +1,362 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta charset="utf-8" />
+   <title>Vote</title>
+   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+   <style>
+      :root {
+         --gd-blue: #0d6efd;
+         --gd-indigo: #6610f2;
+         --gd-purple: #6f42c1;
+         --gd-pink: #d63384;
+         --gd-red: #dc3545;
+         --gd-orange: #fd7e14;
+         --gd-yellow: #ffc107;
+         --gd-green: #198754;
+         --gd-teal: #20c997;
+         --gd-cyan: #0dcaf0;
+         --gd-white: #fff;
+         --gd-gray: #6c757d;
+         --gd-gray-dark: #343a40;
+         --gd-gray-light: #e9e8eb;
+         --gd-primary: #0d6efd;
+         --gd-secondary: #6c757d;
+         --gd-success: #198754;
+         --gd-info: #0dcaf0;
+         --gd-warning: #ffc107;
+         --gd-danger: #dc3545;
+         --gd-light: #f8f9fa;
+         --gd-dark: #212529;
+         --gd-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+         --gd-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      }
+
+
+      body {
+         color: #212529;
+         margin: 0;
+         font-family: var(--gd-font-sans-serif);
+         font-size: 1rem;
+         font-weight: 400;
+         line-height: 1.5;
+         background-color: #fff;
+      }
+
+      section, tbody { 
+         outline: none; 
+      }
+
+      .selected {
+         background-color: var(--gd-gray-light);
+      }
+
+      .checked {
+         display: inline-block;
+         width: 16px;
+         height: 16px;
+         background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-check2-square' viewBox='0 0 16 16'> <path d='M3 14.5A1.5 1.5 0 0 1 1.5 13V3A1.5 1.5 0 0 1 3 1.5h8a.5.5 0 0 1 0 1H3a.5.5 0 0 0-.5.5v10a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V8a.5.5 0 0 1 1 0v5a1.5 1.5 0 0 1-1.5 1.5H3z'/> <path d='M8.354 10.354l7-7a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z'/> </svg>");
+      }
+
+
+   </style>
+
+</head>
+<body>
+
+   <div class="container">
+
+      <div class="notification is-primary">
+         <div id="idLogin" class="content is-primary"></div>
+      </div>
+
+
+      <div class="notification is-primary">
+         <div id="idVoteParty" class="content is-primary"></div>
+      </div>
+
+      <div class="notification is-primary">
+         <div id="idVoteLimit" class="content is-primary"></div>
+      </div>
+
+   </div>
+
+
+   <script>
+      function PAGE_Setup() {
+
+         class CApplication {
+            constructor() {
+               this.m_oEditors = edit.CEditors.GetInstance();
+            }
+
+            Initialize() {
+               let oEditors = this.m_oEditors;
+               oEditors.Add("string", edit.CEditInput);
+               oEditors.Add("password", edit.CEditPassword);
+               oEditors.Add("text", edit.CEditTextarea);
+               oEditors.Add("number", edit.CEditNumber);
+               oEditors.Add("checkbox", edit.CEditCheckbox);
+            }
+
+            CreateLogin(eRoot, aSource) {
+               if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
+               let TDLogin = new CTableData();
+               TDLogin.ReadArray(aSource);
+               TDLogin.COLUMNSetType(TDLogin.ROWGet(0));
+               TDLogin.ROWSet( 0 );                          // clear first row
+
+               TDLogin.COLUMNSetPropertyValue(0, "alias", "Name");
+               TDLogin.COLUMNSetPropertyValue(1, "alias", "Mail");
+               TDLogin.COLUMNSetPropertyValue(2, "alias", "Password");
+
+               TDLogin.COLUMNSetPropertyValue(0, "edit.name", "string");
+               TDLogin.COLUMNSetPropertyValue(1, "edit.name", "string");
+               TDLogin.COLUMNSetPropertyValue(2, "edit.name", "password");
+
+               TDLogin.COLUMNSetPropertyValue([ 0, 1, 2 ], "edit.edit", true);
+
+
+
+               let oStyle = {
+                  class_section: "uitabletext_login", class_value_error: "error_value",
+                  html_value: `
+<div style='border-bottom: 1px dotted var(--gd-white); padding: 0.5em 1em;'>
+         <div style='display: flex; align-items: stretch;'>
+            <span data-label='1' style='padding: 0px 1em 0px 0px; text-align: right; width: 120px;'></span>
+            <span data-value='1' style='flex-grow: 1; padding: 0px 2px; box-sizing: border-box; background-color: var(--gd-gray);'></span>
+         </div>
+         <div data-description='1'></div>
+         <div class='error-message' data-error='1' style="display: none; margin-left: 120px; text-align:right;"></div>
+</div>
+`
+               }
+
+               let options = {
+                  parent: eRoot,                            // container
+                  section: [ "title", "body", "statusbar" ],
+                  style: oStyle,
+                  table: TDLogin,                           // source data
+                  name: "login",                            // name to access UI table in CTableData
+                  edit: 1,                                  // endable edit
+                  callback_render: (sType, _value, eElement, oColumn) => {
+                     if(sType === "afterCellValue") {
+                        let eLabel = eElement.querySelector("[data-label]");
+                        eLabel.innerText = oColumn.alias;
+                     }
+                  }
+               };
+
+               let TTLogin = new CUITableText(options);
+               TDLogin.UIAppend(TTLogin);
+               TTLogin.Render();
+               TTLogin.GetSection("body").focus();
+            }
+
+            CreateVoteParty(eRoot, aSource) {
+               if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
+               let TDVote = new CTableData();
+               TDVote.ReadArray(aSource);
+
+               TDVote.COLUMNSetPropertyValue(0, "edit.name", "checkbox");
+               TDVote.COLUMNSetPropertyValue([ 0 ], "edit.edit", true);
+
+
+               let oStyle = {
+                  html_group: "table.table",                // "table" element and class table
+                  html_row: "tr",                           // "tr" element for each row
+                  html_cell_header: "th",                   // "th" for column headers
+                  html_cell: "td",                          // "td" for cells
+                  html_section_header: "thead",             // "thead" for header section
+                  html_section_body: "tbody",               // "tbody" for body section
+                  html_section_footer: "tfoot",             // "tfoot" for footer section
+               }
+
+
+               let options = {
+                  parent: eRoot,                            // container
+                  section: [ "title", "table.header", "table.body", "footer" ],// sections to create
+                  table: TDVote,                            // source data
+                  name: "voteparty",                        // name to access UI table in CTableData
+                  style: oStyle,                            // styling
+                  edit: 1,                                  // endable edit
+               };
+
+               let TTVote = new CUITableText(options);
+               TDVote.UIAppend(TTVote);
+
+               TTVote.COLUMNSetRenderer(0, (e, v, a) => { 
+                  let eCheck = e.querySelector("div");
+                  if( v === "1" || v === 1) {
+                     if( !eCheck ) {
+                        let eDiv = document.createElement("div");
+                        eDiv.innerHTML = "<span>Vald</span> <i class='checked' />";
+                        e.appendChild(eDiv);
+                     }
+                  }
+                  else if( eCheck ) {
+                     eCheck.remove();
+                  }
+               });
+
+               TTVote.Render();
+               let eTitle = TTVote.GetSection("title");
+               eTitle.innerHTML = "<h2>Vilket parti får din röst om det var riksdagsval idag?</h2>"
+
+               let eFooter = TTVote.GetSection("footer");
+               eFooter.innerHTML = "<div style='text-align: right;'><button class='button is-white'>Vote</button></div>"
+
+            }
+
+            CreateVoteLimit(eRoot, aSource) {
+               if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
+               let TDVote = new CTableData();
+               TDVote.ReadArray(aSource);
+
+               TDVote.COLUMNSetPropertyValue(0, "edit.name", "checkbox");
+               TDVote.COLUMNSetPropertyValue([ 0 ], "edit.edit", true);
+
+               let oStyle = {
+                  html_group: "table.table",                // "table" element and class table
+                  html_row: "tr",                           // "tr" element for each row
+                  html_cell_header: "th",                   // "th" for column headers
+                  html_cell: "td",                          // "td" for cells
+                  html_section_header: "thead",             // "thead" for header section
+                  html_section_body: "tbody",               // "tbody" for body section
+                  html_section_footer: "tfoot",             // "tfoot" for footer section
+               }
+
+
+               let options = {
+                  parent: eRoot,                            // container
+                  section: [ "title", "table.header", "table.body", "footer" ],// sections to create
+                  table: TDVote,                            // source data
+                  name: "votelimit",                        // name to access UI table in CTableData
+                  style: oStyle,                            // styling
+                  edit: 1,                                  // endable edit
+               };
+
+               let TTVote = new CUITableText(options);
+               TDVote.UIAppend(TTVote);
+
+               TTVote.COLUMNSetRenderer(0, (e, v, a) => { 
+                  let eCheck = e.querySelector("div");
+                  if( v === "1" || v === 1) {
+                     if( !eCheck ) {
+                        let eDiv = document.createElement("div");
+                        eDiv.innerHTML = "<span>Vald</span> <i class='checked' />";
+                        e.appendChild(eDiv);
+                     }
+                  }
+                  else if( eCheck ) {
+                     eCheck.remove();
+                  }
+               });
+
+
+               TTVote.Render();
+
+               let eTitle = TTVote.GetSection("title");
+               eTitle.innerHTML = "<h2>Skall den s.k. 4%-spärren ändras för att kunna vara ett regerande parti?</h2>"
+               let eFooter = TTVote.GetSection("footer");
+               eFooter.innerHTML = "<div><button class='button is-white'>Vote</button></div>"
+
+            }
+
+
+         } // class CApplication
+
+         /**
+          * Callback for events managed by CTableDataTrigger
+          * @param {EventDataTable} oEventData standard event data
+          * @param {any} e This is dependent on the event.
+          */
+         function CALLBACK_TableData(oEventData, v) {
+            let sName = CTableDataTrigger.GetTriggerName(oEventData.iEvent); console.log(sName);
+            switch(sName) {
+               case "BeforeSetCellError":
+                  let eCell = oEventData.eElement.closest("td");
+                  let _type = oEventData.information;
+                  eCell.querySelector("[data-error]").innerText = _type[ 1 ];
+                  break;
+
+            }
+         }
+
+         window.app = new CApplication();
+         window.app.Initialize();
+         window.app.CreateLogin( "idLogin", aLogon );
+         window.app.CreateVoteParty( "idVoteParty", aPollParty );
+         window.app.CreateVoteLimit( "idVoteLimit", aPollLimit );
+         
+         // window.app.CreateTable("idTableNew", aData);
+      }
+
+
+   </script>
+
+
+   <!--
+   | Init page
+   -->
+   <script>
+      document.addEventListener('DOMContentLoaded', function() {
+         //PAGE_SetupEventList();
+         PAGE_Setup();
+      });
+   </script>
+
+
+   <!--
+    | Load needed components to manage login and vote data
+   -->
+   <script type="module">
+      import { CTableData, browser } from "./../lib/TableData.js";
+      import { edit } from "./../lib/TableDataEdit.js";
+      import { CTableDataTrigger } from "./../lib/TableDataTrigger.js";
+      import { SetTriggerName } from "./../lib/TableDataTriggerNames.js";
+      import { CUITableText } from "./../lib/UITableText.js";
+
+
+      window.edit = edit;
+      window.CTableData = CTableData;
+      window.CTableData_browser = browser;
+      window.CUITableText = CUITableText;
+      window.CTableDataTrigger = CTableDataTrigger;
+
+      SetTriggerName();
+   </script>
+
+   <!--
+    | Source data for login test page
+   -->
+   <script>
+      var aLogon = [
+         [ "Namn", "E-Mejl", "Lösenord" ],
+         [ "?", "?", "?" ]
+      ];
+
+      var aPollParty = [
+         [ "Vote", "Beskrivning" ],
+         [ 0, "Centerpartiet" ],
+         [ 0, "Kristdemokraterna" ],
+         [ 0, "Liberalerna" ],
+         [ 0, "Moderaterna" ],
+         [ 0, "Miljöpartiet" ],
+         [ 0, "Socialdemokraterna" ],
+         [ 0, "Sverigedemokraterna" ],
+         [ 0, "Vänsterpartiet" ],
+         [ 0, "Annat" ]
+      ];
+
+      var aPollLimit = [
+         [ "Vote", "Beskrivning" ],
+         [ 0, "Ja" ],
+         [ 0, "Nej" ],
+         [ 0, "Ja till 5%" ]
+      ];
+   </script>
+
+</body>
+</html>

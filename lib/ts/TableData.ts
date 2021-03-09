@@ -1148,7 +1148,7 @@ export class CTableData {
    ROWGetRowIndex(iRow: number): number { return this._row(iRow); }
 
    /**
-    * Return values for row in array
+    * Return values for row as array
     * @param iRow key to row or if bRay it is the physical index
     * @param bRaw if true then access internal row
     */
@@ -1165,6 +1165,38 @@ export class CTableData {
          if(Array.isArray(a[ i ])) a[ i ] = a[ i ][ 0 ];
       }
       return a;
+   }
+
+   /**
+    * Set values to cells in row. Using this you need to know the internal data. No checking is done
+    * @param {number} iRow Index to row where column values are set
+    * @param {unknown} [_Value] Value set to row cells
+    * @param {boolean} [bRaw] if raw position in internal data is used, if not true then `iRow` is the row index
+    */
+   ROWSet(iRow: number, _Value?: unknown, bRaw?: boolean ): void;
+   ROWSet(iRow: number, aValue: unknown[], bRaw?: boolean ): void;
+   ROWSet(iRow: number, _2?: any, bRaw?: boolean ): void {
+      if( bRaw !== true ) iRow = this._row(iRow); // row position in body
+      let aRow = this.m_aBody[ iRow ];
+      if(Array.isArray(_2) === false) {
+         let v = _2;
+         if( v === undefined ) v = null;
+         let i = aRow.length;
+         while(--i >= 1) { // first value in row is the row key, do not modify that value
+            if( Array.isArray( aRow[i] ) === false ) aRow[i] = v
+            else aRow[i][0] = v;
+         }
+      }
+      else {
+         let a = _2;
+         let iTo = Math.min( (aRow.length - 1), a.length );                   // first value in row is key to record, subtract to get then real value length
+         for(let i = 0; i < iTo; i++) {
+            if( a[i] === undefined ) continue;                                // skip undefined values
+            const iR = i + 1;
+            if( Array.isArray( aRow[iR] ) === false ) aRow[iR] = a[i];
+            else aRow[iR][0] = aRow[iR] = a[i];
+         }
+      }
    }
 
    /**

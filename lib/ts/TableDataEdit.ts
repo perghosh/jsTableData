@@ -244,7 +244,7 @@ export namespace edit {
    /**
     *
     */
-   export class CEdit {
+   export abstract class CEdit {
       m_oColumn: tabledata_column;      // Column information from table data
       m_oEdits: CEdits;                 // Owning edit manager
       m_eElement: HTMLElement;
@@ -522,8 +522,12 @@ export namespace edit {
    }
 
    export class CEditCheckbox extends CEdit {
+      m_iSelected: number;
+      m_iOldSelected: number;
+      m_aValue: [unknown,unknown];     // first value is not selected, second value is selected
       constructor(o: details.construct_edit) {
          super(o);
+         this.m_iSelected = 0;
       }
 
       Create(_1: any): HTMLInputElement {
@@ -551,31 +555,57 @@ export namespace edit {
 
       GetValue( bUpdate?: boolean ): string|unknown {
          if( !this.m_eElement ) return null;
-         let _value = "";
-         if( (<HTMLInputElement>this.m_eElement).checked ) _value = (<HTMLInputElement>this.m_eElement).value;
+         let _value: unknown;
+         if((<HTMLInputElement>this.m_eElement).checked) {
+            _value = this.m_aValue[1];
+         }
+         else {
+            _value = this.m_aValue[0];
+         }
          if( bUpdate === true ) this._update_old_value();
          return _value;
       }
 
       GetValueStack(): details.value_stack { return [ this.m_aPosition, this.m_aPositionRelative, this.GetValue(), this.m_sOldValue]; }
 
+      IsModified(): boolean {
+         if( !this.m_eElement || this.m_iState & enumInputState.Canceled ) return false;
+      
+         //let _value = (<HTMLInputElement>this.m_eElement).value;
+         this.m_iSelected = (<HTMLInputElement>this.m_eElement).checked ? 1 : 0;
+         return this.m_iOldSelected !== this.m_iSelected;
+      }
+
+
       SetPosition(aPosition: [ number, number ], aPositionRelative?: [ number, number ]): void {
          super.SetPosition(aPosition, aPositionRelative);
       }
 
       SetValue(_Value: unknown) {
-         if(typeof _Value === "number" ) _Value = _Value.toString();
-         if(typeof _Value !== "string" ) {
+         this.m_iSelected = 0;
+         if(typeof _Value === "number") {
+            this.m_aValue = [0,1];
+            if( _Value !== 0 ) this.m_iSelected = 1;
+            _Value = _Value.toString();
+         }
+         else if(typeof _Value !== "string" ) {
+            this.m_aValue = [false,true];
+            if( _Value ) this.m_iSelected = 1;
+/*
             if(_Value === null) _Value = "";
             else if( typeof _Value === "number" || typeof _Value === "object" ) _Value = _Value.toString();
             if(typeof _Value !== "string") _Value = "";
+
+            if( _Value === "1" ) this.m_bSelected = true;
+            */
+         }
+         else {
+            this.m_aValue = ["0","1"];
          }
 
-         this.m_sOldValue = <string>_Value;
-         (<HTMLInputElement>this.m_eElement).value = <string>_Value || "1";
-
-         let bCheck = _Value ? true : false;
-         (<HTMLInputElement>this.m_eElement).checked = bCheck;
+         this.m_sOldValue = this.m_aValue[this.m_iSelected].toString();
+         this.m_iOldSelected = this.m_iSelected;
+         (<HTMLInputElement>this.m_eElement).checked = (this.m_iSelected === 1);
       }
    }
 

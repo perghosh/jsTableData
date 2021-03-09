@@ -31,6 +31,7 @@ namespace details {
       callback_action?: ((sType: string, e: EventDataTable, sSection: string) => boolean) | ((sType: string, e: EventDataTable, sSection: string) => boolean)[],
       callback_create?: ((sType: string, e: EventDataTable, sSection: string) => boolean) | ((sType: string, e: EventDataTable, sSection: string) => boolean)[],
       callback_render?: ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column ) => boolean) | ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column) => boolean)[],
+      callback_renderer?: details.renderer[],
       create?: boolean,          // create elements for table in constructor
       edit?: boolean,            // enable edit for table
       edits?: edit.CEdits;       // edits component, logic for edit fields used in table
@@ -78,6 +79,8 @@ namespace details {
          max_row_width?: number, // max width for row in pixels
       }
    }
+
+   export type renderer = (( e: HTMLElement, value: unknown, aCell: [[number,number],[number,number],tabledata_column] ) => void)
 }
 
 /*
@@ -108,8 +111,8 @@ parent.addEventListener('click', function(e) {
  *       div [type="row"]
  *          span
  *    section [section="body"]
- *       div [row=index, type="row"]
- *          span
+ *       div [row=data_row_index, type="row", line=ui_row_index ,record="1"]
+ *          span [c=ui_column_index]
  *    section [section="footer"]
  *       div [row=index, type="row"]
  *          span
@@ -117,9 +120,10 @@ parent.addEventListener('click', function(e) {
  * 
  * */
 export class CUITableText implements IUITableData {
-   m_acallAction: ((sType: string, e: EventDataTable, sSection: string) => boolean)[];
-   m_acallCreate: ((sType: string, e: EventDataTable, sSection: string) => boolean)[];
-   m_acallRender: ((sType: string, e: EventDataTable, sSection: string, oColumn: any) => boolean)[];
+   m_acallAction: ((sType: string, e: EventDataTable, sSection: string) => boolean)[];// callback array for action hooks, like select cell, values is changing etc.
+   m_acallCreate: ((sType: string, e: EventDataTable, sSection: string) => boolean)[];// callback array for hooks used when items in table is created
+   m_acallRender: ((sType: string, e: EventDataTable, sSection: string, oColumn: any) => boolean)[];// callback array for hooks used when items are rendered
+   m_acallRenderer: details.renderer[];// callback array used to render values, if this is set to column then internal rendering for value is disabled. Array has to match number of columns shown in table
    m_iColumnCount: number;    // Number of columns shown, this may not match number of columns in table data
    m_aColumnFormat: tabledata_format[];
    m_aColumnPhysicalIndex: number[]; // index for column in table data
@@ -179,6 +183,8 @@ export class CUITableText implements IUITableData {
 
       this.m_acallRender = [];
       if(o.callback_render) this.m_acallRender = Array.isArray(o.callback_render) ? o.callback_render : [ o.callback_render ];
+
+      if(o.callback_renderer) this.m_acallRenderer = o.callback_renderer;
 
       this.m_aRowBody      = o.body || [];
       this.m_iColumnCount  = 0;
@@ -403,7 +409,7 @@ export class CUITableText implements IUITableData {
       let sSection = this.ELEMENTGetSection(eRow).dataset.section;
 
       let e = eCell;
-      while( e && e.dataset.c === undefined && e.isEqualNode( eRow ) === false ) { // find column ?
+      while( e && e.dataset.c === undefined && e.isEqualNode( eRow ) === false ) { // find column ? column is always a child to row element
          e = e.parentElement;
       }
 
@@ -644,6 +650,7 @@ export class CUITableText implements IUITableData {
 
 
       this.m_iColumnCount = aHeader.length;                                    // Set total column count
+      if( this.m_acallRenderer ) this.COLUMNSetRenderer( this.m_iColumnCount - 1 );// Make sure that array for renders holds as many columns as columns
 
       const oRowRows = this.m_oRowRows;
       let aHeaderColumns = oRowRows.GetRowColumns();                           // header takes columns from main row
@@ -866,6 +873,34 @@ export class CUITableText implements IUITableData {
       eSection.style.display = "none";
       set_width(eSection);
       eSection.style.display = sDisplay;
+   }
+
+   COLUMNGetRenderer(iIndex: number): details.renderer {
+      if( this.m_acallRenderer ) return this.m_acallRenderer[iIndex];
+      return null;
+   }
+
+   /**
+    * Set renderer for column
+    * @param {number | string} _Index index to column renderer are set for
+    * @param {details.renderer | null } [callback] callback that will render value
+    */
+   COLUMNSetRenderer(_Index: number | string, callback?: details.renderer | null) {
+      let iIndex: number
+      if(typeof _Index === "number" ) iIndex = _Index;
+      else {
+         const i = this.data._index( _Index );                                 console.assert( i !== -1, "no column for: " + _Index );
+         iIndex = this._column_in_ui( i );
+      }
+      if(!this.m_acallRenderer) {
+         const iLength = Math.max( this.m_iColumnCount, iIndex + 1 );
+         this.m_acallRenderer = new Array(iLength);
+      }
+      else {
+         const iLength = Math.max( this.m_iColumnCount, iIndex + 1 );
+         while(this.m_acallRenderer.length < iLength) this.m_acallRenderer.push(null);
+      }
+      if( callback !== undefined ) this.m_acallRenderer[iIndex] = callback;
    }
 
    /**
@@ -1324,10 +1359,11 @@ export class CUITableText implements IUITableData {
             const iTo = aColumn.length;
             for(let i = 0; i < iTo; i++) {
             //aColumn.forEach(iC => { 
-               const iC = aColumn[i];
-               let e = this.ELEMENTGetCellValue(eColumn);                   // get cell value element
-               let sValue = aRow[ iC ];
+               const iC = aColumn[i];                                          // index to column in table data
+               let e = this.ELEMENTGetCellValue(eColumn);                      // get cell value element
+               let sValue = aRow[ iC ];                                        // value for active cell
                const oColumn = this.data.COLUMNGet( this._column_in_data( i ) );
+               const callRenderer = this.COLUMNGetRenderer( i );               // get renderer for cell if custom rendering
 
                if( bCall ) { 
                   let bRender = true;
@@ -1341,11 +1377,17 @@ export class CUITableText implements IUITableData {
                if(Object.keys(aStyle[ iC ][1]).length > 0) Object.assign(e.style, aStyle[ iC ][1]);
 
                if( bSetValue === false ) {
-                  if(sValue !== null && sValue != void 0) e.innerText = sValue.toString();
+                  if(callRenderer) {
+                     callRenderer.call( this, e, sValue, [[iIndex, i],[iRow,iC], oColumn] );// custom render for column
+                  }
+                  else if(sValue !== null && sValue != void 0) e.innerText = sValue.toString();
                   else if( e.hasAttribute("value") === false ) e.innerText = " ";
                }
                else {
-                  if(sValue !== null && sValue != void 0) {
+                  if(callRenderer) {
+                     callRenderer.call( this, e, sValue, [[iIndex, i],[iRow,iC], oColumn] );// custom render for column
+                  }
+                  else if(sValue !== null && sValue != void 0) {
                      if("value" in e) { (<HTMLElement>e).setAttribute("value", sValue.toString()); }
                      else e.innerText = sValue.toString();
                   }
@@ -1479,7 +1521,14 @@ export class CUITableText implements IUITableData {
       const s = eElement.tagName;
       if(s === "INPUT" || s === "TEXTAREA" || s === "METER") bValue = true;
 
-      if(sValue !== null && sValue != void 0) {
+      const callRenderer = this.COLUMNGetRenderer( iColumn );
+
+      if(callRenderer) {
+         const iDataColumn = this._column_in_data(iColumn);
+         const oColumn = this.data.COLUMNGet( this._column_in_data( iDataColumn ) );
+         callRenderer.call( this, eElement, sValue, [[_Row, iColumn],[this._row_in_data(_Row),iDataColumn], oColumn] );// custom render for column
+      }
+      else if(sValue !== null && sValue != void 0) {
          if(bValue) { (<HTMLElement>eElement).setAttribute("value", sValue.toString()); }
          else eElement.innerText = sValue.toString();
       }
@@ -2054,20 +2103,24 @@ export class CUITableText implements IUITableData {
             else if((<KeyboardEvent>e).keyCode === 34) eMove = enumMove.page_down;
             else if((<KeyboardEvent>e).keyCode === 27) eMove = enumMove.disable;
             if(eMove) { 
-               if( this.m_iOpenEdit > 0 ) {                                    // any open edit elements?
-                  let oEdit = this.edits.GetEdit(<HTMLElement>e.srcElement) || this.edits.GetEdit(<[number,number]><unknown>this.m_aInput);
+               if(this.m_iOpenEdit > 0) {                                    // any open edit elements?
+                  let oEdit = this.edits.GetEdit(<HTMLElement>e.srcElement) || this.edits.GetEdit(<[ number, number ]><unknown>this.m_aInput);
                   if(oEdit && oEdit.IsModified() === true) {                               // Is value modified
                      let bOk: boolean = true;
                      let _Value = oEdit.GetValue();
-                     this.SetCellValue( oEdit.GetPositionRelative(), _Value, {iReason: enumReason.Edit,edit:oEdit, eElement: <HTMLElement>e.srcElement, browser_event: sType } );
+                     this.SetCellValue(oEdit.GetPositionRelative(), _Value, { iReason: enumReason.Edit, edit: oEdit, eElement: <HTMLElement>e.srcElement, browser_event: sType });
                   }
 
-                  if( eMove == enumMove.disable ) this.INPUTDeactivate( false );
+                  if(eMove == enumMove.disable) this.INPUTDeactivate(false);
                   else this.INPUTDeactivate();                                 // close all edits
                   if(oEdit) this.render_value(oEdit.GetPositionRelative());
-                  this.GetSection("body").focus({preventScroll: true});        // Set focus to body, closing edit elements will make it loose focus
+                  this.GetSection("body").focus({ preventScroll: true });        // Set focus to body, closing edit elements will make it loose focus
+                  this.INPUTMove(eMove, true);
+                  //this.INPUTActivate();
                }
-               this.INPUTMove(eMove, true);
+               else {
+                  this.INPUTMove(eMove, true);
+               }
                //this.INPUTActivate();   NOTE: acitvate or not activate edit on move keys?                   
             }
             else if(this.m_oEdits && (<KeyboardEvent>e).keyCode >= 32) {       // space and above
