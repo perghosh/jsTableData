@@ -147,6 +147,7 @@
                   table: TDLogin,                           // source data
                   name: "login",                            // name to access UI table in CTableData
                   edit: 1,                                  // endable edit
+                  state: 0x0010,
                   callback_render: (sType, _value, eElement, oColumn) => {
                      if(sType === "afterCellValue") {
                         let eLabel = eElement.querySelector("[data-label]");
@@ -198,6 +199,7 @@
                   name: "voteparty",                        // name to access UI table in CTableData
                   style: oStyle,                            // styling
                   edit: 1,                                  // endable edit
+                  state: 0x0010,
                };
 
                let TTVote = new CUITableText(options);
@@ -252,6 +254,7 @@
                   name: "votelimit",                        // name to access UI table in CTableData
                   style: oStyle,                            // styling
                   edit: 1,                                  // endable edit
+                  state: 0x0010,
                };
 
                let TTVote = new CUITableText(options);

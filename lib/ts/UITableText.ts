@@ -22,6 +22,7 @@ const enum enumState {
    SetDirtyRow = 0x0002,   // When value in row is change, set row to dirty
    SetHistory  = 0x0004,   // Record changes in history
    SetValue    = 0x0008,   // Try to set value if property is found in element.
+   SetOneClickActivate = 0x0010,// Activate edits in one click
 
 }
 
@@ -2068,6 +2069,11 @@ export class CUITableText implements IUITableData {
             if(aCell && this.m_aInput && (aCell[ 0 ] !== this.m_aInput[ 0 ] || aCell[ 1 ] !== this.m_aInput[ 1 ])) {
                this.INPUTSet( <[number,number]><unknown>aCell );
                this.INPUTMove(enumMove.validate, true);
+               if(this.is_state(enumState.SetOneClickActivate)) {              // is state set to activate 
+                  if( this.INPUTDeactivate() !== -1 ) {
+                     this.INPUTActivate();
+                  }
+               }
             }
          }
          //if(this.m_aInput = [ iR, iC, eElement ];)
@@ -2112,11 +2118,17 @@ export class CUITableText implements IUITableData {
                   }
 
                   if(eMove == enumMove.disable) this.INPUTDeactivate(false);
-                  else this.INPUTDeactivate();                                 // close all edits
+                  else {
+                     this.INPUTDeactivate();                                    // close all edits
+                  }
+                  
                   if(oEdit) this.render_value(oEdit.GetPositionRelative());
-                  this.GetSection("body").focus({ preventScroll: true });        // Set focus to body, closing edit elements will make it loose focus
+                  this.GetSection("body").focus({ preventScroll: true });       // Set focus to body, closing edit elements will make it loose focus
                   this.INPUTMove(eMove, true);
-                  //this.INPUTActivate();
+
+                  if(this.is_state(enumState.SetOneClickActivate)) {            // is state set to activate 
+                     this.INPUTActivate();
+                  }
                }
                else {
                   this.INPUTMove(eMove, true);
