@@ -459,7 +459,8 @@ export class CTableData {
          if(aSort.length === 0 ) {
             let a = <[ number, [ number, number ] ][]>this.COLUMNGetPropertyValue(true, ["state.sort", "type.type"]);
             a.forEach((aC) => {
-               if(aC[ 1 ][0] !== undefined) {
+               const v = aC[ 1 ][0];
+               if(v === 1 || v === -1) {
                   let sGrouptype = CTableData.GetJSType( aC[1][1] );
                   if( typeof sGrouptype === "number" ) sGrouptype = "string";  // group name for type not found, set to string as default
                   aSort.push([ aC[ 0 ], aC[1][0] === -1 ? true : false, sGrouptype ]);
@@ -894,7 +895,7 @@ export class CTableData {
             let [ s0, s1 ] = _Property.split("."); // format to find property is property_name.property_name because some properties are in child objects
             let v = o[ s0 ];
             if(s1 && v) v = v[ s1 ];
-            bReturn = compare(v, _Value);
+            if( v !== undefined ) bReturn = compare(v, _Value);
          }
       }
 
