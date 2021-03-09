@@ -448,7 +448,7 @@ export class CTableData {
 
       let aBody: unknown[][] = this.m_aBody;
 
-      let bSortOrHide = this.COLUMNHasPropertyValue(true, [ "state.sort", "position.hide" ], [ 1, -1 ]);
+      let bSortOrHide = this.COLUMNHasPropertyValue(true, [ "state.sort", "position.hide" ], [ true, 1, -1 ]);
       let bConvert = this.COLUMNHasPropertyValue(true, "position.convert");
 
       // Check if sort values is needed
@@ -456,10 +456,10 @@ export class CTableData {
       let aHide: number[] = o.hide || [];
 
       if(bSortOrHide === true) {
-         if(aSort.length === 0) {
+         if(aSort.length === 0 ) {
             let a = <[ number, [ number, number ] ][]>this.COLUMNGetPropertyValue(true, ["state.sort", "type.type"]);
             a.forEach((aC) => {
-               if(aC[ 1 ][0] !== 0) {
+               if(aC[ 1 ][0] !== undefined) {
                   let sGrouptype = CTableData.GetJSType( aC[1][1] );
                   if( typeof sGrouptype === "number" ) sGrouptype = "string";  // group name for type not found, set to string as default
                   aSort.push([ aC[ 0 ], aC[1][0] === -1 ? true : false, sGrouptype ]);
@@ -497,11 +497,14 @@ export class CTableData {
    }
 
    /**
+    * @param  {number[]} [aMatch] Recalculate column positions
     * Return `CRowRows` object that has raw data on how to design row values.
     */
-   GetRowRows(): CRowRows {
+   
+   GetRowRows( aMatch?: number[] ): CRowRows {
       let aRows = this._collect_row_design();
       let oRR = new CRowRows(aRows);
+      if( aMatch ) oRR.OffsetColumns( aMatch );
       return oRR;
    }
 
@@ -1607,7 +1610,7 @@ export class CTableData {
          // Push values that is to be shown.
          if(aHidden) {
             let a = [];
-            aHidden.forEach((iHide, iIndex) => { if(iHide !== 1) a.push(aModify[ iIndex ]); })
+            aHidden.forEach((_H, i) => { if(!_H) a.push(aModify[ i ]); })
             aModify = a;
          }
          return aModify;
@@ -1838,6 +1841,23 @@ export class CRowRows {
     */
    SetRowElement(iIndex: number, eRow: HTMLElement) {
       this.m_aRows[iIndex][0][2] = eRow;
+   }
+
+
+   /**
+    * When columns are collected they get the position.index value. If that value hasn't been modified to ignore hidden columns this method can be used to recalculate column indexes
+    * @param {number[]} aMatch array that has the physical position index for column in table data in array position where value is presentedO
+    */
+   OffsetColumns( aMatch: number[] ) {
+      for( var i = 0; i < this.m_aRows.length; i++ ) {
+         let aColumns: number[] = this.m_aRows[i][1];
+
+         for( let j = 0; j < aColumns.length; j++ ) {
+            const iPhysical = aColumns[j];
+            const iRelative = aMatch.findIndex( v => v === iPhysical );
+            aColumns[j] = iRelative;
+         }
+      }
    }
    
 

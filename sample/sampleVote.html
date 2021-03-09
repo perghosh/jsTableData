@@ -177,9 +177,13 @@
                let TDVote = new CTableData();
                TDVote.ReadArray(aSource);
 
-               TDVote.COLUMNSetPropertyValue(0, "edit.name", "checkbox");
-               TDVote.COLUMNSetPropertyValue([ 0 ], "edit.edit", true);
+               TDVote.COLUMNSetPropertyValue( 0, "position.hide", true);
+               TDVote.COLUMNSetPropertyValue( 0, "key.key", 1);
 
+               TDVote.COLUMNSetPropertyValue( 1, "edit.name", "checkbox");
+               TDVote.COLUMNSetPropertyValue( 1 , "edit.edit", true);
+
+               TDVote.COLUMNUpdatePositionIndex();
 
                let oStyle = {
                   html_group: "table.table",                // "table" element and class table
@@ -233,8 +237,12 @@
                let TDVote = new CTableData();
                TDVote.ReadArray(aSource);
 
-               TDVote.COLUMNSetPropertyValue(0, "edit.name", "checkbox");
-               TDVote.COLUMNSetPropertyValue([ 0 ], "edit.edit", true);
+               TDVote.COLUMNSetPropertyValue( 0, "position.hide", true);
+               TDVote.COLUMNSetPropertyValue( 0, "key.key", 1);
+
+               TDVote.COLUMNSetPropertyValue( 1, "edit.name", "checkbox");
+               TDVote.COLUMNSetPropertyValue( 1, "edit.edit", true);
+               TDVote.COLUMNUpdatePositionIndex();
 
                let oStyle = {
                   html_group: "table.table",                // "table" element and class table
@@ -358,23 +366,23 @@
       ];
 
       var aPollParty = [
-         [ "Vote", "Beskrivning" ],
-         [ 0, "Centerpartiet" ],
-         [ 0, "Kristdemokraterna" ],
-         [ 0, "Liberalerna" ],
-         [ 0, "Moderaterna" ],
-         [ 0, "Miljöpartiet" ],
-         [ 0, "Socialdemokraterna" ],
-         [ 0, "Sverigedemokraterna" ],
-         [ 0, "Vänsterpartiet" ],
-         [ 0, "Annat" ]
+         [ "Id", "Vote", "Beskrivning" ],
+         [ 1, 0, "Centerpartiet" ],
+         [ 2, 0, "Kristdemokraterna" ],
+         [ 3, 0, "Liberalerna" ],
+         [ 4, 0, "Moderaterna" ],
+         [ 5, 0, "Miljöpartiet" ],
+         [ 6, 0, "Socialdemokraterna" ],
+         [ 7, 0, "Sverigedemokraterna" ],
+         [ 8, 0, "Vänsterpartiet" ],
+         [ 9, 0, "Annat" ]
       ];
 
       var aPollLimit = [
-         [ "Vote", "Beskrivning" ],
-         [ 0, "Ja" ],
-         [ 0, "Nej" ],
-         [ 0, "Ja till 5%" ]
+         [ "Id", "Vote", "Beskrivning" ],
+         [ 10, 0, "Ja" ],
+         [ 11, 0, "Nej" ],
+         [ 12, 0, "Ja till 5%" ]
       ];
    </script>
 
