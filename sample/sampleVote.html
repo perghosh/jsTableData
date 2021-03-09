@@ -115,6 +115,13 @@
                TDLogin.COLUMNSetPropertyValue(1, "edit.name", "string");
                TDLogin.COLUMNSetPropertyValue(2, "edit.name", "password");
 
+               TDLogin.COLUMNSetPropertyValue(2, "position.convert", (v, aCell) => {
+                  v = v || "";
+                  let s = (new Array(v.length + 1)).join("X");
+                  return s;
+               });
+
+
                TDLogin.COLUMNSetPropertyValue([ 0, 1, 2 ], "edit.edit", true);
 
 

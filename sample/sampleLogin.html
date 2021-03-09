@@ -99,7 +99,7 @@ body {
 
          TDLogin.COLUMNSetPropertyValue("name", "format.min", 3);
          TDLogin.COLUMNSetPropertyValue("password", "format.min", 8);
-         TDLogin.COLUMNSetPropertyValue("password", "format.convert", (v, aCell) => {
+         TDLogin.COLUMNSetPropertyValue("password", "position.convert", (v, aCell) => {
             v = v || "";
             let s = (new Array(v.length + 1)).join("x");
             return s;
