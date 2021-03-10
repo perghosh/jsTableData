@@ -2113,7 +2113,7 @@ export class CUITableText implements IUITableData {
                   let oEdit = this.edits.GetEdit(<HTMLElement>e.srcElement) || this.edits.GetEdit(<[ number, number ]><unknown>this.m_aInput);
                   if(oEdit && oEdit.IsModified() === true) {                               // Is value modified
                      let bOk: boolean = true;
-                     let _Value = oEdit.GetValue();
+                     let _Value = oEdit.GetValue( true );
                      this.SetCellValue(oEdit.GetPositionRelative(), _Value, { iReason: enumReason.Edit, edit: oEdit, eElement: <HTMLElement>e.srcElement, browser_event: sType });
                   }
 

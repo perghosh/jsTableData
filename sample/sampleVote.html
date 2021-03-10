@@ -172,6 +172,9 @@
                TTLogin.GetSection("body").focus();
             }
 
+            /**
+             * Create vote for swedish politica party
+             */
             CreateVoteParty(eRoot, aSource) {
                if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
                let TDVote = new CTableData();
@@ -195,6 +198,7 @@
                   html_section_footer: "tfoot",             // "tfoot" for footer section
                }
 
+               let oTrigger = new CTableDataTrigger({ table: TDVote, trigger: CApplication.CallbackVoteParty });
 
                let options = {
                   parent: eRoot,                            // container
@@ -203,7 +207,8 @@
                   name: "voteparty",                        // name to access UI table in CTableData
                   style: oStyle,                            // styling
                   edit: 1,                                  // endable edit
-                  state: 0x0010,
+                  state: 0x0010,                            // one click activate for edit controls
+                  trigger: oTrigger,
                };
 
                let TTVote = new CUITableText(options);
@@ -228,7 +233,35 @@
                eTitle.innerHTML = "<h2>Vilket parti får din röst om det var riksdagsval idag?</h2>"
 
                let eFooter = TTVote.GetSection("footer");
-               eFooter.innerHTML = "<div style='text-align: right;'><button class='button is-white'>Vote</button></div>"
+               eFooter.innerHTML = `<div>
+<button style='display: inline-block;' class='button is-white'>Vote</button>
+<span data-info="data" style='display: inline-block; margin-left: 3em;'></span><br>
+<span data-info="xml" style='display: inline-block; margin-left: 3em;'></span>
+</div>`;
+            }
+
+            static iCounter = 0;
+            static CallbackVoteParty( oEventData, v ) {
+               
+               let sName = CTableDataTrigger.GetTriggerName( oEventData.iEvent );
+               switch(sName) {
+               case "AfterSetValue":
+                  {
+                     let a = this.GetColumnData( 0 );
+                     let iCount = a.filter( v => v === 1 ).length;
+                     let iSum = a.reduce( (a,b) => a + b, 0 );
+                     let eSection = oEventData.dataUI.GetSection("footer")
+                     let e = eSection.querySelector("[data-info='data']");
+                     e.innerText = "Selected = " + iCount + ", Sum = " + iSum;
+                     let aData = this.GetDataForKeys();
+                     let xml = this.XMLGetData(aData, {insert: [0,1]});
+                     const sXml = (new XMLSerializer()).serializeToString(xml);
+                     e = eSection.querySelector("[data-info='xml']");
+                     e.innerText = sXml;
+
+                  }
+                  break;
+               }
 
             }
 
@@ -300,6 +333,7 @@
           * @param {EventDataTable} oEventData standard event data
           * @param {any} e This is dependent on the event.
           */
+         /*
          function CALLBACK_TableData(oEventData, v) {
             let sName = CTableDataTrigger.GetTriggerName(oEventData.iEvent); console.log(sName);
             switch(sName) {
@@ -311,6 +345,7 @@
 
             }
          }
+         */
 
          window.app = new CApplication();
          window.app.Initialize();

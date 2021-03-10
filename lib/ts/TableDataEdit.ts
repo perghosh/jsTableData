@@ -522,8 +522,8 @@ export namespace edit {
    }
 
    export class CEditCheckbox extends CEdit {
-      m_iSelected: number;
-      m_iOldSelected: number;
+      m_iSelected: number;             // selected value in pair value array with two values
+      m_iOldSelected: number;          // old selected value in pair value array
       m_aValue: [unknown,unknown];     // first value is not selected, second value is selected
       constructor(o: details.construct_edit) {
          super(o);
@@ -562,7 +562,7 @@ export namespace edit {
          else {
             _value = this.m_aValue[0];
          }
-         if( bUpdate === true ) this._update_old_value();
+         if( bUpdate === true ) this.m_iOldSelected = this.m_iSelected;
          return _value;
       }
 

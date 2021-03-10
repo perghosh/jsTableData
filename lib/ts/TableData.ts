@@ -430,6 +430,7 @@ export class CTableData {
    /**
     * Return array with rows and if specified another array with row numbers
     * @param oOptions
+    * @param {number} [oOptions.begin] index to start row where to  begin to collect internal data
     */
    GetData(oOptions?: { begin?: number, end?: number, max?: number, page?: number, sort?: [ number, boolean, string?][], hide?: number[] }): [ unknown[][], number[] ] {
       let o = oOptions || {};
@@ -491,10 +492,24 @@ export class CTableData {
       return aResult;
    }
 
+   /**
+    * Wrapper method to get values from selected column, uses `GetData` to collect values
+    * @param {number} iColumn index to column
+    * @param oOptions
+    */
+   GetColumnData( iColumn: number, oOptions?: { begin?: number, end?: number, max?: number, page?: number, sort?: [ number, boolean, string?][], hide?: number[] } ): unknown[] {
+      let a: unknown[] = [];
+      let aResult = this.GetData( oOptions );
+      aResult[ 0 ].forEach(row => { a.push( row[iColumn] ) });
+      return a;
+   }
+
    GetDataForKeys(aKey?: number[], aColumn?: number[]): unknown[][] {
-      aKey = aKey || this.m_aDirtyRow;
+      aKey = aKey || this.m_aDirtyRow; // default is dirty keys
       // aColumn = aColumn || implement columns from properties
-      return CTableData._get_data_for_keys( aKey, this.m_aBody, aColumn );
+      let aData = CTableData._get_data_for_keys( aKey, this.m_aBody, aColumn );
+
+      return aData;
    }
 
    /**
@@ -1374,8 +1389,15 @@ export class CTableData {
    }
 
 
+   /**
+    * Convert data to XML
+    * @param {unknown[][]} aBody data that is converted to XML
+    * @param oOptions
+    * @param {number} [oOptions.insert] array with column indexes that is added to xml, indexes are physical indexes
+    * @param doc
+    */
    XMLGetData(aBody: unknown[][], 
-      oOptions: { columns?: details.column[], values?: string, value?: string }, 
+      oOptions: { insert?: number[], columns?: details.column[], values?: string, value?: string }, 
       doc?: XMLDocument 
    ): XMLDocument {
       oOptions = oOptions || {};
@@ -1389,6 +1411,15 @@ export class CTableData {
       const iRowKey = 1;
       const iRowCount = aBody.length;
       const iColumnCount = aBody[0].length;
+
+      let aPass: boolean[];
+      if(oOptions.insert) {
+         aPass = new Array( iColumnCount );
+         aPass.fill(false);
+         oOptions.insert.forEach( iIndex => aPass[iIndex] = true );
+      }
+
+
       for(let iRow = 0; iRow < iRowCount; iRow++) {
          const aRow = aBody[iRow];
          let eValues = xml.appendChild( doc.createElement( sValues ) );
@@ -1401,8 +1432,9 @@ export class CTableData {
 
          for(; iColumn < iColumnCount; iColumn++) {
             const i = iColumn - iRowKey;
-            const v = aRow[i]
-            const oC = aColumn[i];
+            if( aPass && aPass[i] === false ) continue;
+            const v = aRow[iColumn];                                          // get value in row, iColumn has the current row position (remember that first is internal row key)
+            const oC = aColumn[i];                                            // get matching column
             let eValue = xml.appendChild( doc.createElement( sValue ) );
 
             eValue.setAttribute( "col", i.toString() );
