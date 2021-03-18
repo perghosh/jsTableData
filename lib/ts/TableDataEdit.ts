@@ -545,11 +545,22 @@ export namespace edit {
          return e;
       }
 
+      /**
+       * Open checkbox in table
+       * @param eParent
+       * @param sValue
+       * @param oPosition
+       */
       Open( eParent: HTMLElement, sValue?: string, oPosition?: DOMRect) {
+         if(this.IsElement()) { // are we working on one existing input element? the we need to attach to that element
+            this.m_eElement = eParent;
+            this.SetListener();
+         }
+         else {
+            eParent.appendChild(this.m_eElement);
+            this.m_eElement.style.display = "inline";
+         }
          this.SetValue( sValue );
-
-         eParent.appendChild( this.m_eElement );
-         this.m_eElement.style.display = "inline";
          this.m_iState |= enumInputState.Open;
       }
 
@@ -581,6 +592,10 @@ export namespace edit {
          super.SetPosition(aPosition, aPositionRelative);
       }
 
+      /**
+       * Specialization for INPUT[type=checkbox]. It is using the checked attribute and therefore differs from normal INPUT elements.
+       * @param {unknown} _Value
+       */
       SetValue(_Value: unknown) {
          this.m_iSelected = 0;
          if(typeof _Value === "number") {
@@ -588,16 +603,13 @@ export namespace edit {
             if( _Value !== 0 ) this.m_iSelected = 1;
             _Value = _Value.toString();
          }
+         else if(<HTMLInputElement><unknown>_Value instanceof HTMLElement) {
+            this.m_iSelected = (<HTMLInputElement><unknown>_Value).checked ? 1 : 0;
+            return;
+         }
          else if(typeof _Value !== "string" ) {
             this.m_aValue = [false,true];
             if( _Value ) this.m_iSelected = 1;
-/*
-            if(_Value === null) _Value = "";
-            else if( typeof _Value === "number" || typeof _Value === "object" ) _Value = _Value.toString();
-            if(typeof _Value !== "string") _Value = "";
-
-            if( _Value === "1" ) this.m_bSelected = true;
-            */
          }
          else {
             this.m_aValue = ["0","1"];

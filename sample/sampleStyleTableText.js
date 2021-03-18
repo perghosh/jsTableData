@@ -2,7 +2,6 @@
    * Cofigure page. Triggers, CSS and elements are prepared for page
    */
 function setup() {
-   window.SetTriggerName();
    CTableData_browser.AddCSS(sCSS); // prepare CSS
    document.createElement("table-info");
 

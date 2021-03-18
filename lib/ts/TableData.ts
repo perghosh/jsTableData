@@ -137,9 +137,11 @@ namespace details {
       body?: unknown[][],
       column?: details.column[],
       dirty_row?: number[],
+      external?: object;   // external properties, used if you need to attach custom properties
       footer_size?: number,
       header_size?: number,
-      id?: string,
+      id?: string,         // unique id for result
+      name?: string,       // name used to identify table data
       page?: number,       // index for active page if any
       trigger?: ((iTrigger: number, iReason: number, _data: any) => boolean)[],
    }
@@ -159,12 +161,14 @@ export class CTableData {
    m_aColumnIndex?: number[];// If columns have a different order, this points to column in `m_aColumn` and `m_aBody`.
                              // When this is specified always use it to get to column.
    m_aDirtyRow?: number[]; //  Dirty rows
+   m_oExternal: object;    // used to manage external properties. Not used in CTableData
    m_aFooter?: unknown[][];// Footer values, like sticky at bottom if result is presented in table
    m_iFooterSize: number;  // if bottom rows in body is used for something "else"
    m_aHeader?: unknown[][];// Header values, like sticky if result is presented in table
    m_iHeaderSize?: number; // if top rows in body is used for something "else"
    m_aHistory: [number,number,unknown][];// history of modified values
    m_sId: string;          // Unique id for source data 
+   m_sName: string;        // Name for source data, may be used to simplify identification
    m_iNextKey: number;     // key counter used to set key to rows. Each row holds a key value
    m_iPage?: number;       // index to active page
    m_aUITable?: [ string, IUITableData][];// UITable objects connected
@@ -220,6 +224,9 @@ export class CTableData {
             const a = CTableData.s_aJsType[i];
             if( a[0] === _Type ) return a[1];
          }
+
+         // try special type
+         return CTableData.GetType( _Type.toLowerCase() );
       }
       else {
          while(--i >= 0) {
@@ -319,10 +326,12 @@ export class CTableData {
       this.m_aBody = o.body || [];
       this.m_aColumn = o.column || [];
       this.m_aDirtyRow = o.dirty_row || [];
+      this.m_oExternal = o.external || {};
       this.m_iFooterSize = o.footer_size || 0;
       this.m_iHeaderSize = o.header_size || 0;
       this.m_aHistory = [];
       this.m_sId = o.id || "id" + ++CTableData.s_iIdNext;
+      this.m_sName = o.name || this.m_sId;
       this.m_iNextKey = 0;
       this.m_iPage = o.page || 0;
       this.m_aUITable = [];
@@ -332,6 +341,177 @@ export class CTableData {
     * Return id 
     */
    get id() { return this.m_sId; }
+
+   /**
+    * access external object
+    */
+   get external() { return this.m_oExternal; }
+
+
+   /**
+    * Return raw body of data. Only use this if you know how table data works internally
+    */
+   get body() { return this.m_aBody; }
+
+   /**
+    * Return array with rows and if specified another array with row numbers
+    * @param oOptions
+    * @param {number} [oOptions.begin] index to start row where to  begin to collect internal data
+    */
+   GetData(oOptions?: { begin?: number, end?: number, max?: number, page?: number, sort?: [ number, boolean, string?][], hide?: number[] }): [ unknown[][], number[] ] {
+      let o = oOptions || {};
+      let iPage = 0;
+      let iTotalRowCount = this.ROWGetCount(true);
+
+      let iBeginRow = this.m_iHeaderSize,
+         iEndRow = iTotalRowCount - this.m_iFooterSize,
+         iSlice = 1; // Important, first column in body is the index for row, default is not to add this column to result
+      let aResult: [ unknown[][], number[] ] = [[],[]];
+
+      iBeginRow = o.begin || iBeginRow;
+      iEndRow = o.end || iEndRow;
+
+      if(o.max && (iEndRow - iBeginRow) > o.max) iEndRow = iBeginRow + o.max;  // if max number of rows is set, check total and decrease if above.
+
+      let aBody: unknown[][] = this.m_aBody;
+
+      let bSortOrHide = this.COLUMNHasPropertyValue(true, [ "state.sort", "position.hide" ], [ true, 1, -1 ]);
+      let bConvert = this.COLUMNHasPropertyValue(true, "position.convert");
+
+      // Check if sort values is needed
+      let aSort: [ number, boolean, string?][] = o.sort || [];
+      let aHide: number[] = o.hide || [];
+
+      if(bSortOrHide === true) {
+         if(aSort.length === 0 ) {
+            let a = <[ number, [ number, number ] ][]>this.COLUMNGetPropertyValue(true, ["state.sort", "type.type"]);
+            a.forEach((aC) => {
+               const v = aC[ 1 ][0];
+               if(v === 1 || v === -1) {
+                  let sGrouptype = CTableData.GetJSType( aC[1][1] );
+                  if( typeof sGrouptype === "number" ) sGrouptype = "string";  // group name for type not found, set to string as default
+                  aSort.push([ aC[ 0 ], aC[1][0] === -1 ? true : false, sGrouptype ]);
+               }
+            });
+         }
+
+         if(aHide.length === 0) {
+            let a = <[ number, number ][]>this.COLUMNGetPropertyValue(true, "position.hide");
+            a.forEach((aH) => {
+               aHide.push(aH[1]);
+            });
+         }
+      }
+
+
+      if(aSort.length) {
+         aBody = aBody.slice(0);
+         CTableData._sort(aBody, aSort);
+      }
+
+
+      let oGetOptions: any = { slice: iSlice, hide: aHide.length === 0 ? null : aHide, table: this };
+      if(bConvert) { oGetOptions.convert = CTableData.StripIndex( <[ string | number, unknown ][]>this.COLUMNGetPropertyValue(true, "position.convert") ); }
+
+      CTableData._get_data(aResult, aBody, iBeginRow, iEndRow, oGetOptions);
+
+      return aResult;
+   }
+
+   /**
+    * Wrapper method to get values from selected column, uses `GetData` to collect values
+    * @param {number} iColumn index to column
+    * @param oOptions
+    */
+   GetColumnData( iColumn: number, oOptions?: { begin?: number, end?: number, max?: number, page?: number, sort?: [ number, boolean, string?][], hide?: number[] } ): unknown[] {
+      let a: unknown[] = [];
+      let aResult = this.GetData( oOptions );
+      aResult[ 0 ].forEach(row => { a.push( row[iColumn] ) });
+      return a;
+   }
+
+   GetDataForKeys(aKey?: number[], aColumn?: number[]): unknown[][] {
+      aKey = aKey || this.m_aDirtyRow; // default is dirty keys
+      // aColumn = aColumn || implement columns from properties
+      let aData = CTableData._get_data_for_keys( aKey, this.m_aBody, aColumn );
+
+      return aData;
+   }
+
+
+   /**
+    * Compare values in cell or cells identified by row and column or range
+    * @param  {number} iRow key for row in source array
+    * @param  {number|string} _Column index or column name to column value is set to
+    * @param  {unknown} value value set to cell
+    * @param  {boolean} bRaw if raw value cell value from raw row is set
+    */
+   CountValue(iRow: number, _Column: string | number, value: unknown, bRaw?: boolean): number;
+   CountValue(aRange: [ iR: number, _C: string | number ], value: unknown, bRaw?: boolean): number;
+   CountValue(aRange: [ iR1: number, _C1: string | number, iR2: number, _C2: string | number ], value: unknown, bRaw?: boolean): number;
+   CountValue(_Row: any, _Column: any, value?: unknown, bRaw?: boolean): number {
+
+      const compare = (a, b): number => {
+         if( typeof b === "function" ) return b( a );
+         return a === b ? 1 : 0;
+      }
+
+      let iCount = 0, iRow = _Row, iColumn = _Column;
+      if(Array.isArray(_Row) && _Row.length === 2) {
+         [ iRow, iColumn ] = _Row;
+         if(iRow === -1) {
+            _Row = [ 0, _Column, this.ROWGetCount() - 1, _Column ];
+         }
+         bRaw = <boolean>value;
+         value = _Column;
+      }
+
+      if(typeof _Row === "number") {
+         let [ iR, iC ] = this._get_cell_coords(iRow, iColumn, bRaw);
+         let aRow: unknown[] = this.m_aBody[ iR ];
+
+         if(aRow[ iC ] instanceof Array) { // is current value array
+            if(Array.isArray(value) == false) iCount += compare( aRow[ iC ][ 0 ], value ); 
+            else iCount += compare( aRow[ iC ], value );
+         }
+         else { iCount += compare( aRow[ iC ], value); } 
+      }
+      else if(Array.isArray(_Row) === true) {
+         let aRow: unknown[]; // active row
+         let [ iR1, iC1, iR2, iC2 ] = _Row;                    // convert to variables
+         [ iR1, iC1 ] = this._get_cell_coords(iR1, iC1, bRaw); // get physical positions
+         [ iR2, iC2 ] = this._get_cell_coords(iR2, iC2, bRaw); // get physical positions
+         if(iR1 > iR2) iR2 = [ iR1, iR2 = iR1 ][ 0 ];
+         if(iC1 > iC2) iC2 = [ iC1, iC2 = iC1 ][ 0 ];
+
+         for(let iR = iR1; iR <= iR2; iR++) {
+            if( bRaw ) aRow = this.m_aBody[ iR ];
+            else aRow = this.m_aBody[ this._row( iR ) ];
+            for(let iC = iC1; iC <= iC2; iC++) {
+               if(aRow[ iC ] instanceof Array) {
+                  if(Array.isArray(value) == false) iCount += compare( aRow[ iC ][ 0 ], value );
+                  else iCount += compare( aRow[ iC ],  value );
+               }
+               else { iCount += compare( aRow[ iC ], value ); }
+            }
+         }
+      }
+
+      return iCount;
+   }
+
+
+   /**
+    * Insert column to table. Adds column information and cell/cells at position in rows
+    * @param {number|string} _WhereColumn
+    * @param {unknown|unknown[]} [_Value] value or array of value inserted at position
+    * @param {number} [iCount] Number of columns inserted, default is 1
+    */
+   InsertColumn(_WhereColumn: number|string, _Value?:unknown|unknown[], iCount?: number): details.column[] {
+      iCount = iCount || 1;
+      this.ROWExpand( iCount, _Value, _WhereColumn );
+      return this.COLUMNInsert( _WhereColumn, iCount );
+   }
 
    /**
     * Read array information into table data. If table is empty the default is to create columns and
@@ -423,93 +603,6 @@ export class CTableData {
       });
 
       return aReturn;
-   }
-
-   GetBody() { return this.m_aBody; }
-
-   /**
-    * Return array with rows and if specified another array with row numbers
-    * @param oOptions
-    * @param {number} [oOptions.begin] index to start row where to  begin to collect internal data
-    */
-   GetData(oOptions?: { begin?: number, end?: number, max?: number, page?: number, sort?: [ number, boolean, string?][], hide?: number[] }): [ unknown[][], number[] ] {
-      let o = oOptions || {};
-      let iPage = 0;
-      let iTotalRowCount = this.ROWGetCount(true);
-
-      let iBeginRow = this.m_iHeaderSize,
-         iEndRow = iTotalRowCount - this.m_iFooterSize,
-         iSlice = 1; // Important, first column in body is the index for row, default is not to add this column to result
-      let aResult: [ unknown[][], number[] ] = [[],[]];
-
-      iBeginRow = o.begin || iBeginRow;
-      iEndRow = o.end || iEndRow;
-
-      if(o.max && (iEndRow - iBeginRow) > o.max) iEndRow = iBeginRow + o.max;  // if max number of rows is set, check total and decrease if above.
-
-      let aBody: unknown[][] = this.m_aBody;
-
-      let bSortOrHide = this.COLUMNHasPropertyValue(true, [ "state.sort", "position.hide" ], [ true, 1, -1 ]);
-      let bConvert = this.COLUMNHasPropertyValue(true, "position.convert");
-
-      // Check if sort values is needed
-      let aSort: [ number, boolean, string?][] = o.sort || [];
-      let aHide: number[] = o.hide || [];
-
-      if(bSortOrHide === true) {
-         if(aSort.length === 0 ) {
-            let a = <[ number, [ number, number ] ][]>this.COLUMNGetPropertyValue(true, ["state.sort", "type.type"]);
-            a.forEach((aC) => {
-               const v = aC[ 1 ][0];
-               if(v === 1 || v === -1) {
-                  let sGrouptype = CTableData.GetJSType( aC[1][1] );
-                  if( typeof sGrouptype === "number" ) sGrouptype = "string";  // group name for type not found, set to string as default
-                  aSort.push([ aC[ 0 ], aC[1][0] === -1 ? true : false, sGrouptype ]);
-               }
-            });
-         }
-
-         if(aHide.length === 0) {
-            let a = <[ number, number ][]>this.COLUMNGetPropertyValue(true, "position.hide");
-            a.forEach((aH) => {
-               aHide.push(aH[1]);
-            });
-         }
-      }
-
-
-      if(aSort.length) {
-         aBody = aBody.slice(0);
-         CTableData._sort(aBody, aSort);
-      }
-
-
-      let oGetOptions: any = { slice: iSlice, hide: aHide.length === 0 ? null : aHide, table: this };
-      if(bConvert) { oGetOptions.convert = CTableData.StripIndex( <[ string | number, unknown ][]>this.COLUMNGetPropertyValue(true, "position.convert") ); }
-
-      CTableData._get_data(aResult, aBody, iBeginRow, iEndRow, oGetOptions);
-
-      return aResult;
-   }
-
-   /**
-    * Wrapper method to get values from selected column, uses `GetData` to collect values
-    * @param {number} iColumn index to column
-    * @param oOptions
-    */
-   GetColumnData( iColumn: number, oOptions?: { begin?: number, end?: number, max?: number, page?: number, sort?: [ number, boolean, string?][], hide?: number[] } ): unknown[] {
-      let a: unknown[] = [];
-      let aResult = this.GetData( oOptions );
-      aResult[ 0 ].forEach(row => { a.push( row[iColumn] ) });
-      return a;
-   }
-
-   GetDataForKeys(aKey?: number[], aColumn?: number[]): unknown[][] {
-      aKey = aKey || this.m_aDirtyRow; // default is dirty keys
-      // aColumn = aColumn || implement columns from properties
-      let aData = CTableData._get_data_for_keys( aKey, this.m_aBody, aColumn );
-
-      return aData;
    }
 
    /**
@@ -647,24 +740,48 @@ export class CTableData {
       let aColumn: details.column[];
 
       // check if _Column is string, if string it is treated as a name
-      if(typeof _Column === "string") { _Column = this._create_column(1, { id: _Column, name: _Column, position: { index: this.COLUMNGetCount() } });}
-
-      if(Array.isArray(_Column) === false) _Column = [ _Column ];
+      if(typeof _Column === "string") { 
+         aColumn = this._create_column(1, { id: _Column, name: _Column, position: { index: this.COLUMNGetCount() } });
+      }
+      else if(typeof _Column === "number") {
+         aColumn = this._create_column(_Column);
+      }
+      else if(Array.isArray(_Column) === true) {
+         for(let i = 0; i < (<unknown[]>_Column).length; i++) {
+            if(typeof _Column[ i ] === "string") { _Column[i] = this._create_column(1, { id: _Column[i], name: _Column[i], position: { index: this.COLUMNGetCount() } })[0]; }
+            else { _Column[i] = this._create_column(1, _Column[i] )[0]; }
+         }
+         aColumn = <details.column[]>_Column;
+      }
+      else if(Array.isArray(_Column) === false) _Column = [ _Column ];
 
       if(callConvert) {
          let a = callConvert(<unknown[]>_Column, aColumn);
          if(Array.isArray(a)) aColumn = a;
       }
-      else {
-         for(let i = 0; i < (<unknown[]>_Column).length; i++) {
-            if(typeof _Column[ i ] === "string") { _Column[i] = this._create_column(1, { id: _Column[i], name: _Column[i], position: { index: this.COLUMNGetCount() } })[0]; }
-         }
-         aColumn = <details.column[]>_Column;
-      }
 
       this.m_aColumn = this.m_aColumn.concat(aColumn);
 
       return this.m_aColumn.length;
+   }
+
+   /**
+    * Insert column or columns at specified position
+    * @param {number | string} _WhereColumn Where columns are inserted
+    * @param {number} [iCount] number of columns inserted at position
+    * @param {boolean} [bRaw] if true then position is exact index for column in table data
+    */
+   COLUMNInsert(_WhereColumn: number | string, iCount?: number, bRaw?: boolean): details.column[] {
+      iCount = iCount || 1;
+      const iWhere = bRaw !== true ? this._index( _WhereColumn ) : <number>_WhereColumn;
+      let aColumn: details.column[] = this._create_column(iCount);
+      this.m_aColumn.splice( iWhere, 0, ...aColumn );
+      aColumn = [];
+      for(let i = 0; i < iCount; i++) {
+         aColumn.push( this.m_aColumn[i + iWhere] );
+      }
+
+      return aColumn;
    }
 
    /**
@@ -996,6 +1113,87 @@ export class CTableData {
       return _Old[ 1 ];                                                        // return primitive value for property
    }
 
+
+   /**
+    * Set property value for item or items in array
+    * @param {TYPE[]} aTarget index or name for column that you want to set
+    * @param {boolean|number|string|number[]} _Index index or name for column that you want to set
+    * @param {string | string[]} _Property property name, if child property remember the format is "property.property"
+    * @param {unknown} _Value value set to property, if array then each array value are matched to column setting multiple column properties
+    * @param {boolean} [bRaw] Index for column will use direct index in internal column array.
+    * @returns {unknown} old property value
+    */
+   static SetPropertyValue<TYPE>(aTarget: TYPE[], _Index: boolean | number | number[] | string[], _Property: string | string[], _Value: unknown): unknown | unknown[] {
+      let column: TYPE;
+      let bArray = false;
+      let bAll = false;
+      let _Old: [ number | string, unknown][] = [];
+
+      if(typeof _Index === "boolean" || _Index === void 0) { bAll = true; bArray = true; } // boolean value, then take all columns
+      else if(Array.isArray(_Index) === false) (<unknown[]>_Index) = [ (<string | number>_Index) ];
+      else bArray = true;
+
+      let iEnd = bAll ? aTarget.length : (<unknown[]>_Index).length;
+      for(let i = 0; i < iEnd; i++) {
+         let iPosition: number = bAll ? i : _Index[ i ];
+         if(bAll) { column = aTarget[ i ]; }
+         else {
+            column = aTarget[ iPosition ];
+         }
+
+         if(Array.isArray(_Property)) {
+            _Property.forEach((s,i) => {
+               let [ s0, s1 ] = s.split("."); // format to find property is property_name.property_name because some properties are in child objects
+               
+               if(column.hasOwnProperty(s0) === false) {
+                  if(typeof s1 === "string") column[ s0 ] = {};
+               }
+               if(typeof s1 === "string") {
+                  _Old.push([iPosition,column[ s0 ][ s1 ]]);
+                  if( !Array.isArray(_Value) ) column[ s0 ][ s1 ] = _Value;
+                  else column[ s0 ][ s1 ] = _Value[i];
+               }
+               else {
+                  _Old.push([ iPosition, column[ s0 ] ]);
+                  if(!Array.isArray(_Value) || bArray === false) {
+                     if( typeof _Value === "object" && !Array.isArray(_Value) && _Value !== null ) Object.assign( column[ s0 ], _Value );
+                     else column[ s0 ] = _Value;
+                  }
+                  else column[ s0 ] = _Value[i];
+               }
+            });
+         }
+         else {
+            let [ s0, s1 ] = _Property.split("."); // format to find property is property_name.property_name because some properties are in child objects
+
+            if(column.hasOwnProperty(s0) === false) {
+               if(typeof s1 === "string") column[ s0 ] = {};
+            }
+            if(typeof s1 === "string") {
+               _Old.push([ iPosition, column[ s0 ][ s1 ] ]);
+               if(!Array.isArray(_Value) || bArray === false) {
+                  if( typeof _Value === "object" && !Array.isArray(_Value) && _Value !== null ) Object.assign( column[ s0 ][ s1 ], _Value );
+                  else column[ s0 ][ s1 ] = _Value;
+               }
+               else column[ s0 ][ s1 ] = _Value[i];
+            }
+            else {
+               _Old.push([ iPosition, column[ s0 ] ]);
+               if(!Array.isArray(_Value) || bArray === false) {
+                  if( typeof _Value === "object" && !Array.isArray(_Value) && _Value !== null ) Object.assign( column[ s0 ], _Value );
+                  else column[ s0 ] = _Value;
+               }
+               else column[ s0 ] = _Value[i];
+            }
+         }
+      }
+
+      if(bArray) return _Old;                                                  // return index and value for property in array
+
+      return _Old[ 1 ];                                                        // return primitive value for property
+   }
+
+
    /**
     * Set type for columns based on value types in array:
     * Remember to take array with values that match number of values in each row.
@@ -1030,8 +1228,8 @@ export class CTableData {
          if( oColumn ) {
             const s = typeof v;                                                // parameter type
             if( s === "string" ) {                                             // set column type with javascript type name
-               oColumn.type.group = <string>v;
-               oColumn.type.type = <number>CTableData.GetJSType(<string>v);
+               oColumn.type.group = s;
+               oColumn.type.type = <number>CTableData.GetJSType(s);
                if(v === "number") oColumn.style.textAlign = "right";
             }
             else if(s !== "object") {
@@ -1311,14 +1509,25 @@ export class CTableData {
     * Expands each row in table with 1 or more columns
     * @param {number} iCount number of columns to expand
     * @param {unknown} [_Value] if expanded columns has default value
+    * @param {number|string} [_Where] position in row where new values are inserted
     */
-   ROWExpand(iCount?: number, _Value?: unknown): void {
+   ROWExpand(iCount?: number, _Value?: unknown, _Where?: number|string ): void {
       iCount = iCount || 1;
       let a = new Array(iCount); // array to append to each row
       if(_Value !== undefined) a.fill(_Value); // default value in array
       let i = this.m_aBody.length;
-      while(--i >= 0) {
-         for(let j = 0; j < a.length; j++) this.m_aBody[ i ].push(a[j]);
+      if( _Where === undefined ) {
+         while(--i >= 0) {
+            for(let j = 0; j < a.length; j++) this.m_aBody[ i ].push(a[ j ]);
+         }
+      }
+      else {
+         const iWhere = this._index(_Where) + 1;                              // remember to add 1 because first value is internal key value for row
+         while(--i >= 0) {
+            let aRow = this.m_aBody[ i ];
+            if( iCount === 1 ) aRow.splice( iWhere, 0, _Value );
+            else aRow.splice( iWhere, 0, ...a );
+         }
       }
    }
 
@@ -1784,30 +1993,33 @@ export class CTableData {
 
 
    /**
-    * */
+    * Generate information how fields are placed. the position.row and position.hide column properties
+    * are checked and based on those information about where field is placed is generated.
+    */
    _collect_row_design(): [ [number,number,HTMLElement], number[] ][] {
       let aRow: [ [number,number,HTMLElement], number[] ][] = [ [ [0,0,null], [] ] ];// array used to collect information for each row, format described [ [row index, row priority ], [column indexes...] ] 
 
       let i = this.m_aColumn.length;
 
-      this.m_aColumn.forEach((oC, i) => {
+      this.m_aColumn.forEach((oC, iIndex) => {
          const position = oC.position;
-         if(position.row) {
+         let iColumn = typeof position.index === "number" ? position.index : iIndex;
+         if(position.row) {                                                    //  is field not placed in main row ?
             let bPushed = false;
             let i = aRow.length;
             while(--i >= 0) {
                if(position.row === aRow[ i ][ 0 ][ 0 ]) {                      // compare to row index in [ [row index, row priority ], [column indexes...] ]
-                  aRow[0][1].push( position.index );                           // push column to row
+                  aRow[0][1].push( iColumn  );                                 // push column to row
                   bPushed = true;
                }
             }
 
             if(bPushed === false) {                                            // row wasn't found, add it
-               aRow.push( [ [position.row, 1, null], [position.index] ] );
+               aRow.push( [ [position.row, 1, null], [iColumn] ] );
             }
          }
          else if(!position.hide) {
-            aRow[0][1].push( position.index );                                 // aRow[0] always has the main row
+            aRow[0][1].push( iColumn );                                        // aRow[0] always has the main row
          }
       });
 

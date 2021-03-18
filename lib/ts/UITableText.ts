@@ -23,7 +23,6 @@ const enum enumState {
    SetHistory  = 0x0004,   // Record changes in history
    SetValue    = 0x0008,   // Try to set value if property is found in element.
    SetOneClickActivate = 0x0010,// Activate edits in one click
-
 }
 
 namespace details {
@@ -131,7 +130,7 @@ export class CUITableText implements IUITableData {
    m_aColumnPosition: tabledata_position[];
    m_eComponent: HTMLElement; // Element that acts as container to table, sections can exist outside container but default is within
    m_oEdits: edit.CEdits;     // Component that handles edit logic
-   m_sId: string;             // Unique id for source data 
+   m_sId: string;             // Unique id for ui table
    m_aInput: [ number, number, HTMLElement, number, number ]; // data for active input
    m_sName: string;           // name for UI object, this can be used to make it easier to find ui class in collections
    m_iOpenEdit: number;       // number of input elements opened.
@@ -1199,11 +1198,18 @@ export class CUITableText implements IUITableData {
     * @param {number} iRow Row number where input is activated
     * @param {number | number[]} [_Column] Column where inputs are activated, if no column than all inputs for selected row is activated
     */
-   INPUTActivate(iRow?: number, _Column?: number | number[], bInput?: boolean) {
-      if(iRow === void 0) {
+   INPUTActivate(_Row?: number|boolean, _Column?: number | number[], bInput?: boolean) {
+      let iRow: number;
+      if( typeof _Row === "boolean") {
+         bInput = _Row;
+         _Row = void 0;
+      }
+      if(_Row === void 0) {
          iRow = this.m_aInput[0];
          _Column = this.m_aInput[1];
       }
+      else if( typeof _Row === "number") iRow = _Row;
+
       let aColumn: number[] = [];
       if(_Column === void 0) {                                                 // No column then activate complete row
          let aValue = <unknown[]>this.data.COLUMNGetPropertyValue(true, "edit.edit", (C) => { return C?.edit?.edit === true; }); // get editable columns
@@ -1733,6 +1739,27 @@ export class CUITableText implements IUITableData {
 
                self._on_action("dblclick", e, eSink.dataset.section);
             });
+
+            eSection.addEventListener("change", (e: Event) => {
+               let eSink: HTMLElement;
+               if( (<any>e.target).tagName === "INPUT" || (<any>e.target).tagName === "SELECT") {
+                  let oEdit = this.m_oEdits.GetEdit( (<HTMLElement>e.target) );// try to get edit object for edit element
+                  if(oEdit && (<HTMLElement>e.target).matches("[data-commit]")) {
+                     oEdit.SetValue( e.target );
+                     if(oEdit.IsModified()) {
+                        let _Value = oEdit.GetValue( true );
+                        this.SetCellValue(oEdit.GetPositionRelative(), _Value, { iReason: enumReason.Edit, edit: oEdit, eElement: <HTMLElement>e.target, browser_event: "change" });
+                     }
+                  }
+               }
+               else eSink = <HTMLElement>e.currentTarget;
+
+               while(eSink && eSink.dataset.section === undefined && eSink.dataset.widget !== CUITableText.s_sWidgetName) eSink = eSink.parentElement;
+               if(!eSink) return;
+
+               self._on_action("change", e, eSink.dataset.section);
+            }, true);
+
          }
 
          let bOk = this._has_create_callback("afterCreate", {data: this.data, dataUI: this, eElement: eSection }, sName );
@@ -1804,7 +1831,7 @@ export class CUITableText implements IUITableData {
       let _HtmlRow = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row") || "div";
       let _HtmlBefore = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body_before") || _HtmlRow;
       let _HtmlAfter = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body_after") || _HtmlRow;
-      let _HtmlContainer = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body_container");
+      let _HtmlContainer = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body_container"); // if row is more than one row this could be used to group rows within container element
       let sHtmlCell: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_cell") || "span"; // span is default for cell
       let sHtmlValue: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_value");
       if( typeof sHtmlValue === "string" ) sHtmlValue = sHtmlValue.trim();
@@ -1819,7 +1846,8 @@ export class CUITableText implements IUITableData {
          eRow.dataset.r = iRow.toString();
          eRow.dataset.c_row = "C" + aColumn.join(",C") + ",";
 
-         aColumn.forEach(i => { 
+         aColumn.forEach((i,j) => { 
+            if( i === undefined ) i = j;
             let e = document.createElement(sHtmlCell);
             e.dataset.c = i.toString();
             const oFormat = this.m_aColumnFormat[i];
@@ -1856,12 +1884,12 @@ export class CUITableText implements IUITableData {
          iLevelIndex++;
       }
 
-      oRowRows.SetRowElement( iLevelIndex, aRowMain[1] );                       // main row
+      oRowRows.SetRowElement( iLevelIndex, aRowMain[1] );                      // main row
       set_row_attr( aRowMain[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), sHtmlCell, sHtmlValue, sStyle, sClass );
       aRowMain[1].dataset.i = iLevelIndex.toString();
       iLevelIndex++;
 
-      if(aRowLevel[ iLevelIndex ] > 0) {                                        // rows after main row
+      if(aRowLevel[ iLevelIndex ] > 0) {                                       // rows after main row
          let aRow = this._create_row( _HtmlAfter );
          oRowRows.SetRowElement( iLevelIndex, aRow[1] );
          set_row_attr( aRow[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), sHtmlCell, sHtmlValue, sStyle, sClass );

@@ -25,7 +25,7 @@ export function SetTriggerName() {
       [enumTrigger.AfterRemoveRow_,"AfterRemoveRow"],
       [enumTrigger.BeforeSetCellError_,"BeforeSetCellError"],
       [enumTrigger.AfterSetCellError_,"AfterSetCellError"],
-
+      [enumTrigger.OnResize_,"OnResize"],
       [enumTrigger.UpdateDataNew,"UpdateDataNew"],
       [enumTrigger.UpdateData,"UpdateData"],
       [enumTrigger.UpdateRowNew,"UpdateRowNew"],

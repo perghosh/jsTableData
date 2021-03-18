@@ -1,0 +1,662 @@
+﻿<!DOCTYPE html>
+<!-- 
+Methods
+- CApplication::Initialize - Initialize objects in CApplication for use.
+- CApplication::CreateLogin - Create login markup from source
+
+-->
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta charset="utf-8" />
+   <title>Vote</title>
+   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+   <style>
+      :root {
+         --gd-blue: #0d6efd;
+         --gd-indigo: #6610f2;
+         --gd-purple: #6f42c1;
+         --gd-pink: #d63384;
+         --gd-red: #dc3545;
+         --gd-orange: #fd7e14;
+         --gd-yellow: #ffc107;
+         --gd-green: #198754;
+         --gd-teal: #20c997;
+         --gd-cyan: #0dcaf0;
+         --gd-white: #fff;
+         --gd-gray: #6c757d;
+         --gd-gray-dark: #343a40;
+         --gd-gray-light: #e9e8eb;
+         --gd-primary: #0d6efd;
+         --gd-secondary: #6c757d;
+         --gd-success: #198754;
+         --gd-info: #0dcaf0;
+         --gd-warning: #ffc107;
+         --gd-danger: #dc3545;
+         --gd-light: #f8f9fa;
+         --gd-dark: #212529;
+         --gd-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+         --gd-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      }
+
+
+      body {
+         color: #212529;
+         margin: 0;
+         font-family: var(--gd-font-sans-serif);
+         font-size: 1rem;
+         font-weight: 400;
+         line-height: 1.5;
+         background-color: #fff;
+      }
+
+      section, tbody { 
+         outline: none; 
+      }
+
+      .selected {
+         background-color: var(--gd-gray-light);
+      }
+
+      .checked {
+         display: inline-block;
+         width: 16px;
+         height: 16px;
+         background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-check2-square' viewBox='0 0 16 16'> <path d='M3 14.5A1.5 1.5 0 0 1 1.5 13V3A1.5 1.5 0 0 1 3 1.5h8a.5.5 0 0 1 0 1H3a.5.5 0 0 0-.5.5v10a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V8a.5.5 0 0 1 1 0v5a1.5 1.5 0 0 1-1.5 1.5H3z'/> <path d='M8.354 10.354l7-7a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z'/> </svg>");
+      }
+
+
+      /* Customizable styles  https://github.com/adamculpepper/toggle-switchy*/
+
+/* Colors: Default (blue) */
+.vote-check {color:#fff;}
+.vote-check > input + .toggle:before {content:'VALD';}
+.vote-check > input + .toggle:after {content:'-';}
+.vote-check > input + .toggle > .switch {background:#fff;}
+.vote-check > input + .toggle + .label {color:#000;}
+.vote-check > input:checked + .toggle {background:#3498db;}
+.vote-check > input:not(:checked) + .toggle {background:#ccc;}
+.vote-check > input:checked + .toggle > .switch {border:3px solid #3498db;}
+.vote-check > input:not(:checked) + .toggle > .switch {border:3px solid #ccc;}
+.vote-check > input:focus + .toggle,
+.vote-check > input:active + .toggle {box-shadow:0 0 5px 3px rgba(0, 119, 200, 0.50);}
+
+/* Rounded switch corners */
+.vote-check > input + .toggle {border-radius:4px;}
+.vote-check > input + .toggle .switch {border-radius:6px;}
+
+/* //////////////////////////
+CORE STYLES BELOW - NO TOUCHY
+////////////////////////// */
+.vote-check {display:inline-flex; align-items:center; user-select:none; position:relative; vertical-align:middle; margin-bottom:0;}
+.vote-check:hover {cursor:pointer;}
+.vote-check > input {position:absolute; opacity:0;}
+.vote-check > input + .toggle {align-items:center; position:relative;}
+.vote-check > input + .toggle {overflow:hidden; position:relative; flex-shrink:0;}
+.vote-check > input[disabled] + .toggle {opacity:0.5;}
+.vote-check > input[disabled] + .toggle:hover {cursor:not-allowed;}
+.vote-check > input + .toggle {width:100%; height:100%; margin:0; cursor:pointer;}
+.vote-check > input + .toggle > .switch {display:block; height:100%; position:absolute; right:0; z-index:3; box-sizing:border-box;}
+
+/* Labels */
+.vote-check > input + .toggle:before,
+.vote-check > input + .toggle:after {display:flex; align-items:center; position:absolute; z-index:2; height:100%;}
+.vote-check > input + .toggle:before {right:55%;}
+.vote-check > input + .toggle:after {left:50%;}
+.vote-check > input + .toggle + .label {margin-left:10px;}
+.vote-check[data-label='left'] > input + .toggle {order:2;}
+.vote-check[data-label='left'] > input + .toggle + .label {order:1; margin-left:0; margin-right:10px;}
+
+/* Show / Hide */
+.vote-check > input + .toggle:before {opacity:0;}
+.vote-check > input:checked + .toggle:before {opacity:1;}
+.vote-check > input:checked + .toggle:after {opacity:0;}
+
+/* Transitions */
+.vote-check > input + .toggle {transition:background 200ms linear, box-shadow 200ms linear;}
+.vote-check > input + .toggle:before,
+.vote-check > input + .toggle:after {transition:all 200ms linear;}
+.vote-check > input + .toggle > .switch {transition:right 200ms linear, border-color 200ms linear;}
+
+
+/* Rounded switch corners */
+.vote-check > input + .toggle {border-radius:4px;}
+.vote-check > input + .toggle .switch {border-radius:6px;}
+
+/* Size: Large */
+.vote-check[data-size='lg'] > input + .toggle				{width:95px; height:35px;}
+.vote-check[data-size='lg'] > input + .toggle > .switch	{width:35px;}
+.vote-check[data-size='lg'] > input + .toggle:before,
+.vote-check[data-size='lg'] > input + .toggle:after		{font-size:1rem;}
+.vote-check[data-size='lg'] > input:not(:checked) + .toggle > .switch {right:calc(100% - 35px);}
+
+
+/* Style: Rounded */
+.vote-check[data-style='rounded'] > input + .toggle,
+.vote-check[data-style='rounded'] > input + .toggle > .switch {border-radius:50px;}
+.vote-check[data-style='rounded'] > input + .toggle:before {right:50%;}
+.vote-check[data-style='rounded'] > input + .toggle:after {left:50%;}
+
+/* Color: Green */
+.vote-check[data-color='green'] > input:checked + .toggle {background:#00d1b2;}
+.vote-check[data-color='green'] > input:checked + .toggle > .switch {border-color:#00d1b2;}
+
+   </style>
+
+</head>
+<body>
+
+<!--
+   
+<label class="vote-check" data-style="rounded" data-color="green">
+	<input checked type="checkbox" value="1">
+	<span class="toggle">
+		<span class="switch"></span>
+	</span>
+</label>
+-->
+
+
+   <div class="container">
+
+      <div class="notification is-primary">
+         <div id="idLogin" class="content is-primary"></div>
+      </div>
+
+
+      <div class="notification is-primary">
+         <div id="idVote" class="content is-primary"></div>
+      </div>
+
+      <div class="notification is-primary">
+         <div id="idVoteLimit" class="content is-primary"></div>
+      </div>
+
+   </div>
+
+
+   <script>
+      function PAGE_Setup() {
+
+         class CApplication {
+            constructor() {
+               this.m_oEditors = edit.CEditors.GetInstance();
+               // Initialize CRequest for server communication
+               this.m_oRequest = new CRequest({
+                  callback: CApplication.CallbackServer,
+                  folder: "rSelect",
+                  methods: { SYSTEM_Init: "l10", SYSTEM_GetUserData: "s03", SYSTEM_GetCountry: "s08", SCRIPT_Run: "f60", REPORT_Pdf: "r02" },
+                  url: "http://127.0.0.1:8882/jq.srf?"
+               });
+
+               this.m_oPage = new CPage(this);
+            }
+
+            get request() { return this.m_oRequest; }
+            get session() { return this.m_oRequest.session; }
+            get page() { return this.m_oPage; }
+
+            /**
+             * Initialize objects in CApplication for use.
+             */
+            Initialize() {
+               let oEditors = this.m_oEditors;
+               oEditors.Add("string", edit.CEditInput);
+               oEditors.Add("password", edit.CEditPassword);
+               oEditors.Add("text", edit.CEditTextarea);
+               oEditors.Add("number", edit.CEditNumber);
+               oEditors.Add("checkbox", edit.CEditCheckbox);
+
+               this.m_oRequest.Get("SYSTEM_Init|SYSTEM_GetCountry|SYSTEM_GetUserData", { name: "per" });
+            }
+
+            /**
+             * Initialize page information, user is verified and it is tome to collect information needed to render page markup
+             */
+            InitializePage() {
+               this.page.GetLogin();
+               this.page.GetSelectedPoll();
+            }
+
+            OnResponse(eSection, sMethod) {                                   console.log("Method = " + sMethod );
+               let aItem = eSection.getElementsByTagName('item');
+               for(let i = 0; i < aItem.length; i++) {
+                  let eItem = aItem[i];
+                  const sName = eItem.getAttribute("name");
+                  this.page.ProcessResponse(sName, eItem);
+
+               }
+            }
+
+            Logon() {
+               let TDLogon = this.GetColumnData("logon"); //
+               let TTLogon = TDLogon.UIGet( 0 ); // 
+               let aError = TTLogon.ERRORGetCount() ? TTLogon.ERRORGet() : TTLogon.ROWValidate(0);
+               if(Array.isArray(aError) && TTLogon.ERRORGetCount() === 0) TTLogon.ERRORSet(aError);
+
+
+               if(Array.isArray(aError)) {
+                  aError.forEach((aError, iIndex) => {
+                     let eCell = TTLogin.ELEMENTGetCell(aError);
+                     if(eCell) {
+                        let eError = eCell.querySelector("[data-error]");
+                        eError.innerHTML = PAGE_GetErrorDescription(aError[ 3 ]);
+                        eError.style.display = "block";
+                     }
+                  });
+               }
+
+            }
+
+            RunVote() {
+               alert("vote");
+            }
+
+            static CallbackServer( eSection, sMethod, oEvent ) {
+               let get_text = (eSection,sName) => {
+                  let e = eSection.querySelector(sName);
+                  if( e ) return e.textContent;
+                  return null;                     
+               };
+
+               let oApplication = window.app;
+
+               var sError = eSection.getAttribute("error");
+               if( sError === "1" ) {
+                  let sError = eSection.textContent;
+                  throw sError;
+               }
+               else if( sMethod === "SCRIPT_Run" ) {
+                  const sComponent = get_text(eSection, "component");
+                  const sFile = get_text(eSection, "file");
+                  const sHint = get_text(eSection, "hint");
+                  oApplication.OnResponse(eSection, sMethod);
+               }
+               else if (sMethod === "SYSTEM_GetUserData") {
+                  oApplication.InitializePage();
+               }
+            }
+         } // class CApplication
+
+
+         class CQuery {
+            constructor(options) {
+               const o = options;
+               this.m_sId = o.id;
+               this.m_sName = o.name;
+               this.m_sParentId ;
+               this.m_sParentKey;
+            }
+         }
+
+
+         class CPage {
+
+            constructor( oApplication ) {
+               this.m_oApplication = oApplication;
+               this.m_aQuery = [];
+               this.m_aQuery.push(new CQuery({ name: "login", id: "00000000000000000000000000000001" }) );
+               this.m_aQuery.push(new CQuery({ name: "poll_list", id: "00000000000000000000000000000002" }));
+               this.m_aQuery.push(new CQuery({ name: "poll_answer", id: "00000000000000000000000000000003" }));
+
+               /*
+               this.m_aQuery = [
+                  [ "login", "00000000000000000000000000000001" ],
+                  [ "poll_list", "00000000000000000000000000000002" ],
+                  [ "poll_answer", "00000000000000000000000000000004" ],
+               ];
+               */
+
+            }
+
+            // get application object
+            get app() { return this.m_oApplication; }
+
+            ProcessResponse(sName, eItem) {                                   console.log("ProcessResponse: item = " + sName);
+               let oResult = JSON.parse( eItem.textContent );
+               switch(sName) {
+                  case "result":
+                     const sQueryName = oResult.name;
+                     if(sQueryName === "login") {
+                        this.CreateLogin("idLogin", oResult.table.header );
+                     }
+                     else if(sQueryName === "poll_answer") {
+                        this.CreateVote("idVote", oResult);
+                     }
+                     break;
+               }
+            }
+
+
+            /**
+             * Get login information for voter
+             * query = login
+             */
+            GetLogin() {
+               let request = this.app.request;
+               let oCommand = { command: "get_result", query: "login", set: "vote", count: 1, format: 1, start: 0 };
+               request.Get("SCRIPT_Run", { file: "PAGE_result.lua", json: request.GetJson(oCommand) } );
+            }
+
+            GetSelectedPoll() {
+               let request = this.app.request;
+               
+               let sXml = `
+<document>
+   <conditions>
+      <condition value="6" id="PollQuestionK" simple="Vilket parti får din röst om det var riksdagsval idag?" table="TPollQuestion1" operator="0"/>
+   </conditions>
+</document>`;
+
+               let oCommand = { command: "add_condition_to_query get_result", delete: 1, query: "poll_answer", set: "vote", count: 50, format: 1, start: 0 };
+               request.Get("SCRIPT_Run", { file: "PAGE_result.lua", json: request.GetJson(oCommand) }, sXml);
+            }
+
+
+            CreateLogin( eRoot, aHeader ) {
+               if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
+
+               let TDLogin = new CTableData();
+               const iColumnCount = aHeader.length;
+               TDLogin.COLUMNAppend(iColumnCount);
+
+
+               for(let i = 0; i < iColumnCount; i++) {
+                  const oHead = aHeader[i];
+                  
+                  TDLogin.COLUMNSetPropertyValue(i, "id", oHead.id);
+                  TDLogin.COLUMNSetPropertyValue(i, "name", oHead.name);
+                  TDLogin.COLUMNSetPropertyValue(i, "alias", oHead.simple);
+                  if(oHead.key === 1) {
+                     TDLogin.COLUMNSetPropertyValue(i, "position.hide", true);
+                  }
+                  else {
+                     TDLogin.COLUMNSetPropertyValue(i, "edit.name", oHead.group_name);
+                     TDLogin.COLUMNSetPropertyValue(i, "edit.edit", true);
+                  }
+                  TDLogin.COLUMNSetType(i, oHead.select_type_name );
+               }
+
+               TDLogin.ROWAppend(1);
+
+               let oStyle = {
+                  class_section: "uitabletext_login", class_value_error: "error_value",
+                  html_value: `
+<div style='border-bottom: 1px dotted var(--gd-white); padding: 0.5em 1em;'>
+         <div style='display: flex; align-items: stretch;'>
+            <span data-label='1' style='padding: 0px 1em 0px 0px; text-align: right; width: 120px;'></span>
+            <span data-value='1' style='flex-grow: 1; padding: 0px 2px; box-sizing: border-box; background-color: var(--gd-gray);'></span>
+         </div>
+         <div data-description='1'></div>
+         <div class='error-message' data-error='1' style="display: none; margin-left: 120px; text-align:right;"></div>
+</div>
+`
+               }
+
+               let options = {
+                  parent: eRoot,                            // container
+                  section: [ "title", "body", "statusbar", "footer" ],
+                  style: oStyle,
+                  table: TDLogin,                           // source data
+                  name: "login",                            // name to access UI table in CTableData
+                  edit: 1,                                  // endable edit
+                  state: 0x0008,                            // Try to set value if property is found in element.
+                  callback_render: (sType, _value, eElement, oColumn) => {
+                     if(sType === "afterCellValue") {
+                        let eLabel = eElement.querySelector("[data-label]");
+                        eLabel.innerText = oColumn.alias;
+                     }
+                  }
+               };
+
+               let TTLogin = new CUITableText(options);
+               TDLogin.UIAppend(TTLogin);
+               TTLogin.Render();
+
+               // ## GITHUB logo
+               let eTitle = TTLogin.GetSection("title");
+               eTitle.innerHTML = `<div style="height: 80px;">
+         <div style="max-width: 80px; position: absolute; top: 0px; right: 0px; opacity: 0.5;">
+<a href="https://github.com/perghosh/jsTableData" class="uk-navbar-item uk-logo" style="display: block; vertical-align: middle;">
+<svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin:  10px; height: 60px;"><title>GitHub repository</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg>
+</a>
+         </div></div>`;
+
+               // ## Button to logon
+               let eFooter = TTLogin.GetSection("footer");
+               eFooter.innerHTML = `<div><button style='display: inline-block; margin-top: 1em; width: 200px;' class='button is-white'>Logga in</button></div>`;
+
+               eFooter.querySelector("button").addEventListener("click", (e) => {
+                  this.Logon();
+               });
+
+
+               TTLogin.GetSection("body").focus();
+            }
+
+            /**
+             * Create vote for swedish politica party
+             */
+            CreateVote(eRoot, oResult) {
+               if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
+               let TDVote = new CTableData({ id: oResult.id, name: oResult.name, external: {max: 1} } );
+
+               const aHeader = oResult.table.header;
+               const iColumnCount = aHeader.length;
+               TDVote.COLUMNAppend(iColumnCount);
+
+
+               for(let i = 0; i < iColumnCount; i++) {
+                  const oHead = aHeader[ i ];
+                  TDVote.COLUMNSetPropertyValue(i, "id", oHead.id);
+                  TDVote.COLUMNSetPropertyValue(i, "name", oHead.name);
+                  TDVote.COLUMNSetPropertyValue(i, "alias", oHead.simple);
+                  if(oHead.key === 1) {
+                     TDVote.COLUMNSetPropertyValue(i, "position.hide", true);
+                  }
+                  else {
+//                   TDVote.COLUMNSetPropertyValue(i, "edit.name", oHead.group_name);
+//                   TDVote.COLUMNSetPropertyValue(i, "edit.edit", true);
+                  }
+
+                  TDVote.COLUMNSetType(i, oHead.select_type_name);
+               }
+
+               
+               
+               TDVote.ReadArray(oResult.table.body, {begin:0});
+               let aColumn = TDVote.InsertColumn(1,0,1);
+               CTableData.SetPropertyValue(aColumn, true, "id", "check");
+               CTableData.SetPropertyValue(aColumn, true, "alias", "Välj");
+               CTableData.SetPropertyValue(aColumn, true, "edit.name", "checkbox");
+               CTableData.SetPropertyValue(aColumn, true, "edit.edit", true);
+               CTableData.SetPropertyValue(aColumn, true, "edit.element", 1);
+
+
+               TDVote.COLUMNUpdatePositionIndex();
+
+               let oStyle = {
+                  html_group: "table.table",                // "table" element and class table
+                  html_row: "tr",                           // "tr" element for each row
+                  html_cell_header: "th",                   // "th" for column headers
+                  html_cell: "td",                          // "td" for cells
+                  html_section_header: "thead",             // "thead" for header section
+                  html_section_body: "tbody",               // "tbody" for body section
+                  html_section_footer: "tfoot",             // "tfoot" for footer section
+               }
+
+               let oTrigger = new CTableDataTrigger({ table: TDVote, trigger: CPage.CallbackVote });
+
+               let options = {
+                  parent: eRoot,                            // container
+                  section: [ "title", "table.header", "table.body", "footer" ],// sections to create
+                  table: TDVote,                            // source data
+                  name: "vote",                             // name to access UI table in CTableData
+                  style: oStyle,                            // styling
+                  edit: 1,                                  // endable edit
+                  state: 0x0011,                            // SetOneClickActivate = 0x0010, HtmlValue = 0x0001
+                  trigger: oTrigger,
+               };
+
+               let TTVote = new CUITableText(options);
+               TDVote.UIAppend(TTVote);
+
+               TTVote.COLUMNSetRenderer(0, (e, v, a) => {
+                  let eCheck = e.querySelector("div");
+                  let sChecked = "";
+                  if(v === "1" || v === 1) sChecked = "checked";
+                  let eDiv = document.createElement("div");
+                  eDiv.innerHTML = `
+<label class="vote-check" data-style="rounded" data-color="green" data-size="lg">
+	<input ${sChecked} type="checkbox" data-value="1" data-commit="1" value="1">
+	<span class="toggle">
+		<span class="switch"></span>
+	</span>
+</label>`;
+                  e.appendChild(eDiv);
+               });
+
+               TTVote.Render();
+               let eTitle = TTVote.GetSection("title");
+               eTitle.innerHTML = "<h2>Vilket parti får din röst om det var riksdagsval idag?</h2>"
+
+               let eFooter = TTVote.GetSection("footer");
+               eFooter.innerHTML = `<div>
+<button style='display: inline-block;' class='button is-white'>Vote</button>
+<span data-info="data" style='display: inline-block; margin-left: 3em;'></span><br>
+<span data-info="xml" style='display: inline-block; margin-left: 3em;'></span>
+</div>`;
+               eFooter.querySelector("button").addEventListener("click", (e) => {
+                  this.RunVote();
+               });
+            }
+
+            /**
+             * Callback for action events from ui table
+             * @param oEventData
+             * @param v
+             */
+            static CallbackVote(oEventData, v) {
+
+               let sName = CTableDataTrigger.GetTriggerName(oEventData.iEvent); console.log(sName);
+               switch(sName) {
+                  case "AfterSetValue":
+                     {
+                        //console.log("AfterSetValue");
+                        let oTD = oEventData.data;
+                        let iCount = oTD.CountValue( [ -1, 1 ], 1 );
+                        const iMax = oTD.external.max;
+                        if(iMax < iCount) {
+                           oTD.external.error = true;
+                           let oTT = oEventData.dataUI;
+                           let eFooter = oTT.GetSection("footer");
+                           let eError = eFooter.querySelector("[data-error]");
+                           if(!eError) {
+                              let eDiv = document.createElement("div");
+                              eDiv.dataset.error = "1";
+                              eFooter.appendChild(eDiv);
+                              eError = eDiv;
+                           }
+                           eError.innerText = `Max antal val = ${iMax}, du har valt ${iCount}`;
+                        }
+                        else {
+                           oTD.external.error = false;
+                        }
+                        console.log("iCount: " + iCount );
+                     }
+                     break;
+               }
+            }
+         }
+
+         /**
+          * Callback for events managed by CTableDataTrigger
+          * @param {EventDataTable} oEventData standard event data
+          * @param {any} e This is dependent on the event.
+          */
+         /*
+         function CALLBACK_TableData(oEventData, v) {
+            let sName = CTableDataTrigger.GetTriggerName(oEventData.iEvent); console.log(sName);
+            switch(sName) {
+               case "BeforeSetCellError":
+                  let eCell = oEventData.eElement.closest("td");
+                  let _type = oEventData.information;
+                  eCell.querySelector("[data-error]").innerText = _type[ 1 ];
+                  break;
+
+            }
+         }
+         */
+
+         window.app = new CApplication();
+         window.app.Initialize();
+      }
+
+
+   </script>
+
+
+   <!--
+   | Init page
+   -->
+   <script>
+      document.addEventListener('DOMContentLoaded', function() {
+         //PAGE_SetupEventList();
+         //PAGE_ServerSetup();
+         PAGE_Setup();
+      });
+   </script>
+
+
+   <!--
+    | Load needed components to manage login and vote data
+   -->
+   <script type="module">
+      import { CTableData, browser } from "./../lib/TableData.js";
+      import { edit } from "./../lib/TableDataEdit.js";
+      import { CTableDataTrigger } from "./../lib/TableDataTrigger.js";
+      import { SetTriggerName } from "./../lib/TableDataTriggerNames.js";
+      import { CUITableText } from "./../lib/UITableText.js";
+
+      import { CRequest } from "./../app/Request.js";
+
+
+      window.edit = edit;
+      window.CTableData = CTableData;
+      window.CTableData_browser = browser;
+      window.CUITableText = CUITableText;
+      window.CTableDataTrigger = CTableDataTrigger;
+
+      SetTriggerName();
+
+      window.CRequest = CRequest;
+
+
+   </script>
+
+   <!--
+    | Source data for login test page
+   -->
+   <script>
+      var aLogon = [
+         [ "Namn", "E-Mejl", "Lösenord" ],
+         [ "?", "?", "?" ]
+      ];
+
+      var aPollParty = [
+         [ "Id", "Vote", "Beskrivning" ],
+         [ 1, 0, "Centerpartiet" ],
+         [ 2, 0, "Kristdemokraterna" ],
+         [ 3, 0, "Liberalerna" ],
+         [ 4, 0, "Moderaterna" ],
+         [ 5, 0, "Miljöpartiet" ],
+         [ 6, 0, "Socialdemokraterna" ],
+         [ 7, 0, "Sverigedemokraterna" ],
+         [ 8, 0, "Vänsterpartiet" ],
+         [ 9, 0, "Annat" ]
+      ];
+
+   </script>
+
+</body>
+</html>

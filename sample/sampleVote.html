@@ -89,6 +89,7 @@
          class CApplication {
             constructor() {
                this.m_oEditors = edit.CEditors.GetInstance();
+               this.m_oTDs = {};
             }
 
             Initialize() {
@@ -100,9 +101,15 @@
                oEditors.Add("checkbox", edit.CEditCheckbox);
             }
 
+            GetTableData( sName ) { 
+               let o = this.m_oTDs[sName]; console.assert( o !== undefined, "No table data for: " + sName );
+               return o;
+            }
+
             CreateLogin(eRoot, aSource) {
                if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
                let TDLogin = new CTableData();
+               this.m_oTDs.login = TDLogin;
                TDLogin.ReadArray(aSource);
                TDLogin.COLUMNSetType(TDLogin.ROWGet(0));
                TDLogin.ROWSet( 0 );                          // clear first row
@@ -121,8 +128,8 @@
                   return s;
                });
 
-
                TDLogin.COLUMNSetPropertyValue([ 0, 1, 2 ], "edit.edit", true);
+               TDLogin.COLUMNSetPropertyValue( 0, "format", { min: 3, const: true, required: true });
 
 
 
@@ -178,6 +185,7 @@
             CreateVoteParty(eRoot, aSource) {
                if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
                let TDVote = new CTableData();
+               this.m_oTDs.vote = TDVote;
                TDVote.ReadArray(aSource);
 
                TDVote.COLUMNSetPropertyValue( 0, "position.hide", true);
