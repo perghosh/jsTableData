@@ -1644,7 +1644,7 @@ export class CTableData {
             if( aPass && aPass[i] === false ) continue;
             const v = aRow[iColumn];                                          // get value in row, iColumn has the current row position (remember that first is internal row key)
             const oC = aColumn[i];                                            // get matching column
-            let eValue = xml.appendChild( doc.createElement( sValue ) );
+            let eValue = eValues.appendChild( doc.createElement( sValue ) );
 
             eValue.setAttribute( "col", i.toString() );
             if( oC.name ) eValue.setAttribute( "name", oC.name );

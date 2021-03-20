@@ -163,10 +163,10 @@ export class CUITableText implements IUITableData {
     * Default styles
     */
    static s_oStyle = {
-      class_component: "component",
-      class_header: "header",
+      class_component: "",
+      class_header: "",
       class_input: "input",
-      class_section: "uitabletext section",
+      class_section: "uitabletext",
       class_selected: "selected",
       class_error: "error",
    };

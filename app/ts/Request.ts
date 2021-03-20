@@ -40,15 +40,15 @@ export class CRequest {
    static s_iIdNext: number = 0;
 
    static s_aServerArgument: string[] = [
-      "flags", "id", "idcondition", "idtable", "idtableparent",                 // 0 - 4
-      "key", "keyparent", "max", "name", "operator",                            // 5 - 9
-      "page", "query", "query2", "thread", "user",                              // 10 - 14
-      "value", "valuecondition", "index", "operation", "keyparentthread",       // 15 - 19
-      "addin", "custom", "webpage", "find", "mark",                             // 20 - 24
-      "file", "type", "debug", "json", "folder",                                // 25 - 29
-      "hint", "auto", "alias", "json8", "parameters",                           // 30 - 34
-      "parameters8", "zoom", "width", "height", "join",                         // 35 - 39
-      "node", "cache", "component", "widget"                                      // 40 - 44
+      "flags", "id", "idcondition", "idtable", "idtableparent",                // 0 - 4
+      "key", "keyparent", "max", "name", "operator",                           // 5 - 9
+      "page", "query", "query2", "thread", "user",                             // 10 - 14
+      "value", "valuecondition", "index", "operation", "keyparentthread",      // 15 - 19
+      "addin", "custom", "webpage", "find", "mark",                            // 20 - 24
+      "file", "type", "debug", "json", "folder",                               // 25 - 29
+      "hint", "auto", "alias", "json8", "parameters",                          // 30 - 34
+      "parameters8", "zoom", "width", "height", "join",                        // 35 - 39
+      "node", "cache", "component", "widget"                                   // 40 - 44
    ];
 
    constructor(options: details.construct) {
@@ -73,7 +73,7 @@ export class CRequest {
 
    /**
     * Return identifier for parameter name. Server only allow some type of parameters and each has a specific id
-    * @param  {string }} parameters allowed 
+    * @param  {string} parameters allowed 
     * @return {string} id for parameter
     */
    static GetParameter(oParameter: { [ key: string ]: string }): string {

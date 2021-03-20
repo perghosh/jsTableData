@@ -14,7 +14,7 @@ export class CRequest {
     set session(sSession) { this.m_sSession = sSession; }
     /**
      * Return identifier for parameter name. Server only allow some type of parameters and each has a specific id
-     * @param  {string }} parameters allowed
+     * @param  {string} parameters allowed
      * @return {string} id for parameter
      */
     static GetParameter(oParameter) {

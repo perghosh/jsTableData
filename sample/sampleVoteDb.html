@@ -1,6 +1,23 @@
 ﻿<!DOCTYPE html>
-<!-- 
-Methods
+<!--
+Navigate in page:
+   OnResponse - Unpack respons from server
+   ProcessResponse - Process responses from server
+
+   QUERYGetLogin - query to get login information
+   QUERYGetPollList - query to get list of active polls
+   QUERYGetPollOverview - query to get poll information like name and number of questions
+   QUERYGetSelectedPoll - query to get selected poll
+   QUERYGetNextQuestion - Get next question for current poll
+
+   RESULTCreateLogin - Create login section from logon query
+   RESULTCreatePollList - Create list with active polls that voter are able to select
+   RESULTCreateQuestionPanel
+
+
+   ReadColumnInformationFromHeader
+
+
 - CApplication::Initialize - Initialize objects in CApplication for use.
 - CApplication::CreateLogin - Create login markup from source
 
@@ -50,8 +67,8 @@ Methods
          background-color: #fff;
       }
 
-      section, tbody { 
-         outline: none; 
+      section, tbody {
+         outline: none;
       }
 
       .selected {
@@ -70,7 +87,7 @@ Methods
 
 /* Colors: Default (blue) */
 .vote-check {color:#fff;}
-.vote-check > input + .toggle:before {content:'VALD';}
+.vote-check > input + .toggle:before {content:'RÖST';}
 .vote-check > input + .toggle:after {content:'-';}
 .vote-check > input + .toggle > .switch {background:#fff;}
 .vote-check > input + .toggle + .label {color:#000;}
@@ -140,21 +157,20 @@ CORE STYLES BELOW - NO TOUCHY
 /* Color: Green */
 .vote-check[data-color='green'] > input:checked + .toggle {background:#00d1b2;}
 .vote-check[data-color='green'] > input:checked + .toggle > .switch {border-color:#00d1b2;}
-
    </style>
 
 </head>
 <body>
 
-<!--
-   
-<label class="vote-check" data-style="rounded" data-color="green">
-	<input checked type="checkbox" value="1">
-	<span class="toggle">
-		<span class="switch"></span>
-	</span>
-</label>
--->
+   <!--
+
+   <label class="vote-check" data-style="rounded" data-color="green">
+      <input checked type="checkbox" value="1">
+      <span class="toggle">
+         <span class="switch"></span>
+      </span>
+   </label>
+   -->
 
 
    <div class="container">
@@ -163,14 +179,25 @@ CORE STYLES BELOW - NO TOUCHY
          <div id="idLogin" class="content is-primary"></div>
       </div>
 
-
       <div class="notification is-primary">
-         <div id="idVote" class="content is-primary"></div>
+         <div class="content is-primary">
+            <div id="idPollList" class="select is-rounded">
+            </div>
+         </div>
       </div>
 
-      <div class="notification is-primary">
-         <div id="idVoteLimit" class="content is-primary"></div>
+      <div id="idPollOverview" class="box has-background-success-light">
+         <h1 class="title is-2" data-title></h1>
       </div>
+
+      <div id="idPollQuestionList" class="box">
+      </div>
+
+      <!--
+      <div class="notification is-primary">
+         <div id="idPollQuestionList" class="content is-primary"></div>
+      </div>
+      -->
 
    </div>
 
@@ -186,15 +213,19 @@ CORE STYLES BELOW - NO TOUCHY
                   callback: CApplication.CallbackServer,
                   folder: "rSelect",
                   methods: { SYSTEM_Init: "l10", SYSTEM_GetUserData: "s03", SYSTEM_GetCountry: "s08", SCRIPT_Run: "f60", REPORT_Pdf: "r02" },
-                  url: "http://127.0.0.1:8882/jq.srf?"
+                  //url: "http://127.0.0.1:8882/jq.srf?"
+                  url: "http://goorep.se:1001/changelog/jq.srf?"
                });
 
                this.m_oPage = new CPage(this);
+               this.m_sQueriesSet = "vote";
             }
 
             get request() { return this.m_oRequest; }
             get session() { return this.m_oRequest.session; }
             get page() { return this.m_oPage; }
+            get queries_set() { return this.m_sQueriesSet; }
+            set queries_set( s ) { return this.m_sQueriesSet = s; }
 
             /**
              * Initialize objects in CApplication for use.
@@ -214,14 +245,14 @@ CORE STYLES BELOW - NO TOUCHY
              * Initialize page information, user is verified and it is tome to collect information needed to render page markup
              */
             InitializePage() {
-               this.page.GetLogin();
-               this.page.GetSelectedPoll();
+               this.page.QUERYGetLogin();
+               this.page.QUERYGetPollList();
             }
 
-            OnResponse(eSection, sMethod) {                                   console.log("Method = " + sMethod );
+            OnResponse(eSection, sMethod) {
                let aItem = eSection.getElementsByTagName('item');
                for(let i = 0; i < aItem.length; i++) {
-                  let eItem = aItem[i];
+                  let eItem = aItem[ i ];
                   const sName = eItem.getAttribute("name");
                   this.page.ProcessResponse(sName, eItem);
 
@@ -230,7 +261,7 @@ CORE STYLES BELOW - NO TOUCHY
 
             Logon() {
                let TDLogon = this.GetColumnData("logon"); //
-               let TTLogon = TDLogon.UIGet( 0 ); // 
+               let TTLogon = TDLogon.UIGet(0); //
                let aError = TTLogon.ERRORGetCount() ? TTLogon.ERRORGet() : TTLogon.ROWValidate(0);
                if(Array.isArray(aError) && TTLogon.ERRORGetCount() === 0) TTLogon.ERRORSet(aError);
 
@@ -252,77 +283,90 @@ CORE STYLES BELOW - NO TOUCHY
                alert("vote");
             }
 
-            static CallbackServer( eSection, sMethod, oEvent ) {
-               let get_text = (eSection,sName) => {
+            static CallbackServer(eSection, sMethod, oEvent) {
+               let get_text = (eSection, sName) => {
                   let e = eSection.querySelector(sName);
-                  if( e ) return e.textContent;
-                  return null;                     
+                  if(e) return e.textContent;
+                  return null;
                };
 
                let oApplication = window.app;
 
                var sError = eSection.getAttribute("error");
-               if( sError === "1" ) {
+               if(sError === "1") {
                   let sError = eSection.textContent;
                   throw sError;
                }
-               else if( sMethod === "SCRIPT_Run" ) {
+               else if(sMethod === "SCRIPT_Run") {
                   const sComponent = get_text(eSection, "component");
                   const sFile = get_text(eSection, "file");
                   const sHint = get_text(eSection, "hint");
                   oApplication.OnResponse(eSection, sMethod);
                }
-               else if (sMethod === "SYSTEM_GetUserData") {
-                  oApplication.InitializePage();
+               else if(sMethod === "SYSTEM_GetUserData") {
+                  if(oApplication.queries_set) {
+                     let request = oApplication.request;
+                     let oCommand = { command: "load_if_not_found", set: "vote" };
+                     request.Get("SCRIPT_Run", { file: "queriesset.lua", json: request.GetJson(oCommand) });
+                  }
+                  else {
+                     oApplication.InitializePage();
+                  }
                }
             }
          } // class CApplication
 
 
-         class CQuery {
-            constructor(options) {
-               const o = options;
-               this.m_sId = o.id;
-               this.m_sName = o.name;
-               this.m_sParentId ;
-               this.m_sParentKey;
-            }
-         }
-
-
          class CPage {
+            get app() { return this.m_oApplication; }                         // get application object
 
-            constructor( oApplication ) {
-               this.m_oApplication = oApplication;
-               this.m_aQuery = [];
-               this.m_aQuery.push(new CQuery({ name: "login", id: "00000000000000000000000000000001" }) );
-               this.m_aQuery.push(new CQuery({ name: "poll_list", id: "00000000000000000000000000000002" }));
-               this.m_aQuery.push(new CQuery({ name: "poll_answer", id: "00000000000000000000000000000003" }));
+            // State for eacch 
+            static QUESTION_STATE = { NO_RESULT: 0, WAITING: 1, RESULT_DELIVERED: 2 };
 
-               /*
-               this.m_aQuery = [
-                  [ "login", "00000000000000000000000000000001" ],
-                  [ "poll_list", "00000000000000000000000000000002" ],
-                  [ "poll_answer", "00000000000000000000000000000004" ],
-               ];
-               */
-
+            constructor(oApplication) {
+               this.m_oApplication = oApplication; // application object
+               this.m_iActivePoll = -1;            // active poll id shown in page
+               this.m_aQuestion = [];              // [iKey,bResult,iState,CTableData] iState = 0 (no result), iState = 1 (waiting), iState = 2 (result is returned)
             }
 
-            // get application object
-            get app() { return this.m_oApplication; }
+            SetActivePoll(iActivePoll, sName) {
+               this.m_iActivePoll = iActivePoll;
+               if(this.m_iActivePoll > 0) {
+                  this.QUERYGetPollOverview(this.m_iActivePoll, sName);
+               }
+            }
 
-            ProcessResponse(sName, eItem) {                                   console.log("ProcessResponse: item = " + sName);
-               let oResult = JSON.parse( eItem.textContent );
+            CloseQuestions() {
+               document.getElementById("idPollQuestionList").innerHTML = "";
+            }
+
+
+
+            ProcessResponse(sName, eItem) {
+               console.log("ProcessResponse: item = " + sName);
+               let oResult = JSON.parse(eItem.textContent);
                switch(sName) {
                   case "result":
                      const sQueryName = oResult.name;
                      if(sQueryName === "login") {
-                        this.CreateLogin("idLogin", oResult.table.header );
+                        this.RESULTCreateLogin("idLogin", oResult.table.header);
+                     }
+                     else if(sQueryName === "poll_list") {
+                        this.RESULTCreatePollList("idPollList", oResult);
+                     }
+                     else if(sQueryName === "poll_overview") {
+                        this.RESULTShowPollOverview("idPollOverview", oResult);
+                     }
+                     else if(sQueryName === "poll_question_list") {
+                        this.RESULTCreateQuestionPanel("idPollQuestionList", oResult);
                      }
                      else if(sQueryName === "poll_answer") {
-                        this.CreateVote("idVote", oResult);
+                        this.RESULTCreateVote("idPollQuestionList", oResult);
+                        this.QUERYGetNextQuestion();
                      }
+                     break;
+                  case "load_if_not_found":
+                     window.app.InitializePage();
                      break;
                }
             }
@@ -332,50 +376,97 @@ CORE STYLES BELOW - NO TOUCHY
              * Get login information for voter
              * query = login
              */
-            GetLogin() {
+            QUERYGetLogin() {
                let request = this.app.request;
                let oCommand = { command: "get_result", query: "login", set: "vote", count: 1, format: 1, start: 0 };
-               request.Get("SCRIPT_Run", { file: "PAGE_result.lua", json: request.GetJson(oCommand) } );
+               request.Get("SCRIPT_Run", { file: "PAGE_result.lua", json: request.GetJson(oCommand) });
             }
 
-            GetSelectedPoll() {
+            QUERYGetPollList() {
                let request = this.app.request;
-               
-               let sXml = `
-<document>
-   <conditions>
-      <condition value="6" id="PollQuestionK" simple="Vilket parti får din röst om det var riksdagsval idag?" table="TPollQuestion1" operator="0"/>
-   </conditions>
-</document>`;
+               let oCommand = { command: "get_result", query: "poll_list", set: "vote", count: 100, format: 1, start: 0 };
+               request.Get("SCRIPT_Run", { file: "PAGE_result.lua", json: request.GetJson(oCommand) });
+            }
+
+            QUERYGetPollOverview(iPoll, sSimple) {
+               let request = this.app.request;
+               let oQuery = new CQuery({
+                  conditions: [ { table: "TPoll1", id: "PollK", value: iPoll, simple: sSimple } ]
+               });
+               let sXml = oQuery.CONDITIONGetXml();
+
+               let oCommand = { command: "add_condition_to_query get_result", delete: 1, query: "poll_overview", set: "vote", count: 50, format: 1, start: 0 };
+               request.Get("SCRIPT_Run", { file: "PAGE_result.lua", json: request.GetJson(oCommand) }, sXml);
+            }
+
+            QUERYGetPollQuestions(iPoll) {
+               iPoll = iPoll || this.m_iActivePoll;
+               let request = this.app.request;
+               let oQuery = new CQuery({
+                  conditions: [ { table: "TPoll1", id: "PollK", value: iPoll } ]
+               });
+               let sXml = oQuery.CONDITIONGetXml();
+
+               let oCommand = { command: "add_condition_to_query get_result", delete: 1, query: "poll_question_list", set: "vote", count: 50, format: 1, start: 0 };
+               request.Get("SCRIPT_Run", { file: "PAGE_result.lua", json: request.GetJson(oCommand) }, sXml);
+            }
+
+            QUERYGetNextQuestion() {
+               let iQuestion;
+               for(let i = 0; i < this.m_aQuestion.length; i++) {
+                  let a = this.m_aQuestion[i];
+                  if(a[ 1 ] === false) {
+                     iQuestion = a[ 0 ];
+                     a[ 1 ] = true;
+                     a[ 2 ] = CPage.QUESTION_STATE.WAITING;
+                     break;
+                  }
+               }
+
+               if(iQuestion !== undefined) {
+                  let request = this.app.request;
+                  let oQuery = new CQuery({
+                     conditions: [ { table: "TPollQuestion1", id: "PollQuestionK", value: iQuestion } ]
+                  });
+                  let sXml = oQuery.CONDITIONGetXml();
+
+                  let oCommand = { command: "add_condition_to_query get_result", delete: 1, query: "poll_answer", set: "vote", count: 50, format: 1, start: 0 };
+                  request.Get("SCRIPT_Run", { file: "PAGE_result.lua", json: request.GetJson(oCommand) }, sXml);
+               }
+            }
+
+            QUERYGetQuestion(iQuestion) {
+               let request = this.app.request;
+               let oQuery = new CQuery({
+                  conditions: [ { table: "TPollQuestion1", id: "PollQuestionK", value: iPoll, simple: "Vilket parti får din röst om det var riksdagsval idag?" } ]
+               });
+               let sXml = oQuery.CONDITIONGetXml();
 
                let oCommand = { command: "add_condition_to_query get_result", delete: 1, query: "poll_answer", set: "vote", count: 50, format: 1, start: 0 };
                request.Get("SCRIPT_Run", { file: "PAGE_result.lua", json: request.GetJson(oCommand) }, sXml);
             }
 
 
-            CreateLogin( eRoot, aHeader ) {
+
+            // #region LOGIN
+            /****************************************************************** LOGIN
+             * Create login section
+             * @param eRoot
+             * @param aHeader
+             */
+            RESULTCreateLogin(eRoot, aHeader) {
                if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
 
                let TDLogin = new CTableData();
-               const iColumnCount = aHeader.length;
-               TDLogin.COLUMNAppend(iColumnCount);
-
-
-               for(let i = 0; i < iColumnCount; i++) {
-                  const oHead = aHeader[i];
-                  
-                  TDLogin.COLUMNSetPropertyValue(i, "id", oHead.id);
-                  TDLogin.COLUMNSetPropertyValue(i, "name", oHead.name);
-                  TDLogin.COLUMNSetPropertyValue(i, "alias", oHead.simple);
-                  if(oHead.key === 1) {
-                     TDLogin.COLUMNSetPropertyValue(i, "position.hide", true);
+               CPage.ReadColumnInformationFromHeader(TDLogin, aHeader, (iIndex, oColumn, oTD) => {
+                  if(oColumn.key === 1) {
+                     oTD.COLUMNSetPropertyValue(iIndex, "position.hide", true);
                   }
                   else {
-                     TDLogin.COLUMNSetPropertyValue(i, "edit.name", oHead.group_name);
-                     TDLogin.COLUMNSetPropertyValue(i, "edit.edit", true);
+                     oTD.COLUMNSetPropertyValue(iIndex, "edit.name", oColumn.group_name);
+                     oTD.COLUMNSetPropertyValue(iIndex, "edit.edit", true);
                   }
-                  TDLogin.COLUMNSetType(i, oHead.select_type_name );
-               }
+               });
 
                TDLogin.ROWAppend(1);
 
@@ -383,12 +474,12 @@ CORE STYLES BELOW - NO TOUCHY
                   class_section: "uitabletext_login", class_value_error: "error_value",
                   html_value: `
 <div style='border-bottom: 1px dotted var(--gd-white); padding: 0.5em 1em;'>
-         <div style='display: flex; align-items: stretch;'>
-            <span data-label='1' style='padding: 0px 1em 0px 0px; text-align: right; width: 120px;'></span>
-            <span data-value='1' style='flex-grow: 1; padding: 0px 2px; box-sizing: border-box; background-color: var(--gd-gray);'></span>
-         </div>
-         <div data-description='1'></div>
-         <div class='error-message' data-error='1' style="display: none; margin-left: 120px; text-align:right;"></div>
+   <div style='display: flex; align-items: stretch;'>
+      <span data-label='1' style='padding: 0px 1em 0px 0px; text-align: right; width: 120px;'></span>
+      <span data-value='1' style='flex-grow: 1; padding: 0px 2px; box-sizing: border-box; background-color: var(--gd-gray);'></span>
+   </div>
+   <div data-description='1'></div>
+   <div class='error-message' data-error='1' style="display: none; margin-left: 120px; text-align:right;"></div>
 </div>
 `
                }
@@ -416,58 +507,149 @@ CORE STYLES BELOW - NO TOUCHY
                // ## GITHUB logo
                let eTitle = TTLogin.GetSection("title");
                eTitle.innerHTML = `<div style="height: 80px;">
-         <div style="max-width: 80px; position: absolute; top: 0px; right: 0px; opacity: 0.5;">
+<div style="max-width: 80px; position: absolute; top: 0px; right: 0px; opacity: 0.5;">
 <a href="https://github.com/perghosh/jsTableData" class="uk-navbar-item uk-logo" style="display: block; vertical-align: middle;">
 <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin:  10px; height: 60px;"><title>GitHub repository</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path></svg>
 </a>
-         </div></div>`;
+</div></div>`;
 
                // ## Button to logon
                let eFooter = TTLogin.GetSection("footer");
-               eFooter.innerHTML = `<div><button style='display: inline-block; margin-top: 1em; width: 200px;' class='button is-white'>Logga in</button></div>`;
+               eFooter.innerHTML = `<div><button class='button is-white is-rounded' style='display: inline-block; margin-top: 1em; width: 200px;'>Logga in</button></div>`;
 
                eFooter.querySelector("button").addEventListener("click", (e) => {
                   this.Logon();
                });
 
+               TTLogin.GetSection("body").focus();                            // set focus to body for login values
+            }
 
-               TTLogin.GetSection("body").focus();
+            RESULTCreatePollList(eRoot, oResult) {
+               if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
+               let oTD = new CTableData({ id: oResult.id, name: oResult.name });
+               const aHeader = oResult.table.header;
+               CPage.ReadColumnInformationFromHeader(oTD, aHeader);
+               oTD.ReadArray(oResult.table.body, { begin: 0 });
+
+               let aBody = oTD.GetData();
+               if(aBody[ 0 ].length) {
+                  let aData = aBody[ 0 ];
+                  let aKey = aBody[ 1 ];
+                  let eList = document.getElementById("idPollList");
+                  let eSelect = document.createElement("select");
+                  let eOption = document.createElement("option");
+                  eSelect.appendChild(eOption);
+                  eSelect.className = "has-text-weight-bold";
+                  aData.forEach((a, i) => {
+                     eOption = document.createElement("option");
+                     eOption.value = a[ 0 ];
+                     eOption.innerText = a[ 1 ];
+                     eSelect.appendChild(eOption);
+                  });
+                  eList.appendChild(eSelect);
+
+                  eList.addEventListener('change', e => {
+                     let iPoll = parseInt(e.srcElement.value, 10);
+                     if(isNaN(iPoll)) this.SetActivePoll(-1);
+                     else {
+                        let sName = e.srcElement.options[ e.srcElement.selectedIndex ].text
+                        this.SetActivePoll(iPoll, sName);
+                     }
+                  });
+               }
+            }
+
+            /**
+             * result for selected poll
+             * If data is found then get questions for poll
+             * @param eRoot
+             * @param oResult
+             */
+            RESULTShowPollOverview(eRoot, oResult) {
+               this.CloseQuestions();
+               if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
+               let oTD = new CTableData({ id: oResult.id, name: oResult.name });
+
+               oTD.ReadArray(oResult.table.body, { begin: 0 });
+
+               const sName = oTD.CELLGetValue(0, 1);
+               const iCount = oTD.CELLGetValue(0, 2);
+
+               if(iCount > 0) {
+                  // ## Generate title for poll
+                  let eTitle = eRoot.querySelector("[data-title]");
+                  eTitle.textContent = sName;
+                  let eCount = eRoot.querySelector("[data-count]");
+                  if(eCount) eCount.textContent = iCount.toString();
+
+                  this.QUERYGetPollQuestions(this.m_iActivePoll);
+               }
+            }
+
+
+            /**
+             * Create panels for each question that belongs to current selected poll
+             * @param eRoot
+             * @param oResult
+             */
+            RESULTCreateQuestionPanel(eRoot, oResult) {
+               this.m_aQuestion = [];
+               if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
+               let oTD = new CTableData({ id: oResult.id, name: oResult.name });
+               oTD.ReadArray(oResult.table.body, { begin: 0 });
+
+               let aBody = oTD.GetData()[0];
+               aBody.forEach((aRow, i) => { 
+                  const iPollIndex = i + 1;
+                  this.m_aQuestion.push([ aRow[ 0 ], false, CPage.QUESTION_STATE.NO_RESULT, null] );
+                  let eSection = document.createElement("section");
+                  eSection.dataset.question = aRow[ 0 ].toString();
+                  const sName = aRow[1];
+                  eSection.className = "block section";
+                  eSection.innerHTML = `<header class="title is-3">${iPollIndex}: ${sName}</header><article class="block"></article>`;
+                  eRoot.appendChild(eSection);
+               });
+
+               this.QUERYGetNextQuestion();
             }
 
             /**
              * Create vote for swedish politica party
              */
-            CreateVote(eRoot, oResult) {
+            RESULTCreateVote(eRoot, oResult) {
                if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
-               let TDVote = new CTableData({ id: oResult.id, name: oResult.name, external: {max: 1} } );
+
+               // ## Find key for first waiting question
+               let iQuestion;
+               let aQuestion;
+               for(let i = 0; i < this.m_aQuestion.length; i++) {
+                  aQuestion = this.m_aQuestion[ i ];
+                  if(aQuestion[ 2 ] === CPage.QUESTION_STATE.WAITING) {
+                     iQuestion = aQuestion[ 0 ];
+                     aQuestion[ 2 ] = CPage.QUESTION_STATE.RESULT_DELIVERED;
+                     break;
+                  }
+               }                                                              console.assert( iQuestion !== undefined, "Question for poll not found!");
+
+               // ## find container element to question
+               let eSection = eRoot.querySelector(`section[data-question="${iQuestion}"]`);
+               let eArticle = eSection.querySelector("article");
+
+
+               let TDVote = new CTableData({ id: oResult.id, name: oResult.name, external: { max: 1 } });
+               aQuestion[ 3 ] = TDVote;
 
                const aHeader = oResult.table.header;
-               const iColumnCount = aHeader.length;
-               TDVote.COLUMNAppend(iColumnCount);
-
-
-               for(let i = 0; i < iColumnCount; i++) {
-                  const oHead = aHeader[ i ];
-                  TDVote.COLUMNSetPropertyValue(i, "id", oHead.id);
-                  TDVote.COLUMNSetPropertyValue(i, "name", oHead.name);
-                  TDVote.COLUMNSetPropertyValue(i, "alias", oHead.simple);
-                  if(oHead.key === 1) {
-                     TDVote.COLUMNSetPropertyValue(i, "position.hide", true);
+               CPage.ReadColumnInformationFromHeader(TDVote, aHeader, (iIndex, oColumn, oTD) => {
+                  if(oColumn.key === 1) {
+                     oTD.COLUMNSetPropertyValue(iIndex, "position.hide", true);
                   }
-                  else {
-//                   TDVote.COLUMNSetPropertyValue(i, "edit.name", oHead.group_name);
-//                   TDVote.COLUMNSetPropertyValue(i, "edit.edit", true);
-                  }
+               });
 
-                  TDVote.COLUMNSetType(i, oHead.select_type_name);
-               }
-
-               
-               
-               TDVote.ReadArray(oResult.table.body, {begin:0});
-               let aColumn = TDVote.InsertColumn(1,0,1);
+               TDVote.ReadArray(oResult.table.body, { begin: 0 });
+               let aColumn = TDVote.InsertColumn(1, 0, 1);
                CTableData.SetPropertyValue(aColumn, true, "id", "check");
-               CTableData.SetPropertyValue(aColumn, true, "alias", "Välj");
+               CTableData.SetPropertyValue(aColumn, true, "alias", "Röst");
                CTableData.SetPropertyValue(aColumn, true, "edit.name", "checkbox");
                CTableData.SetPropertyValue(aColumn, true, "edit.edit", true);
                CTableData.SetPropertyValue(aColumn, true, "edit.element", 1);
@@ -488,7 +670,7 @@ CORE STYLES BELOW - NO TOUCHY
                let oTrigger = new CTableDataTrigger({ table: TDVote, trigger: CPage.CallbackVote });
 
                let options = {
-                  parent: eRoot,                            // container
+                  parent: eArticle,                         // container
                   section: [ "title", "table.header", "table.body", "footer" ],// sections to create
                   table: TDVote,                            // source data
                   name: "vote",                             // name to access UI table in CTableData
@@ -508,27 +690,43 @@ CORE STYLES BELOW - NO TOUCHY
                   let eDiv = document.createElement("div");
                   eDiv.innerHTML = `
 <label class="vote-check" data-style="rounded" data-color="green" data-size="lg">
-	<input ${sChecked} type="checkbox" data-value="1" data-commit="1" value="1">
-	<span class="toggle">
-		<span class="switch"></span>
-	</span>
+   <input ${sChecked} type="checkbox" data-value="1" data-commit="1" value="1">
+   <span class="toggle">
+      <span class="switch"></span>
+   </span>
 </label>`;
                   e.appendChild(eDiv);
                });
 
                TTVote.Render();
-               let eTitle = TTVote.GetSection("title");
-               eTitle.innerHTML = "<h2>Vilket parti får din röst om det var riksdagsval idag?</h2>"
 
                let eFooter = TTVote.GetSection("footer");
                eFooter.innerHTML = `<div>
-<button style='display: inline-block;' class='button is-white'>Vote</button>
-<span data-info="data" style='display: inline-block; margin-left: 3em;'></span><br>
+<span data-info="data" style='display: inline-block; margin-left: 3em;'></span>
 <span data-info="xml" style='display: inline-block; margin-left: 3em;'></span>
 </div>`;
-               eFooter.querySelector("button").addEventListener("click", (e) => {
-                  this.RunVote();
-               });
+            }
+
+            /**
+             * Read column information from result header to columns in CTableData
+             * @param {CTableData} oTD table data object that is configured from  aHeader
+             * @param {object[]} aHeader header object in array
+             * @param {string} aHeader[].id id for column
+             * @param {string} aHeader[].name column name
+             * @param {string} aHeader[].simple simple name for column
+             * @param {string} aHeader[].select_type_name type name for column value
+             */
+            static ReadColumnInformationFromHeader(oTD, aHeader, callback) {
+               const iColumnCount = aHeader.length;
+               oTD.COLUMNAppend(iColumnCount);
+               for(let i = 0; i < iColumnCount; i++) {
+                  const o = aHeader[ i ];
+                  oTD.COLUMNSetPropertyValue(i, "id", o.id);
+                  oTD.COLUMNSetPropertyValue(i, "name", o.name);
+                  oTD.COLUMNSetPropertyValue(i, "alias", o.simple);
+                  oTD.COLUMNSetType(i, o.select_type_name);
+                  if(callback) callback(i, o, oTD);
+               }
             }
 
             /**
@@ -542,17 +740,19 @@ CORE STYLES BELOW - NO TOUCHY
                switch(sName) {
                   case "AfterSetValue":
                      {
-                        //console.log("AfterSetValue");
                         let oTD = oEventData.data;
-                        let iCount = oTD.CountValue( [ -1, 1 ], 1 );
+                        let oTT = oEventData.dataUI;
+                        let eFooter = oTT.GetSection("footer");
+                        let eError = eFooter.querySelector("[data-error]");
+
+
+                        let iCount = oTD.CountValue([ -1, 1 ], 1);
                         const iMax = oTD.external.max;
                         if(iMax < iCount) {
                            oTD.external.error = true;
-                           let oTT = oEventData.dataUI;
-                           let eFooter = oTT.GetSection("footer");
-                           let eError = eFooter.querySelector("[data-error]");
                            if(!eError) {
                               let eDiv = document.createElement("div");
+                              eDiv.className = "has-text-danger has-text-weight-bold";
                               eDiv.dataset.error = "1";
                               eFooter.appendChild(eDiv);
                               eError = eDiv;
@@ -561,32 +761,16 @@ CORE STYLES BELOW - NO TOUCHY
                         }
                         else {
                            oTD.external.error = false;
+                           if(eError) eError.innerText = "";
                         }
-                        console.log("iCount: " + iCount );
+                        console.log("iCount: " + iCount);
                      }
                      break;
                }
             }
          }
 
-         /**
-          * Callback for events managed by CTableDataTrigger
-          * @param {EventDataTable} oEventData standard event data
-          * @param {any} e This is dependent on the event.
-          */
-         /*
-         function CALLBACK_TableData(oEventData, v) {
-            let sName = CTableDataTrigger.GetTriggerName(oEventData.iEvent); console.log(sName);
-            switch(sName) {
-               case "BeforeSetCellError":
-                  let eCell = oEventData.eElement.closest("td");
-                  let _type = oEventData.information;
-                  eCell.querySelector("[data-error]").innerText = _type[ 1 ];
-                  break;
-
-            }
-         }
-         */
+         // #endregion
 
          window.app = new CApplication();
          window.app.Initialize();
@@ -596,22 +780,14 @@ CORE STYLES BELOW - NO TOUCHY
    </script>
 
 
-   <!--
-   | Init page
-   -->
-   <script>
-      document.addEventListener('DOMContentLoaded', function() {
-         //PAGE_SetupEventList();
-         //PAGE_ServerSetup();
-         PAGE_Setup();
-      });
-   </script>
-
 
    <!--
     | Load needed components to manage login and vote data
    -->
    <script type="module">
+      // #region LOAD_PAGE_COMPONENETS
+
+
       import { CTableData, browser } from "./../lib/TableData.js";
       import { edit } from "./../lib/TableDataEdit.js";
       import { CTableDataTrigger } from "./../lib/TableDataTrigger.js";
@@ -619,6 +795,7 @@ CORE STYLES BELOW - NO TOUCHY
       import { CUITableText } from "./../lib/UITableText.js";
 
       import { CRequest } from "./../app/Request.js";
+      import { CQuery } from "./../app/Query.js";
 
 
       window.edit = edit;
@@ -630,14 +807,15 @@ CORE STYLES BELOW - NO TOUCHY
       SetTriggerName();
 
       window.CRequest = CRequest;
+      window.CQuery = CQuery;
+
+      document.addEventListener('DOMContentLoaded', function() {
+         //PAGE_SetupEventList();
+         //PAGE_ServerSetup();
+         PAGE_Setup();
+      });
 
 
-   </script>
-
-   <!--
-    | Source data for login test page
-   -->
-   <script>
       var aLogon = [
          [ "Namn", "E-Mejl", "Lösenord" ],
          [ "?", "?", "?" ]
@@ -656,7 +834,9 @@ CORE STYLES BELOW - NO TOUCHY
          [ 9, 0, "Annat" ]
       ];
 
+// #endregion
    </script>
+
 
 </body>
 </html>
