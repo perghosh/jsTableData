@@ -4,6 +4,12 @@ export const enum enumFormat {
    All      = 0x0004,
 }
 
+export const enum enumReturn {
+   Value    = 0,
+   Array    = 1,
+}
+
+
 
 export const enum enumMove {
    validate    = 0,
@@ -441,15 +447,16 @@ export class CTableData {
 
    /**
     * Compare values in cell or cells identified by row and column or range
-    * @param  {number} iRow key for row in source array
+    * @param  {number} iRow key for row in source array, if row is -1 then count found values in all rows for column
     * @param  {number|string} _Column index or column name to column value is set to
     * @param  {unknown} value value set to cell
     * @param  {boolean} bRaw if raw value cell value from raw row is set
     */
-   CountValue(iRow: number, _Column: string | number, value: unknown, bRaw?: boolean): number;
-   CountValue(aRange: [ iR: number, _C: string | number ], value: unknown, bRaw?: boolean): number;
-   CountValue(aRange: [ iR1: number, _C1: string | number, iR2: number, _C2: string | number ], value: unknown, bRaw?: boolean): number;
-   CountValue(_Row: any, _Column: any, value?: unknown, bRaw?: boolean): number {
+   CountValue(iRow: number, _Column: string | number, value: unknown, bRaw?: boolean): number | number[];
+   CountValue(aRange: [ iR: number, _C: string | number ], value: unknown, bRaw?: boolean): number | number[];
+   CountValue(aRange: [ iR1: number, _C1: string | number, iR2: number, _C2: string | number ], value: unknown, bRaw?: boolean): number | number[];
+   CountValue(_Row: any, _Column: any, value?: unknown, bRaw?: boolean|number, iReturn?: enumReturn ): number | number[] {
+      if(typeof bRaw === "number") { iReturn = bRaw; bRaw = undefined; }      // if bRaw is a number then this is the return value type
 
       const compare = (a, b): number => {
          if( typeof b === "function" ) return b( a );
@@ -464,10 +471,13 @@ export class CTableData {
          }
          bRaw = <boolean>value;
          value = _Column;
+         if(typeof bRaw === "number") { iReturn = bRaw; bRaw = undefined; }    // if bRaw is a number then this is the return value type
       }
 
+      let aFind: number[] = iReturn ? [] : null;
+
       if(typeof _Row === "number") {
-         let [ iR, iC ] = this._get_cell_coords(iRow, iColumn, bRaw);
+         let [ iR, iC ] = this._get_cell_coords(iRow, iColumn, <boolean>bRaw);
          let aRow: unknown[] = this.m_aBody[ iR ];
 
          if(aRow[ iC ] instanceof Array) { // is current value array
@@ -475,16 +485,19 @@ export class CTableData {
             else iCount += compare( aRow[ iC ], value );
          }
          else { iCount += compare( aRow[ iC ], value); } 
+
+         if( iReturn && iCount === 1 ) aFind.push( <number>aRow[0] );          // value found? then push row key to find array
       }
       else if(Array.isArray(_Row) === true) {
          let aRow: unknown[]; // active row
          let [ iR1, iC1, iR2, iC2 ] = _Row;                    // convert to variables
-         [ iR1, iC1 ] = this._get_cell_coords(iR1, iC1, bRaw); // get physical positions
-         [ iR2, iC2 ] = this._get_cell_coords(iR2, iC2, bRaw); // get physical positions
+         [ iR1, iC1 ] = this._get_cell_coords(iR1, iC1, <boolean>bRaw); // get physical positions
+         [ iR2, iC2 ] = this._get_cell_coords(iR2, iC2, <boolean>bRaw); // get physical positions
          if(iR1 > iR2) iR2 = [ iR1, iR2 = iR1 ][ 0 ];
          if(iC1 > iC2) iC2 = [ iC1, iC2 = iC1 ][ 0 ];
 
          for(let iR = iR1; iR <= iR2; iR++) {
+            const iSaveCount = iCount;
             if( bRaw ) aRow = this.m_aBody[ iR ];
             else aRow = this.m_aBody[ this._row( iR ) ];
             for(let iC = iC1; iC <= iC2; iC++) {
@@ -494,9 +507,12 @@ export class CTableData {
                }
                else { iCount += compare( aRow[ iC ], value ); }
             }
+
+            if( iReturn && iCount > iSaveCount ) aFind.push( <number>aRow[0] );// value found? then push row key to find array
          }
       }
 
+      if( iReturn === enumReturn.Array ) return aFind;
       return iCount;
    }
 

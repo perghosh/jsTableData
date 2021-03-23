@@ -6,6 +6,14 @@ export class CQuery {
             if (o.operator === undefined)
                 o.operator = 0;
         });
+        this.m_aHeader = o.header || [];
+        this.m_aValue = o.values || [];
+    }
+    get values() { return this.m_aValue; }
+    set values(aValue) {
+        if (Array.isArray(aValue) === false)
+            aValue = [aValue];
+        this.m_aValue = aValue;
     }
     CONDITIONAdd(_1, _2, _3, _4 = 0, _5, _6) {
         let oCondition = {};
@@ -40,6 +48,22 @@ export class CQuery {
         const sXml = (new XMLSerializer()).serializeToString(xml);
         return sXml;
     }
+    HEADERGetXml(oOptions, doc) {
+        oOptions = oOptions || {};
+        let xml = CQuery.HEADERGetDocument(this.m_aHeader, oOptions, doc);
+        if (oOptions.document)
+            return xml;
+        const sXml = (new XMLSerializer()).serializeToString(xml);
+        return sXml;
+    }
+    VALUEGetXml(oOptions, doc) {
+        oOptions = oOptions || {};
+        let xml = CQuery.VALUEGetDocument(this.m_aValue, oOptions, doc);
+        if (oOptions.document)
+            return xml;
+        const sXml = (new XMLSerializer()).serializeToString(xml);
+        return sXml;
+    }
     static CONDITIONGetDocument(aCondition, oOptions, doc) {
         doc = doc || (new DOMParser()).parseFromString("<document/>", "text/xml");
         let xml = doc.documentElement;
@@ -57,6 +81,48 @@ export class CQuery {
                 eCondition.setAttribute("simple", o.simple);
             if (o.group)
                 eCondition.setAttribute("simple", o.group);
+        });
+        return doc;
+    }
+    static HEADERGetDocument(aHeader, oOptions, doc) {
+        doc = doc || (new DOMParser()).parseFromString("<document/>", "text/xml");
+        let xml = doc.documentElement;
+        const sHeaders = oOptions.header || "header";
+        const sHeader = oOptions.value || "value";
+        let eHeaders = doc.createElement(sHeaders);
+        xml.appendChild(eHeaders);
+        aHeader.forEach((o, i) => {
+            let eHeader = eHeaders.appendChild(doc.createElement(sHeader));
+            if (o.name !== undefined)
+                eHeader.setAttribute("name", o.name);
+            if (o.value !== undefined)
+                eHeader.textContent = o.value.toString();
+        });
+        return doc;
+    }
+    static VALUEGetDocument(aValue, oOptions, doc) {
+        doc = doc || (new DOMParser()).parseFromString("<document/>", "text/xml");
+        let xml = doc.documentElement;
+        const sRow = oOptions.row || "row";
+        const sValues = oOptions.values || "values";
+        const sValue = oOptions.value || "value";
+        let eValues = doc.createElement(sValues);
+        if (oOptions.index !== undefined)
+            eValues.setAttribute("index", oOptions.index.toString());
+        xml.appendChild(eValues);
+        let add_value = function (eValues, o) {
+            let eValue = eValues.appendChild(doc.createElement(sValue));
+            if (o.index !== undefined)
+                eValue.setAttribute("index", o.index.toString());
+            if (o.name !== undefined)
+                eValue.setAttribute("name", o.name);
+            if (o.is_null)
+                eValue.setAttribute("is-null", "1");
+            if (o.value !== undefined)
+                eValue.textContent = o.value.toString();
+        };
+        aValue.forEach((o, i) => {
+            add_value(eValues, o);
         });
         return doc;
     }
