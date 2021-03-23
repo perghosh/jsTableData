@@ -2,19 +2,22 @@
 <!--
 # Navigate in page:
    ## Functions
-   OnResponse - Unpack respons from server
+   SetActivePoll - Calling this method triggers a chain of operations that will display needed information about active poll
+   OnResponse - Unpack response from server
    ProcessResponse - Process responses from server
 
    QUERYGetLogin - query to get login information
    QUERYGetPollList - query to get list of active polls
    QUERYGetPollOverview - query to get poll information like name and number of questions
-   QUERYGetSelectedPoll - query to get selected poll
+   QUERYGetPollQuestions - Get questions for selected poll.
    QUERYGetNextQuestion - Get next question for current poll
 
-   RESULTCreateLogin - Create login section from logon query
-   RESULTCreatePollList - Create list with active polls that voter are able to select
+   RESULTCreateLogin - Create login section from login query
+   RESULTCreatePollList - Create drop-down list with active polls that voter are able to select. 
+   RESULTShowPollOverview - Create header for selected poll
    RESULTCreateQuestionPanel - Creates markup for selected poll, this is one or more questions with answers
-
+   RESULTCreateVote - Creates markup for possible answers to poll question
+   RESULTCreateVoteCount - Create markup showing vote count on each answer for poll question
 
    ReadColumnInformationFromHeader
 
@@ -61,6 +64,7 @@
 
       <div id="idPollOverview" class="box has-background-success-light">
          <h1 class="title is-2" data-title></h1>
+         <p class="is-5" data-description></p>
       </div>
 
       <div id="idPollQuestionList" class="box">
@@ -80,8 +84,8 @@
                   callback: CApplication.CallbackServer,
                   folder: "rSelect",
                   methods: { SYSTEM_Init: "l10", SYSTEM_GetUserData: "s03", SYSTEM_GetCountry: "s08", SCRIPT_Run: "f60", REPORT_Pdf: "r02" },
-                  url: "http://127.0.0.1:8882/jq.srf?"
-                  //url: "http://goorep.se:1001/changelog/jq.srf?"
+                  //url: "http://127.0.0.1:8882/jq.srf?"
+                  url: "http://goorep.se:1001/changelog/jq.srf?"
                   //url: "http://localhost:8080/so/jq.srf?"
                });
 
@@ -196,23 +200,44 @@
             // WAITING_FOR_RESULT = waits for result from server about poll question
             // RESULT_DELIVERED = Result about question is returned from server
             // VOTE_READY_TO_SEND = Vote is ready to send to server, voter has selected answers
-            static QUESTION_STATE = { NO_RESULT: 0, WAITING_FOR_RESULT: 1, RESULT_DELIVERED: 2, VOTE_READY_TO_SEND: 3 };
 
             constructor(oApplication) {
                this.m_oApplication = oApplication; // application object
                this.m_iActivePoll = -1;            // active poll id shown in page. This is the key to post i TPoll
                this.m_aQuestion = [];              // [iKey,bResult,iState,CTableData] iKey(0) = key to question, bResult(1) = result is beeing proccesed, iState(2) = state question is in, CTableData(3) = table data object for question
                                                    // iState = check QUESTION_STATE
+
+               this.m_sViewMode = "vote";          // In what mode selected poll is. "vote" = enable voting for voter, "count" = view vote count for selected poll
+
+               this.QUESTION_STATE = { NO_RESULT: 0, WAITING_FOR_RESULT: 1, RESULT_DELIVERED: 2, VOTE_READY_TO_SEND: 3 };
             }
 
+            get view_mode() { return this.m_sViewMode; }
+            set view_mode( sMode ) {                                          console.assert( sMode === "vote" || sMode === "count", "Invalid view mode: " + sMode );
+               this.m_sViewMode = sMode; 
+            }
+
+            /**
+             * 
+             * @param iActivePoll
+             * @param sName
+             */
             SetActivePoll(iActivePoll, sName) {
-               this.m_iActivePoll = iActivePoll;
-               if(this.m_iActivePoll > 0) {
-                  this.QUERYGetPollOverview(this.m_iActivePoll, sName);
+               this.CloseQuestions();
+               if(typeof iActivePoll === "number") {                           // new poll key ?
+                  this.m_iActivePoll = iActivePoll;
+                  if(this.m_iActivePoll > 0) {
+                     this.view_mode = "vote";
+                     this.QUERYGetPollOverview(this.m_iActivePoll, sName);
+                  }
+               }
+               else {
+                  this.QUERYGetPollQuestions(this.m_iActivePoll);
                }
             }
 
             CloseQuestions() {
+               this.m_aQuestion = [];                                          // clear state and items with poll informaiton
                document.getElementById("idPollQuestionList").innerHTML = "";
             }
 
@@ -270,10 +295,10 @@
 
 
 
-            ProcessResponse(sName, eItem) {                                   console.log("ProcessResponse: item = " + sName);
+            ProcessResponse(sName, eItem) {                                   // console.log("ProcessResponse: item = " + sName);
                let oResult = JSON.parse(eItem.textContent);
                switch(sName) {
-                  case "result":
+                  case "result": {
                      const sQueryName = oResult.name;
                      if(sQueryName === "login") {
                         this.RESULTCreateLogin("idLogin", oResult.table.header);
@@ -282,7 +307,7 @@
                         this.RESULTCreatePollList("idPollList", oResult);
                      }
                      else if(sQueryName === "poll_overview") {
-                        this.RESULTShowPollOverview("idPollOverview", oResult);
+                        this.RESULTCreatePollOverview("idPollOverview", oResult);
                      }
                      else if(sQueryName === "poll_question_list") {
                         this.RESULTCreateQuestionPanel("idPollQuestionList", oResult);
@@ -291,12 +316,23 @@
                         this.RESULTCreateVote("idPollQuestionList", oResult);
                         this.QUERYGetNextQuestion();
                      }
-                     break;
+                     else if(sQueryName === "poll_answer_count") {
+                        this.RESULTCreateVoteCount("idPollQuestionList", oResult);
+                        this.QUERYGetNextQuestion();
+                     }
+                  }  break;
                   case "load_if_not_found":
                      window.app.InitializePage();
                      break;
-                  case "add_rows":
-                     window.app.InitializePage();
+                  case "message":
+                     const sType = oResult.type;
+                     if(sType === "add_rows") {
+                        const sQueryName = oResult.name;
+                        if(sQueryName === "poll_vote") {
+                           this.view_mode = "count";
+                           this.SetActivePoll();
+                        }
+                     }
                      break;
                }
             }
@@ -359,7 +395,7 @@
                   if(a[ 1 ] === false) {
                      iQuestion = a[ 0 ];
                      a[ 1 ] = true;
-                     a[ 2 ] = CPage.QUESTION_STATE.WAITING_FOR_RESULT;
+                     a[ 2 ] = this.QUESTION_STATE.WAITING_FOR_RESULT;
                      break;
                   }
                }
@@ -371,7 +407,10 @@
                   });
                   let sXml = oQuery.CONDITIONGetXml();
 
-                  let oCommand = { command: "add_condition_to_query get_result", delete: 1, query: "poll_answer", set: "vote", count: 50, format: 1, start: 0 };
+                  let sQuery = "poll_answer";
+                  if( this.view_mode === "count" ) sQuery = "poll_answer_count";
+
+                  let oCommand = { command: "add_condition_to_query get_result", delete: 1, query: sQuery, set: "vote", count: 50, format: 1, start: 0 };
                   request.Get("SCRIPT_Run", { file: "PAGE_result.lua", json: request.GetJson(oCommand) }, sXml);
                }
             }
@@ -517,20 +556,22 @@
              * @param {string|HTMLElement} eRoot
              * @param oResult
              */
-            RESULTShowPollOverview(eRoot, oResult) {
-               this.CloseQuestions();
+            RESULTCreatePollOverview(eRoot, oResult) {
                if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
                let oTD = new CTableData({ id: oResult.id, name: oResult.name });
 
                oTD.ReadArray(oResult.table.body, { begin: 0 });
 
                const sName = oTD.CELLGetValue(0, 1);
-               const iCount = oTD.CELLGetValue(0, 2);
+               const sDescription = oTD.CELLGetValue(0, 2);
+               const iCount = oTD.CELLGetValue(0, 3);
 
                if(iCount > 0) {
                   // ## Generate title for poll
                   let eTitle = eRoot.querySelector("[data-title]");
                   eTitle.textContent = sName;
+                  let eDescription = eRoot.querySelector("[data-description]");
+                  if(eDescription) eDescription.textContent = sDescription || "";
                   let eCount = eRoot.querySelector("[data-count]");
                   if(eCount) eCount.textContent = iCount.toString();
                   this.QUERYGetPollQuestions(this.m_iActivePoll);
@@ -544,7 +585,6 @@
              * @param oResult
              */
             RESULTCreateQuestionPanel(eRoot, oResult) {
-               this.m_aQuestion = [];
                if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
                
                // ## Create section where questions are placed
@@ -555,21 +595,22 @@
                   eRoot.appendChild( eQuestion );
                }
 
-               // ## Create section for vote button
-               let eVote = eRoot.querySelector('[data-section="vote"]');
-               if(!eVote) {
-                  eVote = document.createElement("div");
-                  eVote.dataset.section = "vote";
-                  eRoot.appendChild( eVote );
-                  eVote.innerHTML = `<button class='button is-white is-rounded is-primary is-large' style='width: 300px;'>RÖSTA</button>`;
+               if(this.view_mode === "vote") {
+                  // ## Create section for vote button
+                  let eVote = eRoot.querySelector('[data-section="vote"]');
+                  if(!eVote) {
+                     eVote = document.createElement("div");
+                     eVote.dataset.section = "vote";
+                     eRoot.appendChild(eVote);
+                     eVote.innerHTML = `<button class='button is-white is-rounded is-primary is-large' style='width: 300px;'>RÖSTA</button>`;
+                  }
+
+                  let eButtonVote = eVote.querySelector("button");
+                  eButtonVote.setAttribute("disabled", true);
+                  eButtonVote.addEventListener("click", e => {
+                     this.SendVote();
+                  });
                }
-
-               let eButtonVote = eVote.querySelector("button");
-               eButtonVote.setAttribute("disabled",true);
-               eButtonVote.addEventListener("click", e => {
-                  this.SendVote();
-               });
-
 
 
                let oTD = new CTableData({ id: oResult.id, name: oResult.name });
@@ -578,7 +619,7 @@
                let aBody = oTD.GetData()[ 0 ];
                aBody.forEach((aRow, i) => {
                   const iPollIndex = i + 1;
-                  this.m_aQuestion.push([ aRow[ 0 ], false, CPage.QUESTION_STATE.NO_RESULT, null ]);
+                  this.m_aQuestion.push([ aRow[ 0 ], false, this.QUESTION_STATE.NO_RESULT, null ]);
                   let eSection = document.createElement("section");
                   eSection.dataset.question = aRow[ 0 ].toString();
                   const sName = aRow[ 1 ];
@@ -591,7 +632,7 @@
             }
 
             /**
-             * Create vote for swedish politica party
+             * Create vote for poll question. Creates markup for possible answers to poll question
              */
             RESULTCreateVote(eRoot, oResult) {
                if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
@@ -601,9 +642,9 @@
                let aQuestion;
                for(let i = 0; i < this.m_aQuestion.length; i++) {
                   aQuestion = this.m_aQuestion[ i ];
-                  if(aQuestion[ 2 ] === CPage.QUESTION_STATE.WAITING_FOR_RESULT) {        // is question WAITING_FOR_RESULT for answers from server?
+                  if(aQuestion[ 2 ] === this.QUESTION_STATE.WAITING_FOR_RESULT) {        // is question WAITING_FOR_RESULT for answers from server?
                      iQuestion = aQuestion[ 0 ];
-                     aQuestion[ 2 ] = CPage.QUESTION_STATE.RESULT_DELIVERED;   // change state to delivered
+                     aQuestion[ 2 ] = this.QUESTION_STATE.RESULT_DELIVERED;   // change state to delivered
                      break;
                   }
                } console.assert(iQuestion !== undefined, "Question for poll not found!");
@@ -684,6 +725,72 @@
 </div>`;
             }
 
+
+            /**
+             * Create markup showing vote count on each answer for poll question
+             */
+            RESULTCreateVoteCount(eRoot, oResult) {
+               if(typeof eRoot === "string") eRoot = document.getElementById(eRoot);
+
+               // ## Find key for first waiting question
+               let iQuestion;
+               let aQuestion;
+               for(let i = 0; i < this.m_aQuestion.length; i++) {
+                  aQuestion = this.m_aQuestion[ i ];
+                  if(aQuestion[ 2 ] === this.QUESTION_STATE.WAITING_FOR_RESULT) {        // is question WAITING_FOR_RESULT for answers from server?
+                     iQuestion = aQuestion[ 0 ];
+                     aQuestion[ 2 ] = this.QUESTION_STATE.RESULT_DELIVERED;   // change state to delivered
+                     break;
+                  }
+               } console.assert(iQuestion !== undefined, "Question for poll not found!");
+
+               // ## Find container element to question
+               let eSection = eRoot.querySelector(`section[data-question="${iQuestion}"]`);
+               let eArticle = eSection.querySelector("article");
+
+
+               let TDVote = new CTableData({ id: oResult.id, name: oResult.name });
+               aQuestion[ 3 ] = TDVote;
+
+               const aHeader = oResult.table.header;
+               CPage.ReadColumnInformationFromHeader(TDVote, aHeader, (iIndex, oColumn, oTD) => {
+                  if(oColumn.key === 1) {
+                     oTD.COLUMNSetPropertyValue(iIndex, "position.hide", true);
+                  }
+               });
+
+               TDVote.ReadArray(oResult.table.body, { begin: 0 });
+               TDVote.COLUMNSetType( TDVote.ROWGet(1) );
+               TDVote.COLUMNUpdatePositionIndex();
+
+               let oStyle = {
+                  html_group: "table.table",                // "table" element and class table
+                  html_row: "tr",                           // "tr" element for each row
+                  html_cell_header: "th",                   // "th" for column headers
+                  html_cell: "td",                          // "td" for cells
+                  html_section_header: "thead",             // "thead" for header section
+                  html_section_body: "tbody",               // "tbody" for body section
+                  html_section_footer: "tfoot",             // "tfoot" for footer section
+               }
+
+               let oTrigger = new CTableDataTrigger({ table: TDVote, trigger: CPage.CallbackVote });
+
+               let options = {
+                  parent: eArticle,                         // container
+                  section: [ "title", "table.header", "table.body", "footer" ],// sections to create
+                  table: TDVote,                            // source data
+                  name: "vote",                             // name to access UI table in CTableData
+                  style: oStyle,                            // styling
+                  trigger: oTrigger,
+               };
+
+               let TTVote = new CUITableText(options);
+               TDVote.UIAppend(TTVote);
+
+               TTVote.Render();
+            }
+
+
             /**
              * Read column information from result header to columns in CTableData
              * @param {CTableData} oTD table data object that is configured from  aHeader
@@ -725,26 +832,29 @@
 
                         let iCount = oTD.CountValue([ -1, 1 ], 1);
                         const iMax = oTD.external.max;
-                        if(iMax < iCount) {
-                           oTD.external.error = true;
-                           if(!eError) {
-                              let eDiv = document.createElement("div");
-                              eDiv.className = "has-text-danger has-text-weight-bold";
-                              eDiv.dataset.error = "1";
-                              eFooter.appendChild(eDiv);
-                              eError = eDiv;
+                        if(typeof iMax === "number") {                        // found max property ? Then this is 
+                           if(iMax < iCount) {
+                              oTD.external.error = true;
+                              if(!eError) {
+                                 let eDiv = document.createElement("div");
+                                 eDiv.className = "has-text-danger has-text-weight-bold";
+                                 eDiv.dataset.error = "1";
+                                 eFooter.appendChild(eDiv);
+                                 eError = eDiv;
+                              }
+                              eError.innerText = `Max antal val = ${iMax}, du har valt ${iCount}`;
                            }
-                           eError.innerText = `Max antal val = ${iMax}, du har valt ${iCount}`;
-                        }
-                        else {
-                           oTD.external.error = false;
-                           if(eError) eError.innerText = "";
+                           else {
+                              oTD.external.error = false;
+                              if(eError) eError.innerText = "";
+                           }
+
+                           if(iCount >= oTD.external.min && iCount <= oTD.external.max) oTD.external.ready = true;
+                           else oTD.external.ready = false;
+                           window.app.page.IsReadyToVote( true );              // Update vote button
                         }
 
-                        if( iCount >= oTD.external.min && iCount <= oTD.external.max ) oTD.external.ready = true;
-                        else oTD.external.ready = false;
-
-                        window.app.page.IsReadyToVote( true );                // Update vote button
+                        
                      }
                      break;
                }
