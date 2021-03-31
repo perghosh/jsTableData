@@ -162,9 +162,9 @@ export class CUITableText {
             }
         }
     }
-    Create(eParent) {
+    Create(callback, eParent) {
         let eComponent = this.GetComponent(true); // create component in not created
-        this.create_sections(eComponent);
+        this.create_sections(eComponent, callback);
         if (eComponent.parentElement === null) {
             this.m_eParent.appendChild(eComponent);
         }
@@ -1404,8 +1404,9 @@ export class CUITableText {
      * Creates section elements for parts used by `CUITableText`.
      * Sections rendered are found in member m_aSection
      * @param {HTMLElement} [eComponent] Container section
+     * @param {(eSection: HTMLElement, sName: string) => boolean )} [callback] method called when element is created. if false is returned then section isn't added to component
      */
-    create_sections(eComponent) {
+    create_sections(eComponent, callback) {
         eComponent = eComponent || this.m_eComponent;
         let self = this;
         // local function used to append sections

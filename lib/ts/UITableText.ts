@@ -83,6 +83,8 @@ namespace details {
    export type renderer = (( e: HTMLElement, value: unknown, aCell: [[number,number],[number,number],tabledata_column] ) => void)
 }
 
+export type uitabledata_construct = details.construct;
+
 /*
 parent.addEventListener('click', function(e) {
     if(e.target.classList.contains('myclass')) {
@@ -304,10 +306,10 @@ export class CUITableText implements IUITableData {
    }
 
 
-   Create(callback?: ((eSection: HTMLElement, sName: string) => void|boolean), eParent?: HTMLElement ): void {
+   Create(eParent?: HTMLElement): void {
       let eComponent = this.GetComponent(true);                                // create component in not created
 
-      this.create_sections(eComponent, callback);
+      this.create_sections(eComponent);
       if(eComponent.parentElement === null) {
          this.m_eParent.appendChild(eComponent);
       }
@@ -1632,9 +1634,8 @@ export class CUITableText implements IUITableData {
     * Creates section elements for parts used by `CUITableText`.
     * Sections rendered are found in member m_aSection
     * @param {HTMLElement} [eComponent] Container section
-    * @param {(eSection: HTMLElement, sName: string) => boolean )} [callback] method called when element is created. if false is returned then section isn't added to component
     */
-   create_sections(eComponent?: HTMLElement, callback?: ((eSection: HTMLElement, sSection: string) => void | boolean )): HTMLElement {
+   create_sections(eComponent?: HTMLElement): HTMLElement {
       eComponent = eComponent || this.m_eComponent;
 
       let self = this;

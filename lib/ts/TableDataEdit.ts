@@ -56,7 +56,7 @@ export namespace edit {
    export class CEditors {
       private static _instance: CEditors;
 
-      m_aControl: [ string, CEdit ][];
+      m_aControl: [ string, any ][];
       private constructor() {
          this.m_aControl = [];
       }
@@ -65,8 +65,8 @@ export namespace edit {
          return CEditors._instance;
       }
 
-      Add(sName: string, oEdit: CEdit): void;
-      Add(aControl: [ string, CEdit ][]): void;
+      Add(sName: string, oEdit: any): void;
+      Add(aControl: [ string, any ][]): void;
       Add(_1: any, _2?: any): void {
          if(Array.isArray(_1)) this.m_aControl = _1;
          else {

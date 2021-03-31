@@ -111,13 +111,13 @@ export type EventDataTable = {
 namespace details {
    export type construct = {
       table?: CTableData,        // table data object. feeds table with data
-      trigger?: ((e: EventDataTable, data: any) => boolean) | ((e: EventDataTable, data: any) => boolean)[],
+      trigger?: ((e: EventDataTable, data: any) => boolean|void) | ((e: EventDataTable, data: any) => boolean|void)[],
    }
 }
 
 
 export class CTableDataTrigger {
-   m_acallTrigger: ((e: EventDataTable, _data: any) => boolean)[];
+   m_acallTrigger: ((e: EventDataTable, _data: any) => boolean|void)[];
    m_aTrigger: boolean[];     // Triggers that are disabled
    m_oTableData: CTableData;  // table source data object used to populate CUITableText
    m_oRS: any;                // ResizeObserver (TODO: add interface for resize observer for typescript)
@@ -304,8 +304,8 @@ export class CTableDataTrigger {
 
    ObserveResize(_1: any, bAdd?: boolean) {
       if(typeof bAdd !== "boolean") bAdd = true;
-      if(!this.m_oRS) {
-         this.m_oRS = new (<any>window).ResizeObserver((aE, oRS) => {
+      if(!this.m_oRS) { // No ResizeObserver ? Create
+         this.m_oRS = new (<any>window).ResizeObserver((aE, oRS) => { // new ResizeObserver
             let e = this._event({ iReason: enumReason.Browser });
             for(let _e of aE) {
                this.TriggerOn(this.Call([ enumTrigger.OnResize ]), e, _e);

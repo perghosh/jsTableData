@@ -15,10 +15,11 @@ export class CQuery {
             aValue = [aValue];
         this.m_aValue = aValue;
     }
-    CONDITIONAdd(_1, _2, _3, _4 = 0, _5, _6) {
+    CONDITIONAdd(_1, _2, _3, _4, _5, _6) {
         let oCondition = {};
         let sTable, sId, _value, iOperator;
         if (typeof _1 === "string") {
+            _4 = _4 || 0;
             oCondition.table = _1;
             oCondition.operator = _4;
             if (typeof _2 === "string")

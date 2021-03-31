@@ -1,8 +1,3 @@
-export var enumReturn;
-(function (enumReturn) {
-    enumReturn[enumReturn["Value"] = 0] = "Value";
-    enumReturn[enumReturn["Array"] = 1] = "Array";
-})(enumReturn || (enumReturn = {}));
 export var browser;
 (function (browser) {
     function AddCSS(sCSS) {
@@ -255,11 +250,11 @@ export class CTableData {
                 return b(a);
             return a === b ? 1 : 0;
         };
-        let iCount = 0, iRow = _Row, iColumn;
+        let iCount = 0, iRow = _Row, iColumn = _Column;
         if (Array.isArray(_Row) && _Row.length === 2) {
             [iRow, iColumn] = _Row;
             if (iRow === -1) {
-                _Row = [0, iColumn, this.ROWGetCount() - 1, iColumn];
+                _Row = [0, _Column, this.ROWGetCount() - 1, _Column];
             }
             bRaw = value;
             value = _Column;
@@ -267,9 +262,6 @@ export class CTableData {
                 iReturn = bRaw;
                 bRaw = undefined;
             } // if bRaw is a number then this is the return value type
-        }
-        else {
-            iColumn = _Column;
         }
         let aFind = iReturn ? [] : null;
         if (typeof _Row === "number") {
@@ -317,7 +309,7 @@ export class CTableData {
                     aFind.push(aRow[0]); // value found? then push row key to find array
             }
         }
-        if (iReturn === enumReturn.Array)
+        if (iReturn === 1 /* Array */)
             return aFind;
         return iCount;
     }
@@ -1607,8 +1599,10 @@ export class CTableData {
             // Push values that is to be shown.
             if (aHidden) {
                 let a = [];
-                aHidden.forEach((_H, i) => { if (!_H)
-                    a.push(aModify[i]); });
+                aHidden.forEach((_H, i) => {
+                    if (!_H)
+                        a.push(aModify[i]);
+                });
                 aModify = a;
             }
             return aModify;
@@ -1620,8 +1614,10 @@ export class CTableData {
             aRow = aRow.slice(iSlice); // create a shallow copy of row
             aRow = callOrderAndHide(aRow, aOrder, aHidden);
             // take first value if array in cell
-            aRow.forEach((v, i) => { if (Array.isArray(v))
-                aRow[i] = v[0]; });
+            aRow.forEach((v, i) => {
+                if (Array.isArray(v))
+                    aRow[i] = v[0];
+            });
             aData.push(aRow);
         }
         // first step, do we need to convert values ?

@@ -3,7 +3,7 @@
 namespace details {
    export type construct = {
       folder?: string,                        // report folder on server where lua files  are found
-      callback?: (( oXml: Document, sResult: string ) => void),
+      callback?: (( oXml: Element, sName: string, e: EventRequest ) => void | boolean),
       id?: string,                            // id for request object
       methods?: { [ key: string ]: string },  // valid methods. Method names internally differs from server because of readability
       set?: string,                           // active query set
@@ -31,7 +31,7 @@ export class CRequest {
    m_sFolder: string; // folder on server
    m_sId: string;     // Unique id for source data 
    m_oMethod: { [ key: string ]: string }; // registered server methods
-   m_callProcess: ((oXml: Document, sName: string, e: EventRequest) => void | boolean)[];
+   m_callProcess: ((oXml: Element, sName: string, e: EventRequest) => void | boolean)[];
    m_sUrl: string;    // Url to server
    m_sSession: string;// User session for user on server. This identifies user on server
    m_sSet: string;    // active query set
@@ -137,7 +137,7 @@ export class CRequest {
    }
 
 
-   GetJson(oJson: {[ key: string ]: string }): string {
+   GetJson(oJson: {[ key: string ]: string|number }): string {
       oJson.set = oJson.set || this.m_sSet;
       return encodeURIComponent(JSON.stringify(oJson));
    }

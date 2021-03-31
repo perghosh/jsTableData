@@ -4,7 +4,7 @@ export const enum enumFormat {
    All      = 0x0004,
 }
 
-export const enum enumReturn {
+export enum enumReturn {
    Value    = 0,
    Array    = 1,
 }
@@ -167,7 +167,7 @@ export class CTableData {
    m_aColumnIndex?: number[];// If columns have a different order, this points to column in `m_aColumn` and `m_aBody`.
                              // When this is specified always use it to get to column.
    m_aDirtyRow?: number[]; //  Dirty rows
-   m_oExternal: object;    // used to manage external properties. Not used in CTableData
+   m_oExternal: any;       // used to manage external properties. Not used in CTableData
    m_aFooter?: unknown[][];// Footer values, like sticky at bottom if result is presented in table
    m_iFooterSize: number;  // if bottom rows in body is used for something "else"
    m_aHeader?: unknown[][];// Header values, like sticky if result is presented in table
@@ -326,7 +326,7 @@ export class CTableData {
 
 
 
-   constructor( options: details.construct ) {
+   constructor( options?: details.construct ) {
       const o = options || {};
 
       this.m_aBody = o.body || [];
@@ -452,6 +452,7 @@ export class CTableData {
     * @param  {unknown} value value set to cell
     * @param  {boolean} bRaw if raw value cell value from raw row is set
     */
+   CountValue(aRange: [ iR: number, _C: string | number ], value: unknown, iReturn?: enumReturn ): number | number[];
    CountValue(iRow: number, _Column: string | number, value: unknown, bRaw?: boolean): number | number[];
    CountValue(aRange: [ iR: number, _C: string | number ], value: unknown, bRaw?: boolean): number | number[];
    CountValue(aRange: [ iR1: number, _C1: string | number, iR2: number, _C2: string | number ], value: unknown, bRaw?: boolean): number | number[];
@@ -463,16 +464,17 @@ export class CTableData {
          return a === b ? 1 : 0;
       }
 
-      let iCount = 0, iRow = _Row, iColumn = _Column;
+      let iCount = 0, iRow = _Row, iColumn: number|string;
       if(Array.isArray(_Row) && _Row.length === 2) {
          [ iRow, iColumn ] = _Row;
          if(iRow === -1) {
-            _Row = [ 0, _Column, this.ROWGetCount() - 1, _Column ];
+            _Row = [ 0, iColumn, this.ROWGetCount() - 1, iColumn ];
          }
          bRaw = <boolean>value;
          value = _Column;
          if(typeof bRaw === "number") { iReturn = bRaw; bRaw = undefined; }    // if bRaw is a number then this is the return value type
       }
+      else { iColumn = _Column; }
 
       let aFind: number[] = iReturn ? [] : null;
 

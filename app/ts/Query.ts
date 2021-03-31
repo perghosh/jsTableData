@@ -35,7 +35,7 @@ export class CQuery {
    m_aHeader: details.header[];
    m_aValue: details.value[];
 
-   constructor( options: details.construct ) {
+   constructor( options?: details.construct ) {
       const o = options || {};
 
       this.m_aCondition = o.conditions || [];
@@ -54,10 +54,12 @@ export class CQuery {
    }
 
    CONDITIONAdd( sTable: string, sId: string, _value: unknown, iOperator?: number );
-   CONDITIONAdd( _1: any, _2: any, _3: any, _4 = 0, _5?: any, _6?: any) {
+   CONDITIONAdd( oCondition: {  table: string, id: string, value: string|number, simple?: string, operator?: number } );
+   CONDITIONAdd( _1: any, _2?: any, _3?: any, _4?: number, _5?: any, _6?: any) {
       let oCondition: details.condition = {};
       let sTable: string, sId: string, _value: unknown, iOperator: number;
       if( typeof _1 === "string" ) {
+         _4 = _4 || 0;
          oCondition.table = _1;
          oCondition.operator = _4;
 
@@ -74,7 +76,7 @@ export class CQuery {
       this.m_aCondition.push( oCondition );
    }
 
-   CONDITIONGetXml( oOptions: { conditions?: string, condition?: string, document?: boolean }, doc?: XMLDocument ): XMLDocument | string {
+   CONDITIONGetXml( oOptions?: { conditions?: string, condition?: string, document?: boolean }, doc?: XMLDocument ): XMLDocument | string {
       oOptions = oOptions || {};
       let xml = CQuery.CONDITIONGetDocument( this.m_aCondition, oOptions, doc );
 
@@ -83,7 +85,7 @@ export class CQuery {
       return sXml;
    }
 
-   HEADERGetXml(oOptions: { values?: string, value?: string, document?: boolean }, doc?: XMLDocument): XMLDocument | string {
+   HEADERGetXml(oOptions?: { values?: string, value?: string, document?: boolean }, doc?: XMLDocument): XMLDocument | string {
       oOptions = oOptions || {};
       let xml = CQuery.HEADERGetDocument( this.m_aHeader, oOptions, doc );
 
@@ -93,7 +95,7 @@ export class CQuery {
    }
 
 
-   VALUEGetXml(oOptions: { values?: string, value?: string, document?: boolean }, doc?: XMLDocument): XMLDocument | string {
+   VALUEGetXml(oOptions?: { index?: number, values?: string, value?: string, document?: boolean }, doc?: XMLDocument): XMLDocument | string {
       oOptions = oOptions || {};
       let xml = CQuery.VALUEGetDocument( this.m_aValue, oOptions, doc );
 
