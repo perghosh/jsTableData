@@ -303,8 +303,8 @@ export class CTableData {
                break;
             case "min": 
                if( 
-                  ((eType & enumValueType.group_string) && (<string>_Value).length < _rule) ||
-                  ((eType & enumValueType.group_number) && _Value < _rule)
+                  ((eType & enumValueType.group_string) && (typeof _Value !== "string" || (<string>_Value).length < _rule)) ||
+                  ((eType & enumValueType.group_number) && (typeof _Value !== "number" || _Value < _rule))
                ) aError = [false,sKey];
                break;
             case "pattern" :
@@ -553,6 +553,8 @@ export class CTableData {
       };
       */
 
+      if(aData.length === 0 ) return; // no rows ?
+
       let aRow: unknown[] = aData[0];
 
       if(this.COLUMNGetCount() === 0) {
@@ -628,10 +630,11 @@ export class CTableData {
     * Return `CRowRows` object that has raw data on how to design row values.
     */
    
-   GetRowRows( aMatch?: number[] ): CRowRows {
-      let aRows = this._collect_row_design();
+   GetRowRows( aMatch?: number[] | boolean, bRaw?:  boolean ): CRowRows {
+      if( typeof aMatch === "boolean") { bRaw = <boolean>aMatch; aMatch = undefined; }
+      let aRows = this._collect_row_design( bRaw );
       let oRR = new CRowRows(aRows);
-      if( aMatch ) oRR.OffsetColumns( aMatch );
+      if( aMatch ) oRR.OffsetColumns( <number[]>aMatch );
       return oRR;
    }
 
@@ -810,10 +813,9 @@ export class CTableData {
     */
    COLUMNGet(_Index: number | string, bNull?: boolean, bRaw?: boolean): details.column {
       if( bRaw ) return this.m_aColumn[ <number>_Index ];
-      else if(!bNull) return this._column(_Index);
 
       let iIndex = this._index(_Index);
-      if(iIndex === -1) return null;
+      if(bNull === true && iIndex === -1) return null;
 
       return this.m_aColumn[ iIndex ];      
    }
@@ -821,12 +823,16 @@ export class CTableData {
    /**
     * Update matching index for objects that uses table data based on property values that marks columns as hidden or disabled
     */
-   COLUMNUpdatePositionIndex() {
+   COLUMNUpdatePositionIndex( bInternal: boolean ) {
+      if( bInternal === true ) this.m_aColumnIndex = [];
       let iIndex = 0;
       this.m_aColumn.forEach((c,i) => { 
-         if( c.position.hide ) c.position.index = -1;
+         if( c.position.hide ) { 
+            c.position.index = -1;
+         }
          else {
             c.position.index = iIndex;
+            if( bInternal === true ) this.m_aColumnIndex.push( i ); // set physical index to column 
             iIndex++;
          }
       });
@@ -1802,7 +1808,7 @@ export class CTableData {
       }
       else {
          iR = iRow;
-         iC = <number>_Column; // if raw then _Column has to be a number
+         iC = <number>_Column + 1; // if raw then _Column has to be a number, just add one for the row key column
       }
 
       return [ iR, iC ];
@@ -2013,15 +2019,20 @@ export class CTableData {
    /**
     * Generate information how fields are placed. the position.row and position.hide column properties
     * are checked and based on those information about where field is placed is generated.
+    * @param {boolean} [bRaw] Use raw position in table data, do not take the index property in position
     */
-   _collect_row_design(): [ [number,number,HTMLElement], number[] ][] {
+   _collect_row_design( bRaw?: boolean ): [ [number,number,HTMLElement], number[] ][] {
       let aRow: [ [number,number,HTMLElement], number[] ][] = [ [ [0,0,null], [] ] ];// array used to collect information for each row, format described [ [row index, row priority ], [column indexes...] ] 
 
       let i = this.m_aColumn.length;
 
       this.m_aColumn.forEach((oC, iIndex) => {
+         let iColumn = iIndex;
          const position = oC.position;
-         let iColumn = typeof position.index === "number" ? position.index : iIndex;
+         if( bRaw !== true ) {
+            iColumn = typeof position.index === "number" ? position.index : iIndex;
+         }
+
          if(position.row) {                                                    //  is field not placed in main row ?
             let bPushed = false;
             let i = aRow.length;

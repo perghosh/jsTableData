@@ -15,10 +15,10 @@
    }
 
    export type value = {
-      index: number,             // index matching field in query
-      name: string,              // name for field in query
+      index?: number,            // index matching field in query
+      name?: string,             // name for field in query
       value?: unknown,           // value set to field in query,
-      is_null: number,           // if value is null
+      is_null?: number,          // if value is null
    }
 
 

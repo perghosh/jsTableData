@@ -13,11 +13,11 @@
  */
 
 
-import { CTableData, CRowRows, enumMove, IUITableData, tabledata_column, tabledata_position, tabledata_format } from "./TableData.js";
+import { CTableData, CRowRows, enumMove, enumFormat, IUITableData, tabledata_column, tabledata_position, tabledata_format } from "./TableData.js";
 import { edit } from "./TableDataEdit.js";
 import { CTableDataTrigger, enumTrigger, enumReason, EventDataTable } from "./TableDataTrigger.js";
 
-const enum enumState {
+export const enum enumState {
    HtmlValue   = 0x0001,   // Value in table has a small dom tree and we need to query for the element holding value
    SetDirtyRow = 0x0002,   // When value in row is change, set row to dirty
    SetHistory  = 0x0004,   // Record changes in history
@@ -480,7 +480,7 @@ export class CUITableText implements IUITableData {
 
       const iDataRow: number = this._row_in_data(iRow), iDataColumn: number = this._column_in_data(iColumn);  // index for row and column in CTableData, its physical position
 
-      const oColumn = this.data.COLUMNGet(iDataColumn);
+      const oColumn = this.data.COLUMNGet(iDataColumn, undefined, true);
       if(oTriggerData) {
          oTriggerData.column = oColumn;
          oTriggerData.data = this.data;
@@ -504,7 +504,7 @@ export class CUITableText implements IUITableData {
             if( this.is_state( enumState.SetHistory ) ) this.data.HISTORYPush( iDataRow,iDataColumn ); // add to history
             let aRow = this.m_aRowBody[iRow];
             aRow[iColumn] = value;                                             // Modify value internally
-            this.data.CELLSetValue( iDataRow, iDataColumn, value )             // Set value to cell
+            this.data.CELLSetValue( iDataRow, iDataColumn, value, true )       // Set value to cell
             if( this.is_state( enumState.SetDirtyRow ) ) this.data.DIRTYSet( iDataRow ); // Set row as dirty
          }
 
@@ -518,7 +518,7 @@ export class CUITableText implements IUITableData {
          }
 
          if(this.SetCellError(iRow, iColumn, value, _result[ 1 ], oTriggerData) === true) {
-            this.data.CELLSetValue(iDataRow, iDataColumn, value);
+            this.data.CELLSetValue(iDataRow, iDataColumn, value, true);
          }
       }
    }
@@ -627,7 +627,7 @@ export class CUITableText implements IUITableData {
          return;
       }
 
-      let aHeader = <[ string | number, unknown ][]>this.data.COLUMNGetPropertyValue(true, [ "alias", "name" ], (column) => {
+      let aHeader = <[ string | number, unknown ][]>this.data.COLUMNGetPropertyValue(true, [ "alias", "name" ], true, (column) => {
          if(column.position.hide) return false;
          return true;
       });
@@ -636,18 +636,18 @@ export class CUITableText implements IUITableData {
       aHeader.forEach((a:any) => { this.m_aColumnPhysicalIndex.push(a[ 0 ]); });
 
       this.m_aColumnPosition = [];
-      let aPosition: [number,tabledata_position][] = <[number,tabledata_position][] >this.data.COLUMNGetPropertyValue( this.m_aColumnPhysicalIndex, "position" );
+      let aPosition: [number,tabledata_position][] = <[number,tabledata_position][] >this.data.COLUMNGetPropertyValue( this.m_aColumnPhysicalIndex, "position", true );
       aPosition.forEach( aP => {
          this.m_aColumnPosition.push( aP[1] );
       });
 
       this.m_aColumnFormat = [];
-      let aFormat: [number,tabledata_format][] = <[number,tabledata_format][] >this.data.COLUMNGetPropertyValue( this.m_aColumnPhysicalIndex, "format" );
+      let aFormat: [number,tabledata_format][] = <[number,tabledata_format][] >this.data.COLUMNGetPropertyValue( this.m_aColumnPhysicalIndex, "format", true );
       aFormat.forEach( aF => {
          this.m_aColumnFormat.push( aF[1] );
       });
 
-      this.m_oRowRows = this.data.GetRowRows();
+      this.m_oRowRows = this.data.GetRowRows( true );
 
 
 
@@ -801,7 +801,7 @@ export class CUITableText implements IUITableData {
          }
       }
 
-      if( typeof iColumn === "number" && iColumn >= 0 ) return [iColumn, this.data.COLUMNGet( iColumn )];
+      if( typeof iColumn === "number" && iColumn >= 0 ) return [iColumn, this.data.COLUMNGet( iColumn, undefined, true )];
       return null;
    }
 
@@ -971,7 +971,7 @@ export class CUITableText implements IUITableData {
       for(let i = 0; i < _Row.length; i++) {
          const iRow = _Row[i];
 
-         let aRow = this.data.ROWGet( iRow );
+         let aRow = this.data.ROWGet( iRow, true );
          aRow.forEach((_Value, iIndex) => {
             let oColumn = this.data.COLUMNGet( iIndex, false, true );
             let _result = CTableData.ValidateValue( _Value, oColumn );
@@ -1289,7 +1289,7 @@ export class CUITableText implements IUITableData {
          if( bCall ) { 
             let bRender = true;
             for(let j = 0; j < this.m_acallRender.length; j++) {
-               let b = this.m_acallRender[j].call(this, "beforeHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ) ) );
+               let b = this.m_acallRender[j].call(this, "beforeHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ), undefined, true ) );
                if( b === false ) bRender = false;
             }
             if( bRender === false ) continue;
@@ -1299,7 +1299,7 @@ export class CUITableText implements IUITableData {
             eSpan.innerText = aName[ 0 ] || aName[ 1 ];    // alias or name
             eSpan.title = eSpan.innerText;
             eSpan.dataset.c = aHeader[i][0].toString();    // set column index
-            if( bCall ) this.m_acallRender.forEach((call) => { call.call(this, "afterHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ) ) ); });
+            if( bCall ) this.m_acallRender.forEach((call) => { call.call(this, "afterHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ), undefined, true ) ); });
             eSpan = <HTMLElement>eSpan.nextElementSibling;
          }
 
@@ -1320,7 +1320,7 @@ export class CUITableText implements IUITableData {
       eSection = eSection || this.GetSection("body");
       let aResult: [ unknown[][], number[] ];
       //let sClass: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_value") || "";
-      let aStyle = <unknown[]>this.data.COLUMNGetPropertyValue(this.m_aColumnPhysicalIndex, "style"); // position data for columns
+      let aStyle = <unknown[]>this.data.COLUMNGetPropertyValue(this.m_aColumnPhysicalIndex, "style", true); // position data for columns
       const bSetValue = this.is_state( enumState.SetValue );                    // If try to set value for html element, when you have INPUT elements in column.
 
       if( Array.isArray( _1 ) ) {
@@ -1371,7 +1371,7 @@ export class CUITableText implements IUITableData {
                const iC = aColumn[i];                                          // index to column in table data
                let e = this.ELEMENTGetCellValue(eColumn);                      // get cell value element
                let sValue = aRow[ iC ];                                        // value for active cell
-               const oColumn = this.data.COLUMNGet( this._column_in_data( i ) );
+               const oColumn = this.data.COLUMNGet( this._column_in_data( i ), undefined, true );
                const callRenderer = this.COLUMNGetRenderer( i );               // get renderer for cell if custom rendering
 
                if( bCall ) { 
@@ -1383,7 +1383,7 @@ export class CUITableText implements IUITableData {
                   if( bRender === false ) continue;
                }
 
-               if(Object.keys(aStyle[ iC ][1]).length > 0) Object.assign(e.style, aStyle[ iC ][1]);
+               if(Object.keys(aStyle[ i ][1]).length > 0) Object.assign(e.style, aStyle[ i ][1]);
 
                if( bSetValue === false ) {
                   if(callRenderer) {
@@ -1524,7 +1524,7 @@ export class CUITableText implements IUITableData {
       let sClass: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_value") || "";
       let eElement = this.ELEMENTGetCellValue( this.ELEMENTGetCell(_Row, iColumn) );
 
-      let sValue = this.data.CELLGetValue(this._row_in_data(_Row), this._column_in_data(iColumn));
+      let sValue = this.data.CELLGetValue(this._row_in_data(_Row), this._column_in_data(iColumn), enumFormat.Raw|enumFormat.Format);
 
       let bValue = false;
       const s = eElement.tagName;
@@ -1534,7 +1534,7 @@ export class CUITableText implements IUITableData {
 
       if(callRenderer) {
          const iDataColumn = this._column_in_data(iColumn);
-         const oColumn = this.data.COLUMNGet( this._column_in_data( iDataColumn ) );
+         const oColumn = this.data.COLUMNGet( this._column_in_data( iDataColumn ), undefined, true );
          callRenderer.call( this, eElement, sValue, [[_Row, iColumn],[this._row_in_data(_Row),iDataColumn], oColumn] );// custom render for column
       }
       else if(sValue !== null && sValue != void 0) {
@@ -1601,7 +1601,7 @@ export class CUITableText implements IUITableData {
             let eCell = this.ELEMENTGetCell(aError, "body" );
 
             if(bCall) {                                                        // external rendering ?
-               oColumn = this.data.COLUMNGet( this._column_in_data( aError[ 1 ] ) );
+               oColumn = this.data.COLUMNGet( this._column_in_data( aError[ 1 ] ), undefined, true );
                for(let j = 0; j < this.m_acallRender.length; j++) {
                   let b = this.m_acallRender[j].call(this, "beforeErrorValue", aError, eCell, oColumn );
                   if( b === false ) bRender = false;
@@ -1848,10 +1848,11 @@ export class CUITableText implements IUITableData {
          eRow.dataset.c_row = "C" + aColumn.join(",C") + ",";
 
          aColumn.forEach((i,j) => { 
-            if( i === undefined ) i = j;
+            let iColumn = this._column_in_ui( i );
+            if( iColumn === -1 ) iColumn = j;
             let e = document.createElement(sHtmlCell);
-            e.dataset.c = i.toString();
-            const oFormat = this.m_aColumnFormat[i];
+            e.dataset.c = iColumn.toString();
+            const oFormat = this.m_aColumnFormat[iColumn];
             if( typeof oFormat.html === "string" ) e.innerHTML = oFormat.html;
             else if( sHtmlValue ) e.innerHTML = sHtmlValue;
             if(sStyle) e.style.cssText = sStyle;
