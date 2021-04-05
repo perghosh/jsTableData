@@ -297,8 +297,8 @@ export class CTableData {
          switch(sKey) {
             case "max":
                if( 
-                  ((eType & enumValueType.group_string) && (<string>_Value).length > _rule) ||
-                  ((eType & enumValueType.group_number) && _Value > _rule)
+                  ((eType & enumValueType.group_string) && typeof _Value === "string" && (<string>_Value).length > _rule) ||
+                  ((eType & enumValueType.group_number) && typeof _Value === "number" && _Value > _rule)
                ) aError = [false,sKey];
                break;
             case "min": 
@@ -822,8 +822,9 @@ export class CTableData {
 
    /**
     * Update matching index for objects that uses table data based on property values that marks columns as hidden or disabled
+    * @param {boolean} [bInternal] If true update m_aColumnIndex to set the column order when order do not match the physical order for columnd
     */
-   COLUMNUpdatePositionIndex( bInternal: boolean ) {
+   COLUMNUpdatePositionIndex( bInternal?: boolean ) {
       if( bInternal === true ) this.m_aColumnIndex = [];
       let iIndex = 0;
       this.m_aColumn.forEach((c,i) => { 

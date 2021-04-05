@@ -217,12 +217,12 @@
         "affectsGlobalScope": true
       },
       "./ts/tabledata.ts": {
-        "version": "a73baba4b8fc577a5f8abc76cbc3d0e21ae88ccc6ad6cc9d69bca94dff3263ff",
-        "signature": "6ea973918861dfe317cb5807573a0c2722b3ecc3ee293ce37bcf5e41921b8b9d",
+        "version": "d8243dcb590fb2a88d5b74e444777a77cde96ebdf071d63e1f9ed6005df77215",
+        "signature": "d2e5c2265604cde770f35ecad141a71a4ca81b4c70fca26e2ec3643d171b9457",
         "affectsGlobalScope": false
       },
       "./ts/tabledataedit.ts": {
-        "version": "b15718bc6aad2e9b35cc74e210d25a77656a645be0c19373163d1cf9c650385a",
+        "version": "30fa3ec56bad8a88a4db2d0f21ce15b3f45a651b2a1b5903ae9a78bd249f2f96",
         "signature": "8e37fc20b8e4d25b63cb11a2653f078ce575b2dc103e6f0914dbc9eea7d85094",
         "affectsGlobalScope": false
       },
@@ -242,7 +242,7 @@
         "affectsGlobalScope": false
       },
       "./ts/uitabletext.ts": {
-        "version": "3b8857cd29c0348710c983365849d12554654553ed1ddc0ab189bd5e808592e8",
+        "version": "2c3ae3d33201d7b5853ae2176b802bcd5d4ec6c441656b1b78def9563baf889d",
         "signature": "f20a2e90361440156c7cd2ca43fa89222eeb7257f0b39eb6d96feef1d1e7bbea",
         "affectsGlobalScope": false
       }
