@@ -36,6 +36,7 @@ namespace details {
       edit?: boolean,            // enable edit for table
       edits?: edit.CEdits;       // edits component, logic for edit fields used in table
       id?: string,               // id for CUITableText
+      start?: number,            // start row from table data
       max?: number,              // max number of rows shown in table
       name?: string,             // name to find this when stored in collections.
       parent?: HTMLElement,      // parent element in DOM tree
@@ -139,6 +140,7 @@ export class CUITableText implements IUITableData {
    m_aOrder: [ number | string, number ][];// Order for result, if external order than pic order from  data table
    m_eParent: HTMLElement;    // parent element in DOM that owns component
    m_aRowBody: unknown[][];   // values show in table
+   m_iRowStart: number;       // start row from table data when rows are read in to ui
    m_iRowCount: number;       // Number of rows shown
    m_iRowCountMax: number;    // Max number of rows shown
    m_aRowPhysicalIndex: number[];// array with numbers for row index in table data object. This is to point the physical position for data
@@ -198,7 +200,8 @@ export class CUITableText implements IUITableData {
       this.m_iOpenEdit     = 0;
       this.m_aOrder        = [];
       this.m_eParent       = o.parent || null;
-      this.m_aRowPhysicalIndex = null,
+      this.m_aRowPhysicalIndex = null;
+      this.m_iRowStart     = o.start || 0;
       this.m_iRowCount     = 0;
       this.m_iRowCountMax  = o.max || -1;
       this.m_aSection      = o.section || [ "toolbar", "title", "header", "body", "footer", "statusbar" ]; // sections "header" and "body" are required
@@ -296,6 +299,16 @@ export class CUITableText implements IUITableData {
       this.m_iState = _On ? this.m_iState | iState : this.m_iState & ~iState;
    }
 
+   SetProperty(sName: string, _Value: string | number) {
+      sName = sName.toLowerCase();
+      switch(sName) {
+         case "name": this.m_sName = <string>_Value; break;
+         case "rowstart": this.m_iRowStart = <number>_Value; break;
+         case "rowcount": this.m_iRowCount = <number>_Value; break;
+         case "rowcountmax": this.m_iRowCountMax = <number>_Value; break;
+      }
+   }
+
 
    update(iType: number): any {
       switch(iType) {
@@ -306,12 +319,17 @@ export class CUITableText implements IUITableData {
    }
 
 
+   /**
+    * Create html sections for ui table
+    * @param {HTMLElement} [eParent] parent element for sections.
+    */
    Create(eParent?: HTMLElement): void {
+      eParent = eParent || this.m_eParent;
       let eComponent = this.GetComponent(true);                                // create component in not created
 
       this.create_sections(eComponent);
       if(eComponent.parentElement === null) {
-         this.m_eParent.appendChild(eComponent);
+         eParent.appendChild(eComponent);
       }
    }
 
@@ -677,6 +695,7 @@ export class CUITableText implements IUITableData {
 
       let o: { [key: string]: string|number } = {};
       if( this.m_iRowCountMax >= 0 ) o.max = this.m_iRowCountMax;              // if max rows returned is set
+      if(this.m_iRowStart >= 0) o.begin = this.m_iRowStart;
 
       if(this.m_aInput) { this.m_aInput[ 0 ] = -1; this.m_aInput[ 1 ] = -1; }
       let aBody = this.data.GetData(o);

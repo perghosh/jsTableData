@@ -19,6 +19,7 @@ declare namespace details {
         edit?: boolean;
         edits?: edit.CEdits;
         id?: string;
+        start?: number;
         max?: number;
         name?: string;
         parent?: HTMLElement;
@@ -102,6 +103,7 @@ export declare class CUITableText implements IUITableData {
     m_aOrder: [number | string, number][];
     m_eParent: HTMLElement;
     m_aRowBody: unknown[][];
+    m_iRowStart: number;
     m_iRowCount: number;
     m_iRowCountMax: number;
     m_aRowPhysicalIndex: number[];
@@ -179,7 +181,12 @@ export declare class CUITableText implements IUITableData {
      * @param iState
      */
     set_state<T>(_On: T, iState: number): void;
+    SetProperty(sName: string, _Value: string | number): void;
     update(iType: number): any;
+    /**
+     * Create html sections for ui table
+     * @param {HTMLElement} [eParent] parent element for sections.
+     */
     Create(eParent?: HTMLElement): void;
     /** BLOG: children, childNodes and dataset
      * Get root html element for components, create the component element if argument is true and component element isn't found

@@ -236,14 +236,19 @@
         "signature": "5b274c9ff958d93061e5ab7dd9a6d9defbbdd812cfed94f4bc047d414f2478ff",
         "affectsGlobalScope": false
       },
+      "./ts/uipagerpreviousnext.ts": {
+        "version": "64b64968678abee53e7cae1d7a8fbcac2bd540234dfcf2a2b7278fe53fea57ba",
+        "signature": "9ad6d48e1c729e0ec0ac131bac4fe102dddc6817fe173eea825cb350c256dd2d",
+        "affectsGlobalScope": false
+      },
       "./ts/uitableform.ts": {
         "version": "3c1653cbd14ede5adeb1cb40b0f7130701ace6a3b6a9fc500dd5e7f678e142f9",
         "signature": "7ee97ac2ee94c78368a07f95c7d54f8dd24bb7fce611ab51b3248c0eb2d71d85",
         "affectsGlobalScope": false
       },
       "./ts/uitabletext.ts": {
-        "version": "2c3ae3d33201d7b5853ae2176b802bcd5d4ec6c441656b1b78def9563baf889d",
-        "signature": "f20a2e90361440156c7cd2ca43fa89222eeb7257f0b39eb6d96feef1d1e7bbea",
+        "version": "aef4c749c725b5fc97a7a65785b9291798331c266c1f83cd79f1e6b8d7fe5598",
+        "signature": "3147a33e97efbcca634606ab53fb1a1c74b2868f2c0c7b5413eeaba41f2c9910",
         "affectsGlobalScope": false
       }
     },
@@ -270,6 +275,9 @@
       ],
       "./ts/tabledatatriggernames.ts": [
         "./ts/tabledatatrigger.ts"
+      ],
+      "./ts/uipagerpreviousnext.ts": [
+        "./ts/tabledata.ts"
       ],
       "./ts/uitableform.ts": [
         "./ts/tabledata.ts"
@@ -302,6 +310,7 @@
       "./ts/tabledataedit.ts",
       "./ts/tabledatatrigger.ts",
       "./ts/tabledatatriggernames.ts",
+      "./ts/uipagerpreviousnext.ts",
       "./ts/uitableform.ts",
       "./ts/uitabletext.ts",
       "../../../../../users/per/appdata/roaming/npm/node_modules/typescript/lib/lib.dom.d.ts",

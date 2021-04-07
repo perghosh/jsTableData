@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html>
+<body>
+   <div id="idPageCount">
+      <select>
+         <option value="-1">All</option>
+         <option value="10">10</option>
+         <option value="25">25</option>
+         <option value="100">100</option>
+      </select>
+
+   </div>
+   <div id="idPager"></div>
+   <div id="idContainer" style="width: 100%;"></div>
+
+   <script>
+      function PAGE_Setup() {
+         window.global = {};
+
+         let TDHashtag = new CTableData();
+         window.global.TDHashtag = TDHashtag;
+         TDHashtag.ReadArray(aTable);                       // read happiness data
+         TDHashtag.COLUMNSetPropertyValue("BadgeK", "position.hide", true);
+
+         // style CUITableText
+         let oStyle = {
+            html_row: "div.row",                            // "th" for column headers
+            html_cell: "span",                              // "td" for cells
+         }
+
+         let options = {
+            parent: document.getElementById("idContainer"), // container
+            section: ["body"],                              // sections to create
+            table: TDHashtag,                               // source data
+            name: "hash",                                   // name to access UI table in CTableData
+            style: oStyle,                                  // styling
+         };
+
+         let TTHashtag = new CUITableText(options);         // create CUITableText that render table in browser
+         TDHashtag.UIAppend(TTHashtag);                     // add ui object to source data object (CTableData)
+         TTHashtag.Render();                                // render table
+
+         let oPager = new CUIPagerPreviousNext({ 
+            parent: document.getElementById("idPager")
+          });
+         oPager.component.querySelector('[data-type="previous"]').innerText = "Previous";
+         oPager.component.querySelector('[data-type="next"]').innerText = "Next";
+
+         document.getElementById("idPageCount").addEventListener("change", e => { 
+            let sSelect = e.srcElement;
+            let iValue = parseInt( sSelect.value, 10 );
+            TTHashtag.SetProperty("rowcountmax", iValue);
+            TTHashtag.Render();
+         });
+      }
+   </script>
+
+
+
+   <!--
+   | Init page
+   -->
+   <script>
+      document.addEventListener('DOMContentLoaded', function () {
+         PAGE_Setup();
+      });
+   </script>
+
+   <!--
+    | Load needed components to manage login data
+   -->
+   <script type="module">
+      import { CTableData, browser } from "./../lib/TableData.js";
+      import { edit } from "./../lib/TableDataEdit.js";
+      import { CTableDataTrigger } from "./../lib/TableDataTrigger.js";
+      import { CUITableText } from "./../lib/UITableText.js";
+      import { CUIPagerPreviousNext } from "./../lib/UIPagerPreviousNext.js";
+      import { SetTriggerName } from "./../lib/TableDataTriggerNames.js";
+
+
+      window.edit = edit;
+      window.CTableData = CTableData;
+      window.CTableData_browser = browser;
+      window.CUITableText = CUITableText;
+      window.CTableDataTrigger = CTableDataTrigger;
+      window.CUIPagerPreviousNext = CUIPagerPreviousNext;
+
+      SetTriggerName();
+   </script>
+
+   <!--
+    | Source data for login test page
+   -->
+   <script>
+      var aTable = [
+         ["BadgeK", "FName "],
+         [10447, "SQLGEN_USER_GetValue "],
+         [10446, "ekonomi "],
+         [10445, "bidrag"],
+         [10444, "ResizeObserver"],
+         [10443, "iis "],
+         [10442, "apache"],
+         [10441, "CORS "],
+         [10440, "CQueryLink "],
+         [10439, "arguments "],
+         [10438, "vote"],
+         [10437, "layout"],
+         [10436, "3 "],
+         [10435, "mercurial"],
+         [10433, "DocumentFragment "],
+         [10432, "createElement "],
+         [10431, "dataset "],
+         [10430, "addEventListener"],
+         [10428, "anelSAPOrderProject "],
+         [10422, "overlay "],
+         [10414, "jul"],
+         [10413, "css "],
+         [10412, "iife"],
+         [10411, ".gitignore "],
+         [10410, "git "],
+         [10409, "XPath"],
+         [10408, "XPointer "],
+         [10407, "boost.json"],
+         [10406, "allocation "],
+         [10403, "spdlog"],
+         [10402, "MessagePack "],
+         [10401, "rapidjson"],
+         [10400, "nlohmann "],
+         [10399, "vcpkg "],
+         [10398, "inno+setup"],
+         [10397, "tooltip "],
+         [10396, "CONDITIONS"],
+         [10395, "$_value"],
+         [10394, "$_expression "],
+         [10393, "$_condition "],
+         [10392, "$F "],
+         [10391, "$T "],
+         [10390, "type"],
+         [10389, "flatten "],
+         [10388, "iterator "],
+         [10387, "std::ifstream"],
+         [10386, "CSqlSelectResult::_trigger_resize "],
+         [10385, "rcomponent "],
+         [10384, "location "],
+         [10383, "connectedCallback"],
+         [10382, "part"],
+         [10381, "slot "],
+         [10380, "shadow+dom "],
+         [10379, "dir"],
+         [10378, "dirxml "],
+         [10377, "' "],
+         [10376, "uglify"],
+         [10375, "table "],
+         [10374, "RTCPeerConnection"],
+         [10373, "log "],
+         [10372, "assert "],
+         [10371, "console "],
+         [10370, "CFieldBase "],
+         [10369, "CSqlSelectResult.render_toolbar"],
+         [10368, "CDataDatabase::SetWhereTag "],
+         [10367, "std::prev"],
+         [10366, "std::string::find_first_of "],
+         [10365, "std::string::find"],
+         [10364, "string "],
+         [10362, "PAGE_dashboard.htm "],
+         [10361, "QUERIES "],
+         [10358, "SQLCMD"],
+         [10357, "CSqlSelectResultEdit "],
+         [10356, "add_sheet "],
+         [10355, "Query::GetField "],
+         [10354, "ATTRIBUTE"],
+         [10353, "OUTPUT-STYLE"],
+         [10352, "SERVER-LIST"],
+         [10351, "ATTRIBUTES "],
+         [10350, "queryfile"],
+         [10349, "1"],
+         [10348, "throw "],
+         [10347, "catch"],
+         [10346, "try "],
+         [10345, "print "],
+         [10344, "RAISERROR"],
+         [10343, "onOpenSheetFilter"],
+         [10342, "new_sheet "],
+         [10341, "howto"],
+         [10340, "array"],
+         [10339, "2 "],
+         [10338, "async "],
+         [10337, "optional+chaining"],
+         [10336, "private "],
+         [10335, "keyof "],
+         [10334, "promise"],
+         [10333, "callback "],
+         [10332, "super"],
+         [10331, "inheritance"],
+         [10330, "enum "],
+         [10329, "EXPRESSION "],
+         [10328, "triplet"],
+         [10327, "free"],
+         [10326, "unique_ptr "],
+         [10313, "malloc"],
+         [10312, "new "],
+         [10311, "SQLServer"],
+         [10310, "destructuring"],
+         [10309, "Pick "],
+         [10308, "Readonly "],
+         [10307, "NonNullable "],
+         [10306, "Typescript "],
+         [10305, "vcpkg.json"],
+         [10304, "env"],
+         [10303, "install "],
+         [10301, "toolchain "],
+         [10300, "output "],
+         [10299, "INI "],
+         [10298, "target"],
+         [10297, "CPack"],
+         [10296, "module"],
+         [10295, "shared "],
+         [10294, "static "],
+         [10293, "render_condition_list"],
+         [10292, "onGetResult"],
+         [10291, "onSendValue "],
+         [10290, "generator+expressions"],
+         [10289, "command+line+parameter "],
+         [10288, "TEST_CASE "],
+         [10287, "ctest "],
+         [10286, "bjam"],
+         [10285, "SAP"],
+         [10284, "Ninja"],
+         [10283, "library"],
+         [10282, "Property "],
+         [10281, "GLOB "],
+         [10280, "launch.vs.json "],
+         [10279, "Cut "],
+         [10278, "CMakeCache.txt"],
+         [10277, "directory"],
+         [10276, "CMakeLists.txt"],
+         [10275, "VisualStudio"],
+         [10274, "PARENT_SCOPE"],
+         [277, "cmakedefine10 "],
+         [276, "undef "],
+         [275, "define "],
+         [274, "cmakedefine "],
+         [273, "build"],
+         [272, "CMakeSettings.json"],
+         [271, "temporary "],
+         [270, "TYPENAME"],
+         [269, "query_link"],
+         [268, "sys.columns"],
+         [267, "sys.tables "],
+         [266, "sys.foreign_keys "],
+         [265, "constraint "],
+         [264, "document.cpp"],
+         [263, "document.h "],
+         [262, "AskUser "],
+         [261, "PAGE_queries.lua "],
+         [260, "open_select "],
+         [259, "open_active_query "],
+         [258, "PAGE_queries.js "],
+         [257, "davinci "],
+         [256, "recordset"],
+         [255, "argv"],
+         [254, "argc "],
+         [253, "cmd "],
+         [252, "ripple"],
+         [251, "speed"],
+         [250, "template"],
+         [249, "ProcessResponse "],
+         [248, "front"],
+         [247, "jspanel "],
+         [246, "subscript"],
+         [245, "script "],
+         [244, "render_snapshots "],
+         [243, "json "],
+         [242, "convert "],
+         [241, "move "],
+         [240, "merge "],
+         [239, "command-line "],
+         [238, "docopt "],
+         [237, "GetRowColumn "],
+         [236, "td_click "],
+         [235, "FORMAT_Sql "],
+         [234, "refresh "],
+         [233, "chrono "],
+         [232, "CDocument"],
+         [231, "SerializeQuestion "],
+         [230, "GROUPBY "],
+         [229, "target_link_libraries"],
+         [228, "back-tick "],
+         [227, "file "],
+         [226, "link_directories"],
+         [225, "tabletemplate "],
+         [224, "conan"],
+         [223, "onSetPage"],
+         [222, "CPager "],
+         [221, "GetResultPane "],
+         [220, "pager "],
+         [219, "page "],
+         [218, "stl"],
+         [217, "CTalkToServer"],
+         [216, "CORE_Dispatch.js"],
+         [215, "core.js "],
+         [214, "_request_api "],
+         [213, "@all"],
+         [212, "@groups "],
+         [210, "X3"],
+         [209, "operator"],
+         [208, "simple "],
+         [207, "condition_id"],
+         [206, "table_id "],
+         [205, "constexpr"],
+         [204, "switch "],
+         [203, "TrSystemXApiObject "],
+         [202, "TObject "],
+         [201, "recursion"],
+         [200, "recurson"],
+         [199, "sublime "],
+         [198, "server-conditionlist"],
+         [197, "PAGE_result.lua. "],
+         [196, "QUERY_GetConditionFields "],
+         [195, "testt"],
+         [194, "TCustomer"],
+         [193, "TActivity "],
+         [192, "FDescription"],
+         [191, "TSystem "],
+         [190, "ESCAPE"],
+         [189, "serialize "],
+         [188, "QueryFields.cpp "],
+         [187, "component "],
+         [186, "win"],
+         [185, "webserver"],
+         [184, "lua"],
+         [183, "changelog"],
+         [181, "js"],
+         [180, "programming"],
+         [179, "std::sregex_iterator"],
+         [178, "std::regex_replace"],
+         [177, "IP "],
+         [176, "phrase_parse"],
+         [175, "double_"],
+         [174, "int_ "],
+         [173, "Spirit "],
+         [172, "Boost "],
+         [171, "add_custom_target"],
+         [170, "CEditConditions "],
+         [169, "beforeClose "],
+         [168, "message "],
+         [167, "cmake-variables"],
+         [166, "variable"],
+         [165, "target_include_directories"],
+         [164, "CMake "],
+         [163, "API "],
+         [162, "S_SqlSelectResult.ts "],
+         [161, "ShowRows"],
+         [160, "select_query "],
+         [159, "PAGE_Result.ts "],
+         [158, "_hashtag "],
+         [157, "space"],
+         [156, "notepad++ "],
+         [155, "add_condition"],
+         [154, "D_SqlSelectResult.ts "],
+         [148, "Document"],
+         [144, "csv "],
+         [143, "Query::GetConditionCount "],
+         [142, "lua_Query.cpp"],
+         [141, "Query::GetCondition"],
+         [140, "lookbehind"],
+         [139, "cheatsheet"],
+         [138, "Capture "],
+         [137, "group"],
+         [136, "lua-getresult."],
+         [135, "RESULT_GetSelect "],
+         [134, "cpp"],
+         [133, "C++ "],
+         [132, "ranges"],
+         [131, "metacharacter"],
+         [130, "negate "],
+         [129, "Literal "],
+         [128, "afterLoadQueries "],
+         [127, "filter. "],
+         [126, "_page "],
+         [125, "PAGE_result "],
+         [124, "SetQueryConditions "],
+         [123, "snapshot "],
+         [122, "url "],
+         [121, "lookahead"],
+         [120, "lookaround "],
+         [119, "class "],
+         [118, "length "],
+         [117, "max "],
+         [116, "min "],
+         [115, "numbers"],
+         [114, "markdown "],
+         [113, "email"],
+         [112, "Trim "],
+         [111, "regexp "],
+         [110, "regex "],
+         [109, "GetFileVersion"],
+         [108, "SetupWindowTitle"],
+         [107, "Constants "],
+         [106, "Messages"],
+         [105, "skipifsourcedoesntexist"],
+         [104, "administrator "],
+         [103, "installation "],
+         [102, "Files"],
+         [101, "ShowLanguageDialog"],
+         [100, "Setup"],
+         [99, "Registry"],
+         [98, "Languages"],
+         [96, "CheckInternalData "],
+         [95, "CDataDatabase "],
+         [94, "QUERYLINK "],
+         [93, "PowerShell"],
+         [92, "folder "],
+         [91, "Sizer "],
+         [90, "position "],
+         [89, "OBS "],
+         [88, "output_type "],
+         [86, "OUTPUT-FORMAT"],
+         [85, "onAddCondition "],
+         [84, "CPageResult::_html"],
+         [83, "CPageResult::_html, "],
+         [82, "CPageResult"],
+         [81, "Column"],
+         [80, "TArticle"],
+         [79, "ConnectionC "],
+         [78, "rSelect"],
+         [77, "Add "],
+         [76, "Update "],
+         [75, "Delete "],
+         [74, "SQL "],
+         [73, "Edit "],
+         [72, "filter "],
+         [71, "result"],
+         [70, "database"],
+         [69, "Selection"],
+         [68, "PullTagsFromText "],
+         [67, "Function "],
+         [66, "PROCEDURE_ChangeParentTreeNode"],
+         [65, "Procedure "],
+         [64, "tree"],
+         [63, "hashtags"],
+         [62, "condition "],
+         [61, "hide "],
+         [60, "rows "],
+         [58, "set "],
+         [57, "query "],
+         [56, "alias "],
+         [55, "Book "],
+         [54, "System "],
+         [50, "iQuoteTab"],
+         [29, "Company "],
+         [28, "CREATE "],
+         [27, "INFORMATION_SCHEMA"],
+         [26, "describe_column "],
+         [25, "describe_table "],
+         [24, "application"],
+         [23, "TrXBadge"],
+         [22, "TBadge "],
+         [21, "hashtag "],
+         [20, "stuff"],
+         [19, "testar"],
+         [18, "CSqlSelectResult"],
+         [17, "date "],
+         [13, "version "],
+         [12, "odbc "],
+         [11, "test2"],
+         [10, "test1 "],
+         [9, "works "],
+         [8, "this "],
+         [7, "if"],
+         [6, "test "],
+         [5, "five"],
+         [4, "four "],
+         [3, "three "],
+         [2, "two "],
+         [1, "one "]
+      ];
+
+   </script>
+
+</body>
+<head>
+   <meta charset="utf-8" />
+   <title>Table with hashtags</title>
+   <style>
+      select {
+         font-size: 22px;
+         font-family: Verdana;
+      }
+
+      .row { 
+         display: inline-block; 
+         margin: 2px; 
+
+      }
+
+      .row span { 
+         background-color: #264653;
+         border-radius: 1em;
+         color: white;
+         display: inline-block; 
+         font-family: Arial;
+         padding: 6px 20px; 
+      }
+
+      button {
+         border-radius: 1em;
+         box-sizing: border-box;
+         font-family: Arial;
+         margin: 5px;
+         width: 160px;
+      }
+   </style>
+</head>
+</html>
