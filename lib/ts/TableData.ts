@@ -296,7 +296,10 @@ export class CTableData {
          oFormat = (<details.column>oFormat).format;
       }
 
-      if( !eType ) eType = <number>CTableData.GetJSType( typeof _Value );
+      if( !eType ) {
+         if( Array.isArray( _Value ) ) _Value = _Value[0];
+         eType = <number>CTableData.GetJSType( typeof _Value );
+      }
 
       const _Old = _Value;
       if(!(<details.format>oFormat).const) {
