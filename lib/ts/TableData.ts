@@ -312,10 +312,17 @@ export class CTableData {
                ) aError = [false,sKey];
                break;
             case "min": 
-               if( 
-                  ((eType & enumValueType.group_string) && (typeof _Value !== "string" || (<string>_Value).length < _rule)) ||
-                  ((eType & enumValueType.group_number) && (typeof _Value !== "number" || _Value < _rule))
-               ) aError = [false,sKey];
+               if( eType & enumValueType.group_string ) {
+                  if( _Value.toString().length < _rule ) aError = [false,sKey];
+               }
+               else if( eType & enumValueType.group_number ) {
+                  let i;
+                  if( typeof _Value === "string" ) i = parseInt( _Value, 10 );
+                  else if( typeof _Value === "boolean" ) i = _Value ? 1 : 0;
+                  else i = _Value;
+
+                  if( i < _rule ) aError = [false,sKey];
+               }
                break;
             case "pattern" :
                let a = _rule;

@@ -222,7 +222,7 @@
         "affectsGlobalScope": false
       },
       "./ts/tabledata.ts": {
-        "version": "8d9ffd01154b287b57c6d94c7758a2e4d0d52d9ec5f2349be58f6696093f32f5",
+        "version": "1796650f9a0a6bd4233f610afa5885a874d036d6a65db70cb9951c1182ebf677",
         "signature": "e9b9d2a3efdfc8e4aaeb9c1d45e5241ab16ec90a926658d231fb5ae5f6a0d581",
         "affectsGlobalScope": false
       },
