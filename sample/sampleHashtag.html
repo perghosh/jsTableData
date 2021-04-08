@@ -12,6 +12,7 @@
    </div>
    <div id="idPager"></div>
    <div id="idContainer" style="width: 100%;"></div>
+   <div id="idPager2"></div>
 
    <script>
       function PAGE_Setup() {
@@ -40,15 +41,31 @@
          TDHashtag.UIAppend(TTHashtag);                     // add ui object to source data object (CTableData)
          TTHashtag.Render();                                // render table
 
+         let oDispatch = new CDispatch();
+
          let oPager = new CUIPagerPreviousNext({ 
+            dispatch: oDispatch,
             parent: document.getElementById("idPager")
-          });
+         });
+
+         oDispatch.AddChain( oPager, TTHashtag );           // connect pager with 
+
          oPager.component.querySelector('[data-type="previous"]').innerText = "Previous";
          oPager.component.querySelector('[data-type="next"]').innerText = "Next";
+
+         let oPager2 = new CUIPagerPreviousNext({ 
+            dispatch: oDispatch,
+            parent: document.getElementById("idPager2")
+          });
+         oPager2.component.querySelector('[data-type="previous"]').innerText = "Previous";
+         oPager2.component.querySelector('[data-type="next"]').innerText = "Next";
+
+         oDispatch.AddChain( oPager2, TTHashtag );           // connect pager with 
 
          document.getElementById("idPageCount").addEventListener("change", e => { 
             let sSelect = e.srcElement;
             let iValue = parseInt( sSelect.value, 10 );
+            TTHashtag.SetProperty("rowstart", 0);
             TTHashtag.SetProperty("rowcountmax", iValue);
             TTHashtag.Render();
          });
@@ -75,6 +92,7 @@
       import { CTableDataTrigger } from "./../lib/TableDataTrigger.js";
       import { CUITableText } from "./../lib/UITableText.js";
       import { CUIPagerPreviousNext } from "./../lib/UIPagerPreviousNext.js";
+      import { CDispatch } from "./../lib/Dispatch.js";
       import { SetTriggerName } from "./../lib/TableDataTriggerNames.js";
 
 
@@ -84,6 +102,7 @@
       window.CUITableText = CUITableText;
       window.CTableDataTrigger = CTableDataTrigger;
       window.CUIPagerPreviousNext = CUIPagerPreviousNext;
+      window.CDispatch = CDispatch;
 
       SetTriggerName();
    </script>
@@ -482,6 +501,7 @@
 <head>
    <meta charset="utf-8" />
    <title>Table with hashtags</title>
+   <!-- https://coolors.co/palettes/trending  -->
    <style>
       select {
          font-size: 22px;

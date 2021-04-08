@@ -1,3 +1,5 @@
+import { IUITableData } from "./TableData.js";
+import { CDispatch, DispatchMessage } from "./Dispatch.js";
 declare namespace details {
     type members = {
         page?: number;
@@ -10,16 +12,20 @@ declare namespace details {
     type construct = {
         callback_action?: ((sType: string, e: Event, sSection: string) => boolean) | ((sType: string, e: Event, sSection: string) => boolean)[];
         create?: boolean;
+        dispatch?: CDispatch;
         id?: string;
         members?: members;
+        name?: string;
         parent?: HTMLElement;
         style?: style;
     };
 }
-export declare class CUIPagerPreviousNext {
+export declare class CUIPagerPreviousNext implements IUITableData {
     m_acallAction: ((sType: string, e: Event, sSection: string) => boolean)[];
     m_eComponent: HTMLElement;
+    m_oDispatch: CDispatch;
     m_oMembers: details.members;
+    m_sName: string;
     m_sId: string;
     m_eParent: HTMLElement;
     m_oStyle: details.style;
@@ -29,13 +35,27 @@ export declare class CUIPagerPreviousNext {
         html_button: string;
     };
     constructor(options: details.construct);
+    get dispatch(): CDispatch;
+    set dispatch(oDispatch: CDispatch);
+    get name(): string;
     get id(): string;
     get component(): HTMLElement;
     Create(eParent?: HTMLElement, bCreate?: boolean): HTMLElement;
     Render(): void;
     MovePrevious(): void;
     MoveNext(): void;
-    Move(iOffset: number): void;
+    Move(iOffset: number, sCommand: string): void;
+    /**
+     * General update method where operation depends on the iType value
+     * @param iType
+     */
+    update(iType: number): any;
+    /**
+     *
+     * @param oMessage
+     * @param sender
+     */
+    on(oMessage: DispatchMessage, sender: IUITableData): void;
     create(eComponent?: HTMLElement): void;
     /**
      * Handle element events for ui table text. Events from elements calls this method that will dispatch it.

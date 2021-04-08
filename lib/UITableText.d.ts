@@ -1,6 +1,7 @@
-import { CTableData, CRowRows, enumMove, IUITableData, tabledata_column, tabledata_position, tabledata_format } from "./TableData.js";
+import { CTableData, CRowRows, enumMove, DispatchMessage, IUITableData, tabledata_column, tabledata_position, tabledata_format } from "./TableData.js";
 import { edit } from "./TableDataEdit.js";
 import { CTableDataTrigger, EventDataTable } from "./TableDataTrigger.js";
+import { CDispatch } from "./Dispatch.js";
 export declare const enum enumState {
     HtmlValue = 1,
     SetDirtyRow = 2,
@@ -17,8 +18,10 @@ declare namespace details {
         callback_renderer?: details.renderer[];
         create?: boolean;
         edit?: boolean;
+        dispatch?: CDispatch;
         edits?: edit.CEdits;
         id?: string;
+        offset_start?: number;
         start?: number;
         max?: number;
         name?: string;
@@ -95,6 +98,7 @@ export declare class CUITableText implements IUITableData {
     m_aColumnPhysicalIndex: number[];
     m_aColumnPosition: tabledata_position[];
     m_eComponent: HTMLElement;
+    m_oDispatch: CDispatch;
     m_oEdits: edit.CEdits;
     m_sId: string;
     m_aInput: [number, number, HTMLElement, number, number];
@@ -104,6 +108,7 @@ export declare class CUITableText implements IUITableData {
     m_eParent: HTMLElement;
     m_aRowBody: unknown[][];
     m_iRowStart: number;
+    m_iRowOffsetStart: number;
     m_iRowCount: number;
     m_iRowCountMax: number;
     m_aRowPhysicalIndex: number[];
@@ -162,6 +167,8 @@ export declare class CUITableText implements IUITableData {
     get data(): CTableData;
     get trigger(): CTableDataTrigger;
     get state(): number;
+    get dispatch(): CDispatch;
+    set dispatch(oDispatch: CDispatch);
     /**
      * Get edits object
      */
@@ -182,7 +189,17 @@ export declare class CUITableText implements IUITableData {
      */
     set_state<T>(_On: T, iState: number): void;
     SetProperty(sName: string, _Value: string | number): void;
+    /**
+     * General update method where operation depends on the iType value
+     * @param iType
+     */
     update(iType: number): any;
+    /**
+     *
+     * @param oMessage
+     * @param sender
+     */
+    on(oMessage: DispatchMessage, sender: IUITableData): boolean;
     /**
      * Create html sections for ui table
      * @param {HTMLElement} [eParent] parent element for sections.
@@ -306,7 +323,13 @@ export declare class CUITableText implements IUITableData {
      */
     ROWGet(iRow: number): unknown[];
     ROWInsert(iRow: number, _Row?: number | unknown[] | unknown[][]): unknown[][];
+    /**
+     * Validate values in row
+     * @param  {number | number[]}    _Row [description]
+     * @return {boolean}     [description]
+     */
     ROWValidate(_Row: number | number[]): boolean | [number, number, unknown, unknown][];
+    ROWMove(iOffset: number): void;
     /**
      * Get parent section element for element sent as argument
      * @param {HTMLElement} eElement element that sections is returned for.
@@ -451,6 +474,7 @@ export declare class CUITableText implements IUITableData {
     _create_section(aSection: string | string[], sName: string): [HTMLElement, HTMLElement];
     _has_create_callback(sName: any, v: EventDataTable, sSection: any, call?: ((sType: string, v: any, e: HTMLElement) => boolean)): boolean;
     _has_render_callback(sName: any, sSection: any): boolean;
+    private _action;
     /**
      * Handle element events for ui table text. Events from elements calls this method that will dispatch it.
      * @param {string} sType event name

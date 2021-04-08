@@ -66,12 +66,22 @@ export namespace browser {
    }
 }
 
+export type DispatchMessage = {
+   source?: string;     // source name. this is used to know what type of sender component it is
+   command: string;     // command name
+   target?: string | string[];// Target component name or name for targets
+   data?: any;          // custom data
+}
+
+
 export interface IUITableData {
    id: string;
    name: string;
-   data: CTableData;
+   data?: CTableData;
 
    update: ((iType: number) => any);
+   on: ((oMessage: DispatchMessage, sender: IUITableData ) => any);
+   destroy?: (() => void);
 }
 
 
@@ -1808,7 +1818,7 @@ export class CTableData {
          iC = this._index(_Column) + 1; // First column among rows has index to row
       }
       else {
-         iR = iRow;
+         iR = this._row( iRow );
          iC = <number>_Column + 1; // if raw then _Column has to be a number, just add one for the row key column
       }
 

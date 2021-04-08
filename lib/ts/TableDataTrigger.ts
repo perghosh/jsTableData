@@ -17,6 +17,7 @@ export const enum enumReason {
    Command = 0x0004,
 }
 
+
 /**
  * Triggers - constant number to know the event type.
  */
@@ -46,6 +47,8 @@ export const enum enumTrigger {
    AfterRemoveRow_,
    BeforeSetCellError_,
    AfterSetCellError_,
+   BeforeMove_,
+   AfterMove_,
 
    OnSetValueError_,
    OnResize_,
@@ -86,13 +89,14 @@ export const enum enumTrigger {
    AfterRemoveRow       = TRIGGER_AFTER  + AfterRemoveRow_,
    BeforeSetCellError   = TRIGGER_BEFORE + BeforeSetCellError_,
    AfterSetCellError    = TRIGGER_AFTER  + AfterSetCellError_,
+   BeforeMove           = TRIGGER_BEFORE + BeforeMove_,
+   AfterMove            = TRIGGER_AFTER  + AfterMove_,
 
    OnResize             = TRIGGER_ON     + OnResize_,
 }
 
 /**
  * Event object for events sent from ui table data items
- * 
  */
 export type EventDataTable = {
    column?: tabledata_column,  // column information
@@ -102,6 +106,7 @@ export type EventDataTable = {
    iEventAll?: number,         // all event data
    edit?: edit.CEdit,          // Edit control
    eElement?: HTMLElement,     // if elements is involved in event
+   eEvent?: Event,             // Browser event if any
    iReason?: number,           // reason for event
    information?: unknown,      // event specific information
    browser_event?: string      // if event in browser is involved
@@ -193,13 +198,13 @@ export class CTableDataTrigger {
     * @param aArgument
     * @param callback
     */
-   Trigger(iTrigger: number, e: EventDataTable, aArgument: any | any[], callback?: (any) => any): boolean;
-   Trigger(aTrigger: number[], e: EventDataTable, aArgument: any | any[], callback?: (any) => any): boolean;
-   Trigger(_1: any, e: EventDataTable, aArgument: any | any[], callback?: (any) => any): boolean {
+   Trigger(iTrigger: number, e: EventDataTable, aArgument?: any | any[], callback?: (any) => any): boolean;
+   Trigger(aTrigger: number[], e: EventDataTable, aArgument?: any | any[], callback?: (any) => any): boolean;
+   Trigger(_1: any, e: EventDataTable, aArgument?: any | any[], callback?: (any) => any): boolean {
       let aTrigger: number[] = Array.isArray(_1) ? _1 : [ _1 ];
       e = this._event(e);
 
-      let _trigger = (iTrigger: number, e: EventDataTable, aArgument: any[]): boolean => {
+      let _trigger = (iTrigger: number, e: EventDataTable, aArgument?: any[]): boolean => {
          let bOk: boolean = true;
          e.iEvent = iTrigger & enumTrigger.MASK;
          e.iEventAll = iTrigger;
@@ -350,3 +355,5 @@ export class CTableDataTrigger {
       return e;
    }
 }
+
+

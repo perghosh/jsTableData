@@ -13,9 +13,11 @@
  */
 
 
-import { CTableData, CRowRows, enumMove, enumFormat, IUITableData, tabledata_column, tabledata_position, tabledata_format } from "./TableData.js";
+import { CTableData, CRowRows, enumMove, enumFormat, DispatchMessage, IUITableData, tabledata_column, tabledata_position, tabledata_format } from "./TableData.js";
 import { edit } from "./TableDataEdit.js";
 import { CTableDataTrigger, enumTrigger, enumReason, EventDataTable } from "./TableDataTrigger.js";
+import { CDispatch, IDispatch } from "./Dispatch.js";
+
 
 export const enum enumState {
    HtmlValue   = 0x0001,   // Value in table has a small dom tree and we need to query for the element holding value
@@ -34,8 +36,10 @@ namespace details {
       callback_renderer?: details.renderer[],
       create?: boolean,          // create elements for table in constructor
       edit?: boolean,            // enable edit for table
+      dispatch?: CDispatch,      // dispatcher (not needed)
       edits?: edit.CEdits;       // edits component, logic for edit fields used in table
       id?: string,               // id for CUITableText
+      offset_start?: number,     // offset row when getting data from table data doesn't match with physical relative start row
       start?: number,            // start row from table data
       max?: number,              // max number of rows shown in table
       name?: string,             // name to find this when stored in collections.
@@ -132,6 +136,7 @@ export class CUITableText implements IUITableData {
    m_aColumnPhysicalIndex: number[]; // index for column in table data
    m_aColumnPosition: tabledata_position[];
    m_eComponent: HTMLElement; // Element that acts as container to table, sections can exist outside container but default is within
+   m_oDispatch: CDispatch;
    m_oEdits: edit.CEdits;     // Component that handles edit logic
    m_sId: string;             // Unique id for ui table
    m_aInput: [ number, number, HTMLElement, number, number ]; // data for active input
@@ -141,6 +146,7 @@ export class CUITableText implements IUITableData {
    m_eParent: HTMLElement;    // parent element in DOM that owns component
    m_aRowBody: unknown[][];   // values show in table
    m_iRowStart: number;       // start row from table data when rows are read in to ui
+   m_iRowOffsetStart: number; // offset  to start row, use this if 
    m_iRowCount: number;       // Number of rows shown
    m_iRowCountMax: number;    // Max number of rows shown
    m_aRowPhysicalIndex: number[];// array with numbers for row index in table data object. This is to point the physical position for data
@@ -193,15 +199,17 @@ export class CUITableText implements IUITableData {
       this.m_aRowBody      = o.body || [];
       this.m_iColumnCount  = 0;
       this.m_eComponent    = null;
+      this.m_oDispatch     = o.dispatch || null;
       this.m_oEdits        = o.edits || null;
       this.m_sId           = o.id || CUITableText.s_sWidgetName + (new Date()).getUTCMilliseconds() + ++CUITableText.s_iIdNext;
       this.m_aInput        = o.edit ? [ -1, -1, null, -1, -1 ] : null;
-      this.m_sName         = o.name || "";
+      this.m_sName         = o.name || CUITableText.s_sWidgetName;
       this.m_iOpenEdit     = 0;
       this.m_aOrder        = [];
       this.m_eParent       = o.parent || null;
       this.m_aRowPhysicalIndex = null;
       this.m_iRowStart     = o.start || 0;
+      this.m_iRowOffsetStart = o.offset_start || 0;
       this.m_iRowCount     = 0;
       this.m_iRowCountMax  = o.max || -1;
       this.m_aSection      = o.section || [ "toolbar", "title", "header", "body", "footer", "statusbar" ]; // sections "header" and "body" are required
@@ -273,6 +281,10 @@ export class CUITableText implements IUITableData {
 
    get state() { return this.m_iState; }
 
+   get dispatch() { return this.m_oDispatch; }
+   set dispatch(oDispatch: CDispatch) { this.m_oDispatch = oDispatch; }
+
+
    /**
     * Get edits object
     */
@@ -310,11 +322,41 @@ export class CUITableText implements IUITableData {
    }
 
 
+   /**
+    * General update method where operation depends on the iType value
+    * @param iType
+    */
    update(iType: number): any {
       switch(iType) {
          case enumTrigger.UpdateDataNew: {
             this.Render();
          }
+      }
+   }
+
+   /**
+    * 
+    * @param oMessage
+    * @param sender
+    */
+   on(oMessage: DispatchMessage, sender: IUITableData) {
+      const [sCommand, sType] = oMessage.command.split(".");
+
+      switch( sCommand ) {
+         case "update" : this.Render(); break;
+         case "move" : {
+            if( oMessage?.data?.trigger & enumTrigger.TRIGGER_BEFORE ) {
+               if( sType === "previous" && this.m_iRowStart <= 0 ) return false;
+               else if( sType === "next" ) {
+                  // Trying to move beyond number of rows in table data
+                  if( this.data.ROWGetCount() < (this.m_iRowStart + this.m_iRowOffsetStart + this.m_iRowCountMax) ) return false;
+               }
+               return;
+            }
+            if( sType === "previous" ) this.ROWMove( -this.m_iRowCountMax );   // move back one "page"
+            else if( sType === "next" ) this.ROWMove( this.m_iRowCountMax );   // move forward one "page"
+         }
+         break;
       }
    }
 
@@ -695,7 +737,7 @@ export class CUITableText implements IUITableData {
 
       let o: { [key: string]: string|number } = {};
       if( this.m_iRowCountMax >= 0 ) o.max = this.m_iRowCountMax;              // if max rows returned is set
-      if(this.m_iRowStart >= 0) o.begin = this.m_iRowStart;
+      if(this.m_iRowStart >= 0) o.begin = this.m_iRowStart + this.m_iRowOffsetStart;
 
       if(this.m_aInput) { this.m_aInput[ 0 ] = -1; this.m_aInput[ 1 ] = -1; }
       let aBody = this.data.GetData(o);
@@ -994,6 +1036,11 @@ export class CUITableText implements IUITableData {
       return aRow;
    }
 
+   /**
+    * Validate values in row
+    * @param  {number | number[]}    _Row [description]
+    * @return {boolean}     [description]
+    */
    ROWValidate( _Row: number | number[] ) : boolean | [ number, number, unknown, unknown ][] {
       let aError: [ number, number, unknown, unknown ][] = [];
       if(typeof _Row === "number") _Row = [ _Row ];
@@ -1012,6 +1059,36 @@ export class CUITableText implements IUITableData {
       }
 
       return aError.length ? aError : true;
+   }
+
+   ROWMove( iOffset: number ) {
+      let iStart = this.m_iRowStart;
+      iStart += iOffset;
+      if( iStart < 0 ) iStart = 0;
+   
+      if( iStart !== this.m_iRowStart ) {
+         let oTD: EventDataTable;
+         const oTrigger = this.trigger;                                           // Get trigger object with trigger logic
+         if( oTrigger ) { 
+            oTD = this._get_triggerdata();
+            oTD.iEvent = enumTrigger.BeforeMove;
+            const bOk = oTrigger.Trigger( enumTrigger.BeforeMove, oTD ); 
+            if( bOk === false ) return;
+         }
+
+         this.m_iRowStart = iStart;
+
+         if( this.dispatch ) {
+            this.dispatch.NotifyConnected(this, { command: "move", data: { start: iStart, count: this.m_iRowCount,  max: this.m_iRowCountMax } });
+         }
+
+         this.Render();
+
+         if( oTrigger ) { 
+            oTD.iEvent = enumTrigger.AfterMove;
+            oTrigger.Trigger( enumTrigger.AfterMove, oTD ); 
+         }
+      }
    }
 
 
@@ -2101,6 +2178,19 @@ export class CUITableText implements IUITableData {
       }
       return bCall;
    }
+
+   private _action(sType: string, e: Event, sSection: string): unknown {
+      if(this.m_acallAction && this.m_acallAction.length > 0) {
+         let EVT = this._get_triggerdata();
+         let i = 0, iTo = this.m_acallAction.length;
+         let callback = this.m_acallAction[ i ];
+         while(i++ < iTo) {
+            let bResult = callback.call(this, sType, EVT, sSection);
+            if(bResult === false) return false;
+         }
+      }
+   }
+
 
    /**
     * Handle element events for ui table text. Events from elements calls this method that will dispatch it.

@@ -1,5 +1,7 @@
 
 import { CTableData, CRowRows, enumMove, enumFormat, IUITableData, tabledata_column, tabledata_position, tabledata_format } from "./TableData.js";
+import { CTableDataTrigger, enumTrigger, enumReason, EventDataTable } from "./TableDataTrigger.js";
+import { CDispatch, DispatchMessage, IDispatch } from "./Dispatch.js";
 
 
 namespace details {
@@ -16,18 +18,22 @@ namespace details {
    export type construct = {
       callback_action?: ((sType: string, e: Event, sSection: string) => boolean) | ((sType: string, e: Event, sSection: string) => boolean)[],
       create?: boolean,          // create elements for pager
+      dispatch?: CDispatch,      // dispatcher (not needed)
       id?: string,               // id for CUIPagerPreviousNext
       members?: members,
+      name?: string,             // name for object
       parent?: HTMLElement,      // parent element in DOM tree
       style?: style,
    }
 }
 
 
-export class CUIPagerPreviousNext {
+export class CUIPagerPreviousNext implements IUITableData {
    m_acallAction: ((sType: string, e: Event, sSection: string) => boolean)[];// callback array for action hooks, like select cell, values is changing etc.
    m_eComponent: HTMLElement; // Root element for pager
+   m_oDispatch: CDispatch;    // dispatch object
    m_oMembers: details.members;
+   m_sName: string;           // class name
    m_sId: string;             // Unique id for ui pager
    m_eParent: HTMLElement;    // Parent element in DOM that owns component
    m_oStyle: details.style;
@@ -46,7 +52,9 @@ export class CUIPagerPreviousNext {
       if(o.callback_action) this.m_acallAction = Array.isArray(o.callback_action) ? o.callback_action : [ o.callback_action ];
 
 
+      this.m_oDispatch  = o.dispatch || null;
       this.m_sId        = o.id || CUIPagerPreviousNext.s_sWidgetName + (new Date()).getUTCMilliseconds() + ++CUIPagerPreviousNext.s_iIdNext;
+      this.m_sName      = o.name || CUIPagerPreviousNext.s_sWidgetName;
       this.m_oMembers   =  { page: 0, page_count: 0, page_max_count: 10 };
       this.m_eParent    = o.parent || null;
 
@@ -61,6 +69,9 @@ export class CUIPagerPreviousNext {
       }
    }
 
+   get dispatch() { return this.m_oDispatch; }
+   set dispatch( oDispatch: CDispatch ) { this.m_oDispatch = oDispatch; }
+   get name() { return this.m_sName; }
    get id() { return this.m_sId; }
    get component() { return this.m_eComponent; }
 
@@ -84,30 +95,65 @@ export class CUIPagerPreviousNext {
    }
 
    MovePrevious() {
-      this.Move( -1 );
+      this.Move( -1, "move.previous" );
    }
 
 
    MoveNext() {
-      this.Move( 1 );
+      this.Move( 1, "move.next" );
    }
 
-   Move( iOffset: number ) {
+   Move( iOffset: number, sCommand: string ) {
       let iPage = this.m_oMembers.page + iOffset;
       if( iPage < 0 ) iPage = 0;
       if( iPage === this.m_oMembers.page ) return;
 
-      this.m_oMembers.page = iPage
+      if( this.dispatch ) {
+         let aResult = this.dispatch.NotifyConnected(this, { command: sCommand, data: { page: this.m_oMembers.page, trigger: enumTrigger.BeforeSetValue } });
+
+         if( CDispatch.IsCancel( aResult ) === true ) return;
+      }
 
       if(this.m_acallAction && this.m_acallAction.length > 0) {
          let i = 0, iTo = this.m_acallAction.length;
          let callback = this.m_acallAction[ i ];
          while(i++ < iTo) {
-            let bResult = callback.call(this, "move" );
+            let bResult = callback.call(this, sCommand );
             if(bResult === false) return;
          }
       }
+
+      this.m_oMembers.page = iPage
+
+      if( this.dispatch ) {
+         this.dispatch.NotifyConnected(this, { command: sCommand, data: { page: this.m_oMembers.page, trigger: enumTrigger.AfterSetValue } });
+      }
    }
+
+   /**
+    * General update method where operation depends on the iType value
+    * @param iType
+    */
+   update(iType: number): any {
+      switch(iType) {
+         case enumTrigger.UpdateDataNew: {
+            this.Render();
+         }
+      }
+   }
+
+   /**
+    * 
+    * @param oMessage
+    * @param sender
+    */
+   on(oMessage: DispatchMessage, sender: IUITableData) {
+      const sCommand = oMessage.command;
+      switch( sCommand ) {
+         case "update" : this.Render(); break;
+      }
+   }
+
 
    create( eComponent?: HTMLElement ) {
       eComponent = eComponent || this.m_eComponent;
@@ -133,14 +179,14 @@ export class CUIPagerPreviousNext {
       let e = add_button( sHtml, sStyle, sClass, "previous" );
       eComponent.appendChild(e);
       e.addEventListener("click", (eEvent: MouseEvent) => {
-         self._on_action("click", eEvent, "previous");
+         if( self._on_action("click", eEvent, "move.previous") !== false ) this.MovePrevious();
       });
 
       
       e = add_button( sHtml, sStyle, sClass, "next" );
       eComponent.appendChild(e);
       e.addEventListener("click", (eEvent: MouseEvent) => {
-         self._on_action("click", eEvent, "next");
+         if( self._on_action("click", eEvent, "move.next") !== false ) this.MoveNext();
       });
    }
 
@@ -150,13 +196,13 @@ export class CUIPagerPreviousNext {
     * @param {Event} e event data
     * @param {string} sSection section name, table text has container elements with a name (section name)
     */
-   private _on_action(sType: string, e: Event, sSection: string) {
+   private _on_action(sType: string, e: Event, sCommand: string): void | unknown {
       if(this.m_acallAction && this.m_acallAction.length > 0) {
          let i = 0, iTo = this.m_acallAction.length;
          let callback = this.m_acallAction[ i ];
          while(i++ < iTo) {
-            let bResult = callback.call(this, sType, e, sSection);
-            if(bResult === false) return;
+            let bResult = callback.call(this, sType, e, sCommand);
+            if(bResult === false) return false;
          }
       }
    }
