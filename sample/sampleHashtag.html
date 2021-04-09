@@ -18,6 +18,8 @@
       function PAGE_Setup() {
          window.global = {};
 
+         let oDispatch = new CDispatch();
+
          let TDHashtag = new CTableData();
          window.global.TDHashtag = TDHashtag;
          TDHashtag.ReadArray(aTable);                       // read happiness data
@@ -30,6 +32,7 @@
          }
 
          let options = {
+            dispatch: oDispatch,
             parent: document.getElementById("idContainer"), // container
             section: ["body"],                              // sections to create
             table: TDHashtag,                               // source data
@@ -41,26 +44,44 @@
          TDHashtag.UIAppend(TTHashtag);                     // add ui object to source data object (CTableData)
          TTHashtag.Render();                                // render table
 
-         let oDispatch = new CDispatch();
 
          let oPager = new CUIPagerPreviousNext({ 
             dispatch: oDispatch,
-            parent: document.getElementById("idPager")
+            members: { page_max_count: TDHashtag.ROWGetCount() },
+            parent: document.getElementById("idPager"),
+            callback_action: function(sAction, e ) {
+               const [sType, sItem] = sAction.split(".");
+               if( sType === "render") {
+                  eComponent = e.eElement;
+                  let ePrevious = eComponent.querySelector('[data-type="previous"]');
+                  let eNext = eComponent.querySelector('[data-type="next"]');
+
+                  let iPage = this.members.page;
+                  ePrevious.innerText = "Previous (page:" + (iPage - 1) + ")";
+                  eNext.innerText = "Next (page:" + (iPage + 1) + ")";
+               }
+            }
          });
 
          oDispatch.AddChain( oPager, TTHashtag );           // connect pager with 
 
+/*
          oPager.component.querySelector('[data-type="previous"]').innerText = "Previous";
          oPager.component.querySelector('[data-type="next"]').innerText = "Next";
+         */
 
          let oPager2 = new CUIPagerPreviousNext({ 
             dispatch: oDispatch,
+            members: { page_max_count: TDHashtag.ROWGetCount() },
             parent: document.getElementById("idPager2")
           });
          oPager2.component.querySelector('[data-type="previous"]').innerText = "Previous";
          oPager2.component.querySelector('[data-type="next"]').innerText = "Next";
 
-         oDispatch.AddChain( oPager2, TTHashtag );           // connect pager with 
+         oDispatch.AddChain( oPager2, TTHashtag );          // connect pager with 
+
+         oDispatch.AddChain( TTHashtag, [oPager, oPager2] ); 
+
 
          document.getElementById("idPageCount").addEventListener("change", e => { 
             let sSelect = e.srcElement;

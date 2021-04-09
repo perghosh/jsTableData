@@ -242,8 +242,8 @@
         "affectsGlobalScope": false
       },
       "./ts/uipagerpreviousnext.ts": {
-        "version": "71b25874279ad276f9819905af7e4a4dd15d08502ae1a3074aa2a6f4a6aaca39",
-        "signature": "67e408ccc88227f677d4cb396746ad4428d03baa21b13221f4842a5446b90800",
+        "version": "2295f28621d2b56628b38256f0f20519b241328fa9b7f0883648aaff868b48e1",
+        "signature": "c8e53e7dcac219fef3121a121376e99a421d8e870bde5faaf70621470517c3db",
         "affectsGlobalScope": false
       },
       "./ts/uitableform.ts": {
@@ -252,8 +252,8 @@
         "affectsGlobalScope": false
       },
       "./ts/uitabletext.ts": {
-        "version": "51cf8fab644fe0752295f536bc8239b4fb0f8b097559b32ad61d284b04a22577",
-        "signature": "eaa8a007dbf8f54a58b7fbfa9a81f7d9c60a4faad5a9aea61680f57829dee302",
+        "version": "87ba49aaaa9d0b5159279ebcc385e730a28414e569ea8f6325687f3f652289b3",
+        "signature": "0a1dba3d187d1b4a8781e4d76715ae86de574f5040f8d3a90516ac43a79b33e0",
         "affectsGlobalScope": false
       }
     },
@@ -306,7 +306,8 @@
       ],
       "./ts/uipagerpreviousnext.ts": [
         "./ts/dispatch.ts",
-        "./ts/tabledata.ts"
+        "./ts/tabledata.ts",
+        "./ts/tabledatatrigger.ts"
       ],
       "./ts/uitableform.ts": [
         "./ts/tabledata.ts"

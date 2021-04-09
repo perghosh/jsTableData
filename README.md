@@ -10,7 +10,7 @@ jsTableData is a JavaScript table library designed to manage and render table da
 |[Login form](https://perghosh.github.io/jsTableData/sample/sampleLogin.html)|Sample login form using [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
 |[Bulma is used to to create online voting](https://perghosh.github.io/jsTableData/sample/sampleVote.html)|Style table with Bulma and using custom renderer. [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
 |[UIKit table with movie list and editing](https://perghosh.github.io/jsTableData/sample/sampleUIKit_play.html)|Style table with UIKit and create input  elements in all cells. Works with [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
-|[Render words with pager](https://perghosh.github.io/jsTableData/sample/sampleHashtag.html)|[`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts) is used to render list and [`CUIPagerPreviousNext`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UIPagerPreviousNext.ts) for paging.|
+|[Render words, use pager to move page](https://perghosh.github.io/jsTableData/sample/sampleHashtag.html)|[`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts) is used to render list and [`CUIPagerPreviousNext`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UIPagerPreviousNext.ts) for paging.|
 |[Simple Bootstrap 5 table](https://perghosh.github.io/jsTableData/sample/sampleBootstrap5Table.html)|Style table with bootstrap 5 with [`CUITableText`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UITableText.ts)|
 
 

@@ -1518,53 +1518,6 @@ export class CUITableText implements IUITableData {
          while( (eRow = <HTMLElement>eRow.nextElementSibling) !== null && (<HTMLElement>eRow).dataset.record !== "1" ); // go to next sibling root row
       });
 
-      /*
-      this.m_aRowBody.forEach((aRow, iIndex: number) => {
-         let iRow = this.m_aRowPhysicalIndex[ iIndex ], s, o;
-         let eR = eRow;                                    // eRow is the main row, but row could hold many child rows with values
-         eR.dataset.row = iRow.toString();
-         if( eR.dataset.type !== "row" ) {
-            eR = eR.querySelector('[data-type="row"]');     console.assert( eR !== null, "No row element for column cells." ); 
-         }
-         let eColumn: HTMLElement = <HTMLElement>eR.firstElementChild;
-         for(var i = 0; i < this.m_iColumnCount; i++) {
-            // const oColumn = this.data.COLUMNGet( this._column_in_data( i ) );
-            const oPosition = this.m_aColumnPosition[ i ];
-            let sValue = aRow[ i ];
-            if( bCall ) { 
-               let bRender = true;
-               for(let j = 0; j < this.m_acallRender.length; j++) {
-                  let b = this.m_acallRender[j].call(this, "beforeCellValue", sValue, eColumn, oPosition );
-                  if( b === false ) bRender = false;
-               }
-               if( bRender === false ) continue;
-            }
-            
-            if( !oPosition.row ) {                                              // place value on record row ?
-               let e = this.ELEMENTGetCellValue(eColumn);                       // get cell value element
-               if(sClass) e.classList.add(sClass);                              //
-               if(Object.keys(aStyle[ i ][1]).length > 0) Object.assign(e.style, aStyle[ i ][1]);
-
-               if( bSetValue === false ) {
-                  if(sValue !== null && sValue != void 0) e.innerText = sValue.toString();
-                  else if( e.hasAttribute("value") === false ) e.innerText = " ";
-               }
-               else {
-                  if(sValue !== null && sValue != void 0) {
-                     if("value" in e) { (<HTMLElement>e).setAttribute("value", sValue.toString()); }
-                     else e.innerText = sValue.toString();
-                  }
-                  else if( e.hasAttribute("value") === false ) e.innerText = " ";
-               }
-
-               if(bCall) this.m_acallRender.forEach((call) => { call.call(this, "afterCellValue", sValue, eColumn, oPosition); });
-               eColumn = <HTMLElement>eColumn.nextElementSibling;                 // next column element in row
-            }
-
-         }
-         while( (eRow = <HTMLElement>eRow.nextElementSibling) !== null && (<HTMLElement>eRow).dataset.record !== "1" ); // go to next sibling root row
-      });
-      */
       return eSection;
    }
 
@@ -2022,6 +1975,10 @@ export class CUITableText implements IUITableData {
          eSection.appendChild( eFragment.cloneNode(true) );
       }
 
+      if( this.dispatch ) {
+         this.dispatch.NotifyConnected(this, { command: "update.body", data: { start: this.m_iRowStart, max: this.m_iRowCountMax, count: this.m_iRowCount, trigger: enumTrigger.AfterCreate } });
+      }
+
       return eSection;
    }
 
@@ -2179,6 +2136,13 @@ export class CUITableText implements IUITableData {
       return bCall;
    }
 
+   /**
+    * Call action callbacks
+    * @param  {string}  sType Type of action
+    * @param  {Event}   e        event data if any
+    * @param  {string}  sSection section name
+    * @return {unknown} if false then disable default action
+    */
    private _action(sType: string, e: Event, sSection: string): unknown {
       if(this.m_acallAction && this.m_acallAction.length > 0) {
          let EVT = this._get_triggerdata();

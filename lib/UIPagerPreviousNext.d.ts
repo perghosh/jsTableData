@@ -1,4 +1,5 @@
 import { IUITableData } from "./TableData.js";
+import { EventDataTable } from "./TableDataTrigger.js";
 import { CDispatch, DispatchMessage } from "./Dispatch.js";
 declare namespace details {
     type members = {
@@ -10,7 +11,7 @@ declare namespace details {
         html_button?: string;
     };
     type construct = {
-        callback_action?: ((sType: string, e: Event, sSection: string) => boolean) | ((sType: string, e: Event, sSection: string) => boolean)[];
+        callback_action?: ((sType: string, e: EventDataTable) => boolean) | ((sType: string, e: EventDataTable) => boolean)[];
         create?: boolean;
         dispatch?: CDispatch;
         id?: string;
@@ -21,7 +22,7 @@ declare namespace details {
     };
 }
 export declare class CUIPagerPreviousNext implements IUITableData {
-    m_acallAction: ((sType: string, e: Event, sSection: string) => boolean)[];
+    m_acallAction: ((sType: string, e: EventDataTable) => boolean)[];
     m_eComponent: HTMLElement;
     m_oDispatch: CDispatch;
     m_oMembers: details.members;
@@ -35,11 +36,12 @@ export declare class CUIPagerPreviousNext implements IUITableData {
         html_button: string;
     };
     constructor(options: details.construct);
+    get component(): HTMLElement;
     get dispatch(): CDispatch;
     set dispatch(oDispatch: CDispatch);
-    get name(): string;
     get id(): string;
-    get component(): HTMLElement;
+    get members(): details.members;
+    get name(): string;
     Create(eParent?: HTMLElement, bCreate?: boolean): HTMLElement;
     Render(): void;
     MovePrevious(): void;
@@ -56,7 +58,15 @@ export declare class CUIPagerPreviousNext implements IUITableData {
      * @param sender
      */
     on(oMessage: DispatchMessage, sender: IUITableData): void;
+    render(eComponent?: HTMLElement): void;
     create(eComponent?: HTMLElement): void;
+    /**
+     * Call action callbacks
+     * @param  {string}  sType Type of action
+     * @param  {Event}   e        event data if any
+     * @return {unknown} if false then disable default action
+     */
+    private _action;
     /**
      * Handle element events for ui table text. Events from elements calls this method that will dispatch it.
      * @param {string} sType event name
@@ -64,5 +74,6 @@ export declare class CUIPagerPreviousNext implements IUITableData {
      * @param {string} sSection section name, table text has container elements with a name (section name)
      */
     private _on_action;
+    private _get_triggerdata;
 }
 export {};

@@ -474,6 +474,13 @@ export declare class CUITableText implements IUITableData {
     _create_section(aSection: string | string[], sName: string): [HTMLElement, HTMLElement];
     _has_create_callback(sName: any, v: EventDataTable, sSection: any, call?: ((sType: string, v: any, e: HTMLElement) => boolean)): boolean;
     _has_render_callback(sName: any, sSection: any): boolean;
+    /**
+     * Call action callbacks
+     * @param  {string}  sType Type of action
+     * @param  {Event}   e        event data if any
+     * @param  {string}  sSection section name
+     * @return {unknown} if false then disable default action
+     */
     private _action;
     /**
      * Handle element events for ui table text. Events from elements calls this method that will dispatch it.

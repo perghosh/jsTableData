@@ -16,7 +16,7 @@ namespace details {
    }
 
    export type construct = {
-      callback_action?: ((sType: string, e: Event, sSection: string) => boolean) | ((sType: string, e: Event, sSection: string) => boolean)[],
+      callback_action?: ((sType: string, e: EventDataTable) => boolean) | ((sType: string, e: EventDataTable) => boolean)[],
       create?: boolean,          // create elements for pager
       dispatch?: CDispatch,      // dispatcher (not needed)
       id?: string,               // id for CUIPagerPreviousNext
@@ -29,7 +29,7 @@ namespace details {
 
 
 export class CUIPagerPreviousNext implements IUITableData {
-   m_acallAction: ((sType: string, e: Event, sSection: string) => boolean)[];// callback array for action hooks, like select cell, values is changing etc.
+   m_acallAction: ((sType: string, e: EventDataTable) => boolean)[];// callback array for action hooks, like select cell, values is changing etc.
    m_eComponent: HTMLElement; // Root element for pager
    m_oDispatch: CDispatch;    // dispatch object
    m_oMembers: details.members;
@@ -69,11 +69,12 @@ export class CUIPagerPreviousNext implements IUITableData {
       }
    }
 
+   get component() { return this.m_eComponent; }
    get dispatch() { return this.m_oDispatch; }
    set dispatch( oDispatch: CDispatch ) { this.m_oDispatch = oDispatch; }
-   get name() { return this.m_sName; }
    get id() { return this.m_sId; }
-   get component() { return this.m_eComponent; }
+   get members() { return this.m_oMembers; }
+   get name() { return this.m_sName; }
 
    Create(eParent?: HTMLElement, bCreate?: boolean): HTMLElement {
       eParent = eParent || this.m_eParent;
@@ -85,13 +86,14 @@ export class CUIPagerPreviousNext implements IUITableData {
 
       if( bCreate !== false ) {
          this.create( eComponent );
+         this.render();
       }
 
       return eComponent;
    }
 
    Render() {
-
+      this.render();
    }
 
    MovePrevious() {
@@ -114,6 +116,8 @@ export class CUIPagerPreviousNext implements IUITableData {
          if( CDispatch.IsCancel( aResult ) === true ) return;
       }
 
+      this.m_oMembers.page = iPage
+
       if(this.m_acallAction && this.m_acallAction.length > 0) {
          let i = 0, iTo = this.m_acallAction.length;
          let callback = this.m_acallAction[ i ];
@@ -122,8 +126,6 @@ export class CUIPagerPreviousNext implements IUITableData {
             if(bResult === false) return;
          }
       }
-
-      this.m_oMembers.page = iPage
 
       if( this.dispatch ) {
          this.dispatch.NotifyConnected(this, { command: sCommand, data: { page: this.m_oMembers.page, trigger: enumTrigger.AfterSetValue } });
@@ -148,12 +150,37 @@ export class CUIPagerPreviousNext implements IUITableData {
     * @param sender
     */
    on(oMessage: DispatchMessage, sender: IUITableData) {
-      const sCommand = oMessage.command;
+      const [sCommand, sType] = oMessage.command.split(".");
       switch( sCommand ) {
-         case "update" : this.Render(); break;
+         case "update" : {
+            const data = oMessage?.data;
+            let o = this.m_oMembers;
+            o.page_max_count = data.max || o.page_max_count;
+            o.page_count = data.count || o.page_count;
+
+            if( typeof data.start === "number" ) {
+               o.page = Math.floor( data.start / data.max );
+            }
+
+            this.Render();
+         }
+         break;
       }
    }
 
+   render( eComponent?: HTMLElement ) {
+      eComponent = eComponent || this.m_eComponent;
+
+      let bRender = this._action( "render.button", null, EVT => {
+         EVT.eElement = eComponent;
+      });
+
+      if( bRender === false ) return;
+
+
+      let ePrevious = eComponent.querySelector('[data-type="previous"]');
+      let eNext = eComponent.querySelector('[data-type="next"]');
+   }
 
    create( eComponent?: HTMLElement ) {
       eComponent = eComponent || this.m_eComponent;
@@ -191,6 +218,28 @@ export class CUIPagerPreviousNext implements IUITableData {
    }
 
    /**
+    * Call action callbacks
+    * @param  {string}  sType Type of action
+    * @param  {Event}   e        event data if any
+    * @return {unknown} if false then disable default action
+    */
+   private _action(sType: string, e: Event, call?: (( EVT: EventDataTable ) => void) ): unknown {
+      if(this.m_acallAction && this.m_acallAction.length > 0) {
+         let EVT = this._get_triggerdata();
+         EVT.eEvent = e;
+         EVT.eElement = this.m_eComponent;
+         if( call ) call( EVT );
+         let i = 0, iTo = this.m_acallAction.length;
+         let callback = this.m_acallAction[ i ];
+         while(i++ < iTo) {
+            let bResult = callback.call(this, sType, EVT);
+            if(bResult === false) return false;
+         }
+      }
+   }
+
+
+   /**
     * Handle element events for ui table text. Events from elements calls this method that will dispatch it.
     * @param {string} sType event name
     * @param {Event} e event data
@@ -205,6 +254,11 @@ export class CUIPagerPreviousNext implements IUITableData {
             if(bResult === false) return false;
          }
       }
+   }
+
+   private _get_triggerdata(): EventDataTable {
+      let o: EventDataTable = { dataUI: this };
+      return o;
    }
 
 
