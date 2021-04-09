@@ -2,7 +2,7 @@
 
 jsTableData is a JavaScript table library designed to manage and render table data using existing css frameworks.
 
-### Demo
+### [`CUIPagerPreviousNext`](https://github.com/perghosh/jsTableData/blob/main/lib/ts/UIPagerPreviousNext.ts) demos
 |Sample page|Description|
 |:-|:-|
 |[Table with two rows for each data row, values are shown on hover](https://perghosh.github.io/jsTableData/sample/sampleAdvancedExtraRow.html)|Advanced sample table, expand row on hover. Edit, sorting and keyboard navigation.|
