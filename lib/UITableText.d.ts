@@ -7,14 +7,15 @@ export declare const enum enumState {
     SetDirtyRow = 2,
     SetHistory = 4,
     SetValue = 8,
-    SetOneClickActivate = 16
+    SetOneClickActivate = 16,
+    DisableFocus = 32
 }
 declare namespace details {
     type construct = {
         body?: unknown[][];
-        callback_action?: ((sType: string, e: EventDataTable, sSection: string) => boolean) | ((sType: string, e: EventDataTable, sSection: string) => boolean)[];
-        callback_create?: ((sType: string, e: EventDataTable, sSection: string) => boolean) | ((sType: string, e: EventDataTable, sSection: string) => boolean)[];
-        callback_render?: ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column) => boolean) | ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column) => boolean)[];
+        callback_action?: ((sType: string, e: EventDataTable, sSection: string) => boolean | void) | ((sType: string, e: Event | EventDataTable, sSection: string) => boolean | void)[];
+        callback_create?: ((sType: string, e: EventDataTable, sSection: string) => boolean | void) | ((sType: string, e: EventDataTable, sSection: string) => boolean | void)[];
+        callback_render?: ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column) => boolean | void) | ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column) => boolean | void)[];
         callback_renderer?: details.renderer[];
         create?: boolean;
         edit?: boolean;
@@ -89,9 +90,9 @@ export declare type uitabledata_construct = details.construct;
  *
  * */
 export declare class CUITableText implements IUITableData {
-    m_acallAction: ((sType: string, e: EventDataTable, sSection: string) => boolean)[];
-    m_acallCreate: ((sType: string, e: EventDataTable, sSection: string) => boolean)[];
-    m_acallRender: ((sType: string, e: EventDataTable, sSection: string, oColumn: any) => boolean)[];
+    m_acallAction: ((sType: string, e: Event | EventDataTable, sSection: string) => boolean | void)[];
+    m_acallCreate: ((sType: string, e: EventDataTable, sSection: string) => boolean | void)[];
+    m_acallRender: ((sType: string, e: EventDataTable, sSection: string, oColumn: any) => boolean | void)[];
     m_acallRenderer: details.renderer[];
     m_iColumnCount: number;
     m_aColumnFormat: tabledata_format[];

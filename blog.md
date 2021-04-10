@@ -1,3 +1,5 @@
+Data attributes generated in table body markup
+--
 
 - `data-type="row"` = Marks that we have a table row. Not found this attribute means that this element do not contain row data and is skipped
 - `data-r="0"` = Row in rendered as multiple rows, then data-r is used to know the internal row index for rows in main row

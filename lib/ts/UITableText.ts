@@ -25,14 +25,15 @@ export const enum enumState {
    SetHistory  = 0x0004,   // Record changes in history
    SetValue    = 0x0008,   // Try to set value if property is found in element.
    SetOneClickActivate = 0x0010,// Activate edits in one click
+   DisableFocus= 0x0020,   // Setting this and tabIndex isn't set for body no focus event is possible
 }
 
 namespace details {
    export type construct = {
       body?: unknown[][],        // table data
-      callback_action?: ((sType: string, e: EventDataTable, sSection: string) => boolean) | ((sType: string, e: EventDataTable, sSection: string) => boolean)[],
-      callback_create?: ((sType: string, e: EventDataTable, sSection: string) => boolean) | ((sType: string, e: EventDataTable, sSection: string) => boolean)[],
-      callback_render?: ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column ) => boolean) | ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column) => boolean)[],
+      callback_action?: ((sType: string, e: EventDataTable, sSection: string) => boolean | void) | ((sType: string, e: Event | EventDataTable, sSection: string) => boolean | void)[],
+      callback_create?: ((sType: string, e: EventDataTable, sSection: string) => boolean | void) | ((sType: string, e: EventDataTable, sSection: string) => boolean | void)[],
+      callback_render?: ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column ) => boolean | void) | ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column) => boolean | void)[],
       callback_renderer?: details.renderer[],
       create?: boolean,          // create elements for table in constructor
       edit?: boolean,            // enable edit for table
@@ -127,9 +128,9 @@ parent.addEventListener('click', function(e) {
  * 
  * */
 export class CUITableText implements IUITableData {
-   m_acallAction: ((sType: string, e: EventDataTable, sSection: string) => boolean)[];// callback array for action hooks, like select cell, values is changing etc.
-   m_acallCreate: ((sType: string, e: EventDataTable, sSection: string) => boolean)[];// callback array for hooks used when items in table is created
-   m_acallRender: ((sType: string, e: EventDataTable, sSection: string, oColumn: any) => boolean)[];// callback array for hooks used when items are rendered
+   m_acallAction: ((sType: string, e: Event | EventDataTable, sSection: string) => boolean | void)[];// callback array for action hooks, like select cell, values is changing etc.
+   m_acallCreate: ((sType: string, e: EventDataTable, sSection: string) => boolean | void)[];// callback array for hooks used when items in table is created
+   m_acallRender: ((sType: string, e: EventDataTable, sSection: string, oColumn: any) => boolean | void)[];// callback array for hooks used when items are rendered
    m_acallRenderer: details.renderer[];// callback array used to render values, if this is set to column then internal rendering for value is disabled. Array has to match number of columns shown in table
    m_iColumnCount: number;    // Number of columns shown, this may not match number of columns in table data
    m_aColumnFormat: tabledata_format[];
@@ -1732,7 +1733,7 @@ export class CUITableText implements IUITableData {
 //         eSection.dataset.section = sName;                                     // set section name, used to access section
 //         eSection.dataset.widget = CUITableText.s_sWidgetName;
          
-         if(sName === "body") eSection.tabIndex = -1;                          // tab index on body to enable keyboard movement
+         if(sName === "body" && this.is_state( enumState.DisableFocus ) === false ) eSection.tabIndex = -1;// tab index on body to enable keyboard movement
 
          let a = sClass.split(" ");
          a.push(CUITableText.s_sWidgetName + "-" + sName);
@@ -1910,6 +1911,7 @@ export class CUITableText implements IUITableData {
             let iColumn = this._column_in_ui( i );
             if( iColumn === -1 ) iColumn = j;
             let e = document.createElement(sHtmlCell);
+            if( sClass ) e.className = sClass;
             e.dataset.c = iColumn.toString();
             const oFormat = this.m_aColumnFormat[iColumn];
             if( typeof oFormat.html === "string" ) e.innerHTML = oFormat.html;
@@ -2306,11 +2308,14 @@ export class CUITableText implements IUITableData {
     * @param iIndex
     */
    private _column_in_ui(iIndex: number): number {
-      let i = this.m_aColumnPhysicalIndex.length;
-      while(--i >= 0) {
-         if(this.m_aColumnPhysicalIndex[ i ] === iIndex) return i;
+      if( this.m_aColumnPhysicalIndex ) {
+         let i = this.m_aColumnPhysicalIndex.length;
+         while(--i >= 0) {
+            if(this.m_aColumnPhysicalIndex[ i ] === iIndex) return i;
+         }
+         return -1;
       }
-      return -1;
+      return iIndex;
    }
 
    private _get_triggerdata(): EventDataTable {

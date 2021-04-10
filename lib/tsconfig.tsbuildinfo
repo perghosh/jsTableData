@@ -222,7 +222,7 @@
         "affectsGlobalScope": false
       },
       "./ts/tabledata.ts": {
-        "version": "f0ff138b5861459c6f2fba6a5ea523ba1b20c6c9e602a1ec3f7c7995a315e7f6",
+        "version": "9699d7174f0e307ea9bb4342001abf965bb04948ab19d634fad83ab41ac5b4f8",
         "signature": "e9b9d2a3efdfc8e4aaeb9c1d45e5241ab16ec90a926658d231fb5ae5f6a0d581",
         "affectsGlobalScope": false
       },
@@ -252,8 +252,8 @@
         "affectsGlobalScope": false
       },
       "./ts/uitabletext.ts": {
-        "version": "87ba49aaaa9d0b5159279ebcc385e730a28414e569ea8f6325687f3f652289b3",
-        "signature": "0a1dba3d187d1b4a8781e4d76715ae86de574f5040f8d3a90516ac43a79b33e0",
+        "version": "037b152f2d96557fd7c7a3b1e087fd9c86bbe2423172571e9cee83ec5469233b",
+        "signature": "0a459231e85d98099661d4227a3d71eaf12b9dfc6862341c44661ba1d916bb85",
         "affectsGlobalScope": false
       }
     },

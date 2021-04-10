@@ -1318,7 +1318,7 @@ export class CTableData {
 
       if( iFormat & enumFormat.Format ) {
          iC--; // decrease column with one because first value is index key for row
-         if( this.m_aColumn[iC].position?.convert ) {
+         if( this.m_aColumn[iC]?.position?.convert ) {
             _V = this.m_aColumn[iC].position.convert( _V, [iR,iC] );
          }
       }

@@ -38,14 +38,14 @@
 
          // style CUITableText
          let oStyle = {
-            html_row: "div.row",                            // "th" for column headers
-            html_cell: "span",                              // "td" for cells
+            html_row: "div.row",                            // "div" for rows and "row" class
+            html_cell: "span",                              // "span" for cells
          }
 
          let options = {
             dispatch: oDispatch,
             parent: document.getElementById("idContainer"), // container
-            section: ["body"],                              // sections to create
+            section: ["body"],                              // sections to create, only one body section
             table: TDHashtag,                               // source data
             name: "hash",                                   // name to access UI table in CTableData
             style: oStyle,                                  // styling
@@ -74,12 +74,7 @@
             }
          });
 
-         oDispatch.AddChain( oPager, TTHashtag );           // connect pager with 
-
-/*
-         oPager.component.querySelector('[data-type="previous"]').innerText = "Previous";
-         oPager.component.querySelector('[data-type="next"]').innerText = "Next";
-         */
+         oDispatch.AddChain( oPager, TTHashtag );           // connect pager with ui table
 
          let oPager2 = new CUIPagerPreviousNext({ 
             dispatch: oDispatch,
@@ -89,9 +84,8 @@
          oPager2.component.querySelector('[data-type="previous"]').innerText = "Previous";
          oPager2.component.querySelector('[data-type="next"]').innerText = "Next";
 
-         oDispatch.AddChain( oPager2, TTHashtag );          // connect pager with 
-
-         oDispatch.AddChain( TTHashtag, [oPager, oPager2] ); 
+         oDispatch.AddChain( oPager2, TTHashtag );           // connect pager with ui table
+         oDispatch.AddChain( TTHashtag, [oPager, oPager2] ); // connect ui table with pagers
 
 
          document.getElementById("idPageCount").addEventListener("change", e => { 
