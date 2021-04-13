@@ -376,6 +376,26 @@ export class CUITableText implements IUITableData {
       }
    }
 
+   /**
+    * Get value from body data. Body data is the data taken from table data that is processed
+    * with rules set. May be sorted and formated based on what settings that is made.
+    * @param _Row
+    * @param _Column
+    */
+   GetBodyValue( _Row: any, _Column: any ): unknown {
+      let iRow: number, iColumn: number;  // index for row and column in body data
+      if(Array.isArray(_Row) && _Row.length === 2) {
+         [ iRow, iColumn ] = _Row;
+      }
+      else {
+         iRow = _Row;
+         iColumn = _Column;
+      }
+      const value = this.m_aRowBody[iRow][iColumn];
+      return value;
+   }
+
+
    /** BLOG: children, childNodes and dataset
     * Get root html element for components, create the component element if argument is true and component element isn't found
     * UI root element has three important data attributes.
@@ -520,12 +540,12 @@ export class CUITableText implements IUITableData {
    /**
     * Set cell value to CTableData.
     * Setting values to table data has added logic with triggers. 
-    * @param _Row Physical index to row in CTableData
-    * @param _Column Physical index to column in CTableData
+    * @param {number | [number,number]} _Row Index to row in CTableData or array with row index and column index
+    * @param _Column Index to column in CTableData
     * @param value Value set to cell
     * @param {EventDataTable} oTriggerData Trigger information for value
     */
-   SetCellValue(_Row: any, _Column: any, value?: unknown, oTriggerData?: EventDataTable) {
+   SetCellValue(_Row: number | [number,number], _Column: any, value?: unknown, oTriggerData?: EventDataTable) {
       let bOk;
       let iRow: number, iColumn: number;  // index for row and column in UI
       const oTrigger = this.trigger;      // Get trigger object with trigger logic
@@ -535,7 +555,7 @@ export class CUITableText implements IUITableData {
          [ iRow, iColumn ] = _Row;
       }
       else {
-         iRow = _Row;
+         iRow = <number>_Row;
          iColumn = _Column;
       }
 
