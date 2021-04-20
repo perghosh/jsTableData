@@ -36,8 +36,8 @@ namespace details {
       callback_render?: ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column ) => boolean | void) | ((sType: string, e: EventDataTable, sSection: string, oColumn?: tabledata_column) => boolean | void)[],
       callback_renderer?: details.renderer[],
       create?: boolean,          // create elements for table in constructor
-      edit?: boolean,            // enable edit for table
       dispatch?: CDispatch,      // dispatcher (not needed)
+      edit?: boolean,            // enable edit for table
       edits?: edit.CEdits;       // edits component, logic for edit fields used in table
       id?: string,               // id for CUITableText
       offset_start?: number,     // offset row when getting data from table data doesn't match with physical relative start row
@@ -1636,12 +1636,29 @@ export class CUITableText implements IUITableData {
       aSelected = aSelected || this.selected;
       if(aSelected.length === 0) return;
 
+      let EVT;   // EventDataTable
       let sStyle: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "cell_selected") || "";      // style
       let sClass: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_cell_selected") || "";// class
 
+
+      let bCall = this.m_acallRender.length ? true : false;
+      if( bCall === true ) {
+         EVT = this._get_triggerdata();
+      }
+
       aSelected.forEach((a) => {
          let e = this.ELEMENTGetCell(a);
-         if(e) {
+         let bRender = true;
+         if( bCall ) { 
+            EVT.information = a;
+            EVT.eElement = e;
+            for(let j = 0; j < this.m_acallRender.length; j++) {
+               let b = this.m_acallRender[j].call(this, "beforeSelected", EVT, "body", this.data.COLUMNGet( this._column_in_data( a[1] )) );
+               if( b === false ) bRender = false;
+            }
+         }
+
+         if(e && bRender) {
             if(sStyle) e.style.cssText = sStyle;
             if(sClass) e.className = sClass;
          }
@@ -1652,10 +1669,22 @@ export class CUITableText implements IUITableData {
       this.INPUTMove(enumMove.validate);
 
       let sClass: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_cell_input") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_selected");
+      const eElement = this.ELEMENTGetCellValue( this.m_aInput[ 2 ] );
 
+      let EVT;   // EventDataTable
+      let bCall = this.m_acallRender.length ? true : false;
+      if( bCall === true ) {
+         EVT = this._get_triggerdata();
+         EVT.information = this.m_aInput;
+         EVT.eElement = eElement;
+         for(let j = 0; j < this.m_acallRender.length; j++) {
+            let b = this.m_acallRender[j].call(this, "beforeInput", EVT, "body", this.data.COLUMNGet( this._column_in_data( this.m_aInput[1] )) );
+            if( b === false ) return;
+         }
+      }
 
       if(sClass) {
-         this.ELEMENTGetCellValue( this.m_aInput[ 2 ] ).classList.add(sClass);
+         eElement.classList.add(sClass);
       }
 
    }
@@ -2211,21 +2240,6 @@ export class CUITableText implements IUITableData {
                }
             }
          }
-         //if(this.m_aInput = [ iR, iC, eElement ];)
-         /*
-         if(sType === "click" && this.m_aInput) {                             // if input, then position input on clicked cell
-            let aCell: [ number, number, unknown ] = this.GetRowCol(<HTMLElement>e.srcElement);
-            let aI = this.m_aInput;
-            if(aCell && (aCell[ 0 ] !== aI[ 0 ] || aCell[ 1 ] !== aI[ 1 ])) {
-               aCell[ 2 ] = this.ELEMENTGetCell(aCell[ 0 ], aCell[ 1 ]);
-               this.m_aInput = <[ number, number, HTMLElement ]>aCell;
-               this.Render("body");
-            }
-            else {
-               // TODO: Open edit
-            }
-         }
-         */
          else if(sType === "keydown" && this.m_aInput) {
             let eMove: enumMove;
             if((<KeyboardEvent>e).keyCode === 9) {
