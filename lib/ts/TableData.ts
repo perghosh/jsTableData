@@ -575,9 +575,10 @@ export class CTableData {
 
       if(aData.length === 0 ) return; // no rows ?
 
-      let aRow: unknown[] = aData[0];
+      let aRow: unknown[];
 
-      if(this.COLUMNGetCount() === 0) {
+      if(this.COLUMNGetCount() === 0) { console.assert( iBegin > 0, "First row should be column names" );
+         aRow = aData[0];
          aRow.forEach((sName) => { 
             this.COLUMNAppend(sName);
          });
@@ -702,15 +703,21 @@ export class CTableData {
 
    /**
     * Clear internal data, everything that is data related that is.
+    * @param {"column" | "body"} [sType] Type of data to be cleared
     */
-   ClearData() {
-      this.m_aBody = [];
-      this.m_aColumn = [];
-      this.m_aDirtyRow = [];
-      this.m_iFooterSize = 0;
-      this.m_iHeaderSize = 0;
-      this.m_iNextKey = 0;
-      this.m_iPage = 0;
+   ClearData( sType?: "column" | "body" ) : void {
+      if(!sType || sType.indexOf("col") !== -1) {
+         this.m_aColumn = [];
+      }
+
+      if(!sType || sType.indexOf("body") !== -1) {
+         this.m_aBody = [];
+         this.m_aDirtyRow = [];
+         this.m_iFooterSize = 0;
+         this.m_iHeaderSize = 0;
+         this.m_iNextKey = 0;
+         this.m_iPage = 0;
+      }
    }
 
 
