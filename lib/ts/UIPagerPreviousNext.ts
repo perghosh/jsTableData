@@ -165,6 +165,13 @@ export class CUIPagerPreviousNext implements IUITableData {
             this.Render();
          }
          break;
+         case "set" : 
+            if( sType === "page" ) {
+               const data = oMessage?.data;
+               this.m_oMembers.page = data.page;
+               this.Render();
+            }
+            break;
       }
    }
 
@@ -214,6 +221,10 @@ export class CUIPagerPreviousNext implements IUITableData {
       eComponent.appendChild(e);
       e.addEventListener("click", (eEvent: MouseEvent) => {
          if( self._on_action("click", eEvent, "move.next") !== false ) this.MoveNext();
+      });
+
+      this._action( "create.button", null, EVT => {
+         EVT.eElement = eComponent;
       });
    }
 

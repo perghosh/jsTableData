@@ -242,7 +242,7 @@
         "affectsGlobalScope": false
       },
       "./ts/uipagerpreviousnext.ts": {
-        "version": "2295f28621d2b56628b38256f0f20519b241328fa9b7f0883648aaff868b48e1",
+        "version": "aa5a5e8f12e07adcf5382e7fa98d103a5164043d7e752178138c360a48046e17",
         "signature": "c8e53e7dcac219fef3121a121376e99a421d8e870bde5faaf70621470517c3db",
         "affectsGlobalScope": false
       },
@@ -252,8 +252,8 @@
         "affectsGlobalScope": false
       },
       "./ts/uitabletext.ts": {
-        "version": "a027c4eaf0f7d6a4a776f8bd7b28432f04d599a54f00c2ba30732d4effbb8f9d",
-        "signature": "e0b4de6989a53d68609fb854b44eaf75f1b90d45ced5c0316085585d2ab3bb01",
+        "version": "bd0ea1cb5095df0041d950171eb0bdb146dfd7347498c9b93fff1ccdf8d82198",
+        "signature": "1f116f46a374bf9e9b4c68446b6c07d5ec4a4144a03068b3ccb8bedda4675e1b",
         "affectsGlobalScope": false
       }
     },

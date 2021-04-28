@@ -51,6 +51,7 @@ namespace details {
          value?: string,
       },
       settings?: { layout?: string },
+      server?: boolean,          // if data is stored on server, default for this is to allways get all from table data when table data is updated from server
       state?: number,            // states on how CUITableData is behaving, check enumState
       style?: {
          header?: string,
@@ -137,7 +138,7 @@ export class CUITableText implements IUITableData {
    m_aColumnPhysicalIndex: number[]; // index for column in table data
    m_aColumnPosition: tabledata_position[];
    m_eComponent: HTMLElement; // Element that acts as container to table, sections can exist outside container but default is within
-   m_oDispatch: CDispatch;
+   m_oDispatch: CDispatch;    // Dispatcher used to connect ui table to other compatible components without implement callbacks
    m_oEdits: edit.CEdits;     // Component that handles edit logic
    m_sId: string;             // Unique id for ui table
    m_aInput: [ number, number, HTMLElement, number, number ]; // data for active input
@@ -153,8 +154,9 @@ export class CUITableText implements IUITableData {
    m_aRowPhysicalIndex: number[];// array with numbers for row index in table data object. This is to point the physical position for data
    m_oRowRows: CRowRows;      // CRowRows is used to manage the layout for each row i CTableData
    m_aSelected: [ number, number ][]; // Cell that are  selected, [row, column]
+   m_bServer: boolean;        // Data is stored on server, when getting new information table data is updated and default is to get all from table data
    //m_oSettings: { layout?: string };// Various settings for table text
-   m_iState: number;          // Holds internal state for UI table.
+   m_iState: number;          // Holds internal state for UI table. State isn't used internally, this is only for external used to save some sort of state
    m_oTableData: CTableData;  // table source data object used to populate CUITableText
    m_oTableDataTrigger: CTableDataTrigger;// Trigger logic for table
    m_aSection: string[] | [string,HTMLElement][]; // Sections
@@ -215,6 +217,7 @@ export class CUITableText implements IUITableData {
       this.m_iRowCountMax  = o.max || -1;
       this.m_aSection      = o.section || [ "toolbar", "title", "header", "body", "footer", "statusbar" ]; // sections "header" and "body" are required
       this.m_aSelected     = [];
+      this.m_bServer       = o.server || false;
       this.m_iState        = o.state || 0;
       this.m_oTableData    = o.table || null;
       this.m_oTableDataTrigger = o.trigger || null;
@@ -280,9 +283,8 @@ export class CUITableText implements IUITableData {
 
    get trigger() { return this.m_oTableDataTrigger; }
 
-   get state() { return this.m_iState; }
 
-   get dispatch() { return this.m_oDispatch; }
+   get dispatch() { return this.m_oDispatch; }              // get dispatcher if any connected
    set dispatch(oDispatch: CDispatch) { this.m_oDispatch = oDispatch; }
 
 
@@ -291,10 +293,20 @@ export class CUITableText implements IUITableData {
     */
    get edits() { return this.m_oEdits; }
 
-   /**
-    * Get selected cells
-    */
-   get selected() { return this.m_aSelected; }
+   // ## row attributes 
+   get row_count() { return this.m_iRowCount; }             // get number of rows in table
+   get row_page() { return this.m_iRowStart / this.m_iRowCountMax; }// calculate active page
+   set row_page( iPage: number ) { 
+      this.m_iRowStart = iPage * this.m_iRowCountMax; 
+      if( this.dispatch ) {
+         this.dispatch.NotifyConnected(this, { command: "set.page", data: { page: this.row_page } });
+      }
+   }
+   get row_max() { return this.m_iRowCountMax; }            // max number of rows in ui table
+
+   get selected() { return this.m_aSelected; }              // selected cells 
+
+   get state() { return this.m_iState; }                    // custom states for ui table, not used internally
 
 
    /**
@@ -346,16 +358,25 @@ export class CUITableText implements IUITableData {
       switch( sCommand ) {
          case "update" : this.Render(); break;
          case "move" : {
+            let iMoveRows = this.m_iRowCountMax !== -1 ? this.m_iRowCountMax : this.m_iRowCount;
+
             if( oMessage?.data?.trigger & enumTrigger.TRIGGER_BEFORE ) {
-               if( sType === "previous" && this.m_iRowStart <= 0 ) return false;
+               if( sType === "previous" && this.m_iRowStart <= 0 ) {
+                  this.ROWMove( -iMoveRows, true );
+                  return false;
+               }
                else if( sType === "next" ) {
                   // Trying to move beyond number of rows in table data
-                  if( this.data.ROWGetCount() < (this.m_iRowStart + this.m_iRowOffsetStart + this.m_iRowCountMax) ) return false;
+                  if( this.data.ROWGetCount() < (this.m_iRowStart + this.m_iRowOffsetStart + this.m_iRowCountMax) ) {
+                     this.ROWMove( iMoveRows, true );
+                     return false;
+                  }
                }
                return;
             }
-            if( sType === "previous" ) this.ROWMove( -this.m_iRowCountMax );   // move back one "page"
-            else if( sType === "next" ) this.ROWMove( this.m_iRowCountMax );   // move forward one "page"
+
+            if( sType === "previous" ) this.ROWMove( -iMoveRows );   // move back one "page"
+            else if( sType === "next" ) this.ROWMove( iMoveRows );   // move forward one "page"
          }
          break;
       }
@@ -757,8 +778,10 @@ export class CUITableText implements IUITableData {
       this.render_header(<[ number, [ string, string ] ][]>aHeader);
 
       let o: { [key: string]: string|number } = {};
-      if( this.m_iRowCountMax >= 0 ) o.max = this.m_iRowCountMax;              // if max rows returned is set
-      if(this.m_iRowStart >= 0) o.begin = this.m_iRowStart + this.m_iRowOffsetStart;
+      if( this.m_iRowCountMax >= 0 ) o.max = this.m_iRowCountMax;               // if max rows returned is set
+
+      if( this.m_bServer === true ) o.begin = 0;                                // data is from server and fetched dynamically, table data only has the active page data
+      else if(this.m_iRowStart >= 0) o.begin = this.m_iRowStart + this.m_iRowOffsetStart;
 
       if(this.m_aInput) { this.m_aInput[ 0 ] = -1; this.m_aInput[ 1 ] = -1; }
       let aBody = this.data.GetData(o);
@@ -1082,28 +1105,36 @@ export class CUITableText implements IUITableData {
       return aError.length ? aError : true;
    }
 
-   ROWMove( iOffset: number ) {
+   /**
+    * Move to row, rows are found in table data and this modifies the first row that is shown from table data
+    * @param {number}  iOffset distance to new row position
+    * @param {boolean} bFake   when true then no movement is done, just triggers. this is if data is fetched from server
+    */
+   ROWMove( iOffset: number, bFake?: boolean ) {
       let iStart = this.m_iRowStart;
+
+      let oTD: EventDataTable;
+      const oTrigger = this.trigger;                                           // Get trigger object with trigger logic
+      if( oTrigger ) { 
+         oTD = this._get_triggerdata();
+         oTD.information = { offset: iOffset, start: iStart, count: this.m_iRowCount,  max: this.m_iRowCountMax }; // move data
+         oTD.iEvent = enumTrigger.BeforeMove;
+         const bOk = oTrigger.Trigger( enumTrigger.BeforeMove, oTD ); 
+         if( bOk === false ) return;
+      }
+
       iStart += iOffset;
       if( iStart < 0 ) iStart = 0;
-   
-      if( iStart !== this.m_iRowStart ) {
-         let oTD: EventDataTable;
-         const oTrigger = this.trigger;                                           // Get trigger object with trigger logic
-         if( oTrigger ) { 
-            oTD = this._get_triggerdata();
-            oTD.iEvent = enumTrigger.BeforeMove;
-            const bOk = oTrigger.Trigger( enumTrigger.BeforeMove, oTD ); 
-            if( bOk === false ) return;
-         }
 
-         this.m_iRowStart = iStart;
+      if( iStart !== this.m_iRowStart ) {
+
+         if( bFake !== true ) this.m_iRowStart = iStart;
 
          if( this.dispatch ) {
             this.dispatch.NotifyConnected(this, { command: "move", data: { start: iStart, count: this.m_iRowCount,  max: this.m_iRowCountMax } });
          }
 
-         this.Render();
+         if( bFake !== true ) this.Render();
 
          if( oTrigger ) { 
             oTD.iEvent = enumTrigger.AfterMove;
