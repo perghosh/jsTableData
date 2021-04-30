@@ -1313,7 +1313,24 @@ export class CUITableText implements IUITableData {
       }
    }
 
-   INPUTMove(e: enumMove, bRender?: boolean) {
+   /**
+    * Clear input item, this doesnt dispach any event. it just clears value if input is created
+    */
+   INPUTClear(): [ number, number, HTMLElement, number, number ] {
+      if( this.m_aInput ) {
+         const a = <[ number, number, HTMLElement, number, number ]>[...this.m_aInput];
+         this.m_aInput = [ -1, -1, null, -1, -1 ];
+         return a;
+      }
+      return null;
+   }
+
+   /**
+    * Move active input based on specified move operation
+    * @param {enumMove} e How input is moved
+    * @param {boolean}  bRender if body is rendered after move, this will update complete table with new input
+    */
+   INPUTMove(e: enumMove, bRender?: boolean): void {
       let [ iR, iC ] = this.m_aInput;
 
       if(e < enumMove.page_up) {
@@ -1337,8 +1354,6 @@ export class CUITableText implements IUITableData {
       if(iR < 0) iR = 0;
       else if(iR >= this.m_iRowCount) iR = this.m_iRowCount - 1;
 
-      //let eElement = this.ELEMENTGetCell(iR,iC);
-      //this.m_aInput = [ iR, iC, eElement ];
       if( e !== enumMove.validate ) this.INPUTSet( iR, iC );
 
       if(bRender === true) this.Render("body");
