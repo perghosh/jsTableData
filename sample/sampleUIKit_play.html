@@ -143,17 +143,17 @@
                         }
                      }
                   },
-                  callback_render: function( sName, v, eElement, c ) {
-                     if( sName === "afterHeaderValue" ) {
+                  callback_render: function( sType, e, sSection, c ) {
+                     if( sType === "afterHeaderValue" ) {
                         let iSort = c.state?.sort;
                         if( iSort ) {
                            let eI = document.createElement("i");
                            if( iSort === 1 ) eI.className = "marker sort-ascending";
                            else eI.className = "marker sort-descending";
-                           eElement.appendChild(eI);
+                           e.eElement.appendChild(eI);
                         }
                      }
-                     else if( sName === "askCellValue" ) return false;
+                     else if( sType === "askCellValue" ) return false;
                   }
                }; 
 

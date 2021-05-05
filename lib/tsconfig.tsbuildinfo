@@ -252,7 +252,7 @@
         "affectsGlobalScope": false
       },
       "./ts/uitabletext.ts": {
-        "version": "8b8d529b40501972f5751694f96cf92fd12f8e375efc2d77eeee1cc5fd2c794f",
+        "version": "d687ba25ca790a0250ffd802facd38c9106a6bf782a46e2383294607740c5eb0",
         "signature": "c6f979ba9dfc8b9eaa8c2fe4beecd5e103cbc4f7e8fc017d7fa0c3a8de9a84d9",
         "affectsGlobalScope": false
       }

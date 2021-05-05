@@ -1456,13 +1456,16 @@ export class CUITableText implements IUITableData {
       }
       let eSpan: HTMLElement = <HTMLElement>eRow.firstElementChild;
       const iCount = aHeader.length;
+      let EVT = this._get_triggerdata();
       for( let i = 0; i < iCount; i++ ) {
          const aName = aHeader[i][1];
 
          if( bCall ) { 
             let bRender = true;
+            EVT.information = aName;
+            EVT.eElement = eSpan;
             for(let j = 0; j < this.m_acallRender.length; j++) {
-               let b = this.m_acallRender[j].call(this, "beforeHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ), undefined, true ) );
+               let b = this.m_acallRender[j].call(this, "beforeHeaderValue", EVT, "header", this.data.COLUMNGet( this._column_in_data( i ), undefined, true ) );
                if( b === false ) bRender = false;
             }
             if( bRender === false ) continue;
@@ -1472,7 +1475,7 @@ export class CUITableText implements IUITableData {
             eSpan.innerText = aName[ 0 ] || aName[ 1 ];    // alias or name
             eSpan.title = eSpan.innerText;
             eSpan.dataset.c = aHeader[i][0].toString();    // set column index
-            if( bCall ) this.m_acallRender.forEach((call) => { call.call(this, "afterHeaderValue", aName, eSpan, this.data.COLUMNGet( this._column_in_data( i ), undefined, true ) ); });
+            if( bCall ) this.m_acallRender.forEach((call) => { call.call(this, "afterHeaderValue", EVT, "header", this.data.COLUMNGet( this._column_in_data( i ), undefined, true ) ); });
             eSpan = <HTMLElement>eSpan.nextElementSibling;
          }
 
