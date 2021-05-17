@@ -2246,6 +2246,7 @@ export class CUITableText implements IUITableData {
    private _action(sType: string, e: Event, sSection: string): unknown {
       if(this.m_acallAction && this.m_acallAction.length > 0) {
          let EVT = this._get_triggerdata();
+         EVT.eEvent = e;
          let i = 0, iTo = this.m_acallAction.length;
          let callback = this.m_acallAction[ i ];
          while(i++ < iTo) {
@@ -2264,10 +2265,12 @@ export class CUITableText implements IUITableData {
     */
    private _on_action(sType: string, e: Event, sSection: string) {
       if(this.m_acallAction && this.m_acallAction.length > 0) {
+         let EVT = this._get_triggerdata();
+         EVT.eEvent = e;
          let i = 0, iTo = this.m_acallAction.length;
          let callback = this.m_acallAction[ i ];
          while(i++ < iTo) {
-            let bResult = callback.call(this, sType, e, sSection);
+            let bResult = callback.call(this, sType, EVT, sSection);
             if(bResult === false) return;
          }
       }

@@ -116,7 +116,7 @@
             trigger: oTrigger,                              // set trigger object, this will enable triggers
             callback_action: function(sType, e, sSection) {
                if(sType === "click" && sSection === "header") {
-                  let aColumn = this.COLUMNGet(e.srcElement);
+                  let aColumn = this.COLUMNGet(e.eEvent.srcElement);
                   if(aColumn) {
                      this.Sort(aColumn[ 0 ], true);
                      this.Render();

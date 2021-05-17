@@ -222,7 +222,7 @@
         "affectsGlobalScope": false
       },
       "./ts/tabledata.ts": {
-        "version": "400e3e32dbb19286a02fa5dd9a6c9dbe81495bf22bb8da229fe4e050cf2fd7c6",
+        "version": "12cf946b39bd04b67af9d4490e905500944a45ded97b98c1252ddaab3b1a996d",
         "signature": "4d8bed7891a62daaa969080ef3893965f15495ce473e0c277b98c87f385f0030",
         "affectsGlobalScope": false
       },
@@ -242,8 +242,8 @@
         "affectsGlobalScope": false
       },
       "./ts/uipagerpreviousnext.ts": {
-        "version": "aa5a5e8f12e07adcf5382e7fa98d103a5164043d7e752178138c360a48046e17",
-        "signature": "c8e53e7dcac219fef3121a121376e99a421d8e870bde5faaf70621470517c3db",
+        "version": "32de9e22be62b7f6d0b0c46aa9a00e5f7567f2d7a9df1c40d1e610c72297eb0f",
+        "signature": "05f477cb52ebaceb8db12b448248b4cabe0d470931cd6eb0684227f7e287adf3",
         "affectsGlobalScope": false
       },
       "./ts/uitableform.ts": {
@@ -252,7 +252,7 @@
         "affectsGlobalScope": false
       },
       "./ts/uitabletext.ts": {
-        "version": "d687ba25ca790a0250ffd802facd38c9106a6bf782a46e2383294607740c5eb0",
+        "version": "d0114cd805fce6d957b73f779ddccf14fb38edea596d8716a4b6a2eccda737b1",
         "signature": "c6f979ba9dfc8b9eaa8c2fe4beecd5e103cbc4f7e8fc017d7fa0c3a8de9a84d9",
         "affectsGlobalScope": false
       }

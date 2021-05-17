@@ -1289,8 +1289,12 @@ export class CTableData {
                oColumn.type.type = <number>CTableData.GetJSType(s);
                if(s === "number") oColumn.style.textAlign = "right";
             }
+            else if( v === null ) {
+               oColumn.type.group = "string";
+               oColumn.type.type = enumValueType.str;
+            }
             else {
-               let eType: enumValueType = (<details.type>v).type || enumValueType.unknown;
+               let eType: enumValueType = (<details.type>v).type || enumValueType.unknown; 
                if(eType === enumValueType.unknown) {
                   oColumn.type.type = <number>CTableData.GetType( (<details.type>v).name );
                   oColumn.type.name = (<details.type>v).name;

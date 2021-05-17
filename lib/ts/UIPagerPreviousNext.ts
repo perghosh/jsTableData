@@ -13,6 +13,7 @@ namespace details {
 
    export type style = {
       html_button?: string,
+      html_page_current?: string,
    }
 
    export type construct = {
@@ -193,6 +194,7 @@ export class CUIPagerPreviousNext implements IUITableData {
       eComponent = eComponent || this.m_eComponent;
       let sClass: string;
       let sHtml: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_button");
+      let sHtmlPageCurrent: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_page_current");
       let sStyle: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "style_button") || "";
       if(!sHtml) sHtml = "button";
       else {
@@ -203,8 +205,11 @@ export class CUIPagerPreviousNext implements IUITableData {
       let self = this;
 
       let add_button = function( sHtml: string, sStyle: string, sClass: string, sType: string ): HTMLElement {
-         let e = <HTMLElement>document.createElement(sHtml);
+         let aHtml = sHtml.split(".");
+         let e = <HTMLElement>document.createElement(aHtml[0]);
          if(sStyle) e.style.cssText = sStyle; 
+         sClass = sClass || "";
+         if( aHtml.length > 1 ) sClass += " " + aHtml[1];
          if(sClass) e.className = sClass;     
          e.dataset.type = sType;
          return e;
@@ -215,6 +220,11 @@ export class CUIPagerPreviousNext implements IUITableData {
       e.addEventListener("click", (eEvent: MouseEvent) => {
          if( self._on_action("click", eEvent, "move.previous") !== false ) this.MovePrevious();
       });
+
+      if( typeof sHtmlPageCurrent === "string" ) {
+         e = add_button( sHtmlPageCurrent, "", "", "current" );
+         eComponent.appendChild(e);
+      }
 
       
       e = add_button( sHtml, sStyle, sClass, "next" );
