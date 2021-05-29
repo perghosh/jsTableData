@@ -6,10 +6,12 @@
    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.css">
 </head>
 <body>
-   <div class="" style="display: grid; height: 800px; place-items: center; overflow: auto; resize: both; width: 1400px; background-color: var(--bs-light);">
-      <div id="idBootstrapTable1" style="height: 500px; width: 1200px; overflow: auto;"></div>
-      <div id="idBootstrapTable2" style="height: 500px; width: 1200px; overflow: auto;"></div>
-      <div id="idBootstrapTable3" style="height: 500px; width: 1200px; overflow: auto;"></div>
+   <div class="" style="display: grid; height: 2000px; place-items: center; overflow: auto; resize: both; width: 1400px; background-color: var(--bs-light);">
+      <div id="idBootstrapTable1" style="margin: 1em; width: 1200px; overflow: auto;"></div>
+      <div id="idBootstrapTable2" style="margin: 1em; width: 1200px; overflow: auto;"></div>
+      <div id="idBootstrapTable3" style="margin: 1em; width: 1200px; overflow: auto;"></div>
+      <div id="idBootstrapTable4" style="margin: 1em; width: 1200px; overflow: auto;"></div>
+      <div id="idBootstrapTable5" style="margin: 1em; width: 1200px; overflow: auto;"></div>
    </div>
 
    <script>
@@ -44,6 +46,8 @@
          oTDAll.UIAppend(oTT);                              // add ui object to source data object (CTableData)
          oTT.Render();                                      // render table
 
+         // ------------------------------------------------
+
          let aTable = oTDAll.CELLGetRangeValue( [[1,0],[5,9]] )[0];
          oTD = new CTableData();
          oTD.COLUMNAppend( aTable[0].length );              // create column data for each value in first row
@@ -62,8 +66,9 @@
          oTD.UIAppend(oTT);                                 // add ui object to source data object (CTableData)
          oTT.Render();                                      // render table
 
+         // ------------------------------------------------
 
-         aTable = oTDAll.CELLGetRangeValue( [[4,2],[8,8]] )[0];
+         
          oTD = new CTableData();
          oTD.COLUMNAppend( aTable[0].length );              // create column data for each value in first row
          oTD.ReadArray(aTable, {begin:0});                  // read data
@@ -74,6 +79,27 @@
             section: [ "toolbar", "title", "table.body", "table.footer", "statusbar" ], // sections to create
             table: oTD,                                     // source data
             name: "table_3",                                // name to access UI table in CTableData
+            style: oStyle,                                  // styling
+         };
+
+         oTT = new CUITableText(options);                   // create CUITableText that render table in browser
+         oTD.UIAppend(oTT);                                 // add ui object to source data object (CTableData)
+         oTT.Render();                                      // render table
+
+
+         // ------------------------------------------------
+
+         aTable = aTable1.filter( a => { return a[2] === "Barry French"; });
+         oTD = new CTableData();
+         oTD.COLUMNAppend( aTable[0].length );              // create column data for each value in first row
+         oTD.ReadArray(aTable, {begin:0});                  // read data
+
+
+         options = {
+            parent: document.getElementById("idBootstrapTable4"),// container
+            section: [ "toolbar", "title", "table.body", "table.footer", "statusbar" ], // sections to create
+            table: oTD,                                     // source data
+            name: "table_4",                                // name to access UI table in CTableData
             style: oStyle,                                  // styling
          };
 
