@@ -1337,6 +1337,92 @@ export class CTableData {
       return _V;
    }
 
+   CELLGetRangeValue( iRow: number, iColumn: number ): [ unknown[][], number[] ];
+   CELLGetRangeValue( aRange: [ iR1: number, _C1: string | number, iR2: number, _C2: string | number ] ): [ unknown[][], number[] ];
+   CELLGetRangeValue( aRange: [ [iR1: number, _C1: string | number ], [iR2: number, _C2: string | number ] ] ): [ unknown[][], number[] ];
+   CELLGetRangeValue( _1: any, _2?: any ): [ unknown[][], number[] ] {
+      let aIndex: number[] = [];
+      let aData: unknown[][] = [];
+      let aRow: unknown[]; // active row
+      let iR1: number, iR2: number; // start and end row
+      let aColumn: number[] = [];   // physical position in row for value
+      let aGetRow: number[];        // convert row keys to physical positions
+
+      if( _1 === undefined ) {                                                 // first argument is undefined, return all rows
+         iR1 = this.m_iHeaderSize;
+         iR2 = this.ROWGetCount();
+      }
+      else if(typeof _1 === "number") {                                        // selected row
+         aGetRow = [ this._row( _1 ) ];
+         iR1 = 0; iR2 = 1; 
+      }
+      else if(Array.isArray( _1 )) {                                           // [row1,col1,row2,col2] or [[row1,col1], [row2,col2]]
+         if(_2 !== undefined) {
+            aGetRow = [];
+            _1.forEach(iR => {
+               const i = this._row(iR);
+               if(i !== -1) aGetRow.push(i);
+            });
+            iR1 = 0; iR2 = aGetRow.length;
+         }
+         else {
+            let _C1: number | string, _C2: number | string;
+            if(Array.isArray(_1[ 0 ])) {
+               iR1 = _1[ 0 ][0];
+               iR2 = _1[ 1 ][0]
+               _C1 = _1[ 0 ][1];
+               _C2 = _1[ 1 ][1];
+            }
+            else {
+               iR1 = _1[ 0 ]; iR2 = _1[ 2 ];
+               _C1 = _1[ 1 ]; _C2 = _1[ 3 ];
+            }
+            
+            let iC1 = this._index2( _C1 );
+            let iC2 = iC1;
+            _C2 = _C2 || iC1;
+            if(_C2 !== iC1) {
+               iC2 = this._index2( _C2 );
+            }
+
+            aColumn.push( iC1 );
+            if(iC1 != iC2) {
+               for( let i = iC1; i < iC2; i++ ) aColumn.push( this._index2( i ) );
+            }
+         }
+      }
+
+      if( aColumn.length === 0 ) {
+         if(typeof _2 === "number") {
+            aColumn.push(this._index(_2));
+         }
+         else if(typeof _2 === "string") {
+            aColumn.push(this._index(_2));
+         }
+         else if(Array.isArray(_2)) {
+            _2.forEach(i => { aColumn.push(this._index(i)); });
+         }
+      }
+
+      for(let iR = iR1; iR < iR2; iR++) {
+         // get row
+         if( aGetRow ) aRow = this.m_aBody[ aGetRow[ iR ] ];// row keys has been converted to physical row
+         else aRow = this.m_aBody[ iR ];                    // raw row position
+
+         let aRowCollect = [];
+         aColumn.forEach(iC => { 
+            const value = aRow[ iC ];
+            if(Array.isArray(value))  aRowCollect.push( value[0] );
+            else aRowCollect.push( value );
+         })
+
+         aIndex.push( <number>aRow[0] );  // push physical index for row
+         aData.push( aRowCollect );
+      }
+
+      return [ aData, aIndex ];
+   }
+
 
    /**
     * Set value in cell
@@ -1578,7 +1664,7 @@ export class CTableData {
          }
       }
       else {
-         const iWhere = this._index(_Where) + 1;                              // remember to add 1 because first value is internal key value for row
+         const iWhere = this._index2(_Where);
          while(--i >= 0) {
             let aRow = this.m_aBody[ i ];
             if( iCount === 1 ) aRow.splice( iWhere, 0, _Value );
@@ -1757,9 +1843,9 @@ export class CTableData {
    */
 
    /**
-    * 
-    * @param iCount
-    * @param oColumn
+    * Create column objects needed to store information about column data in table
+    * @param iCount {number} number of columns
+    * @param oColumn {details.column} column properties
     */
    _create_column(iCount?: number, oColumn?: details.column | object): details.column[] {
       iCount = iCount || 1;
@@ -1814,6 +1900,15 @@ export class CTableData {
    }
 
    /**
+    * Return column index for column i body data (first value is key to row)
+    * @param {number|string} _Index index that is converted to index in `m_aColumnIndex`
+    */
+   _index2(_Index: number|string ): number {
+      const i = this._index( _Index );
+      if( i >= 0 ) return i + 1;                           // add one to skip key
+   }
+
+   /**
     * Return (ui) index from raw column index. UI index is index for object that uses table data to store data
     * @param iIndex raw column index in `m_aColumn`
     */
@@ -1836,7 +1931,7 @@ export class CTableData {
       let iR: number, iC: number;
       if(!bRaw) {
          iR = this._row( iRow );
-         iC = this._index(_Column) + 1; // First column among rows has index to row
+         iC = this._index2(_Column); // First column among rows has index to row
       }
       else {
          iR = this._row( iRow );

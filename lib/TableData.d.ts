@@ -425,6 +425,9 @@ export declare class CTableData {
      * @param  {number} [iFormat] if raw value cell value from raw row is returned
      */
     CELLGetValue(iRow: number, _Column: string | number, iFormat?: number): unknown;
+    CELLGetRangeValue(iRow: number, iColumn: number): [unknown[][], number[]];
+    CELLGetRangeValue(aRange: [iR1: number, _C1: string | number, iR2: number, _C2: string | number]): [unknown[][], number[]];
+    CELLGetRangeValue(aRange: [[iR1: number, _C1: string | number], [iR2: number, _C2: string | number]]): [unknown[][], number[]];
     /**
      * Set value in cell
      * @param  {number} iRow key for row in source array
@@ -518,9 +521,9 @@ export declare class CTableData {
      * @param callback
      */
     /**
-     *
-     * @param iCount
-     * @param oColumn
+     * Create column objects needed to store information about column data in table
+     * @param iCount {number} number of columns
+     * @param oColumn {details.column} column properties
      */
     _create_column(iCount?: number, oColumn?: details.column | object): details.column[];
     /**
@@ -534,6 +537,11 @@ export declare class CTableData {
      * @param {number|string} _Index index that is converted to index in `m_aColumnIndex`
      */
     _index(_Index: number | string): number;
+    /**
+     * Return column index for column i body data (first value is key to row)
+     * @param {number|string} _Index index that is converted to index in `m_aColumnIndex`
+     */
+    _index2(_Index: number | string): number;
     /**
      * Return (ui) index from raw column index. UI index is index for object that uses table data to store data
      * @param iIndex raw column index in `m_aColumn`
