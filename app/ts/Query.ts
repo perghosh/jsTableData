@@ -1,12 +1,13 @@
 ﻿namespace details {
 
    export type condition = {
-      id?: string, 
-      value?: unknown, 
-      operator?: number | string, 
-      simple?: string, 
-      group?: string, 
-      table?: string,
+      flags?: string,            // condition flags
+      id?: string,               // condition id
+      value?: unknown,           // condition value
+      operator?: number | string,// operator, name or number for operator name 
+      simple?: string,           // simple readable name for condition
+      group?: string,            // group if condition is placed in a group
+      table?: string,            // table id condition belongs to
    }
 
    export type header = {
@@ -53,6 +54,13 @@ export class CQuery {
       this.m_aValue = <details.value[]>aValue; 
    }
 
+   /**
+    * [CONDITIONAdd description]
+    * @param {string}  sTable   id for table
+    * @param {string}  sId      id to condition
+    * @param {unknown} _value   condition value
+    * @param {number}  [iOperator] operator number, used in condition (0 = equal, 1 = less than, etc. )
+    */
    CONDITIONAdd( sTable: string, sId: string, _value: unknown, iOperator?: number );
    CONDITIONAdd( oCondition: {  table: string, id: string, value: string|number, simple?: string, operator?: number } );
    CONDITIONAdd( _1: any, _2?: any, _3?: any, _4?: number, _5?: any, _6?: any) {
@@ -124,6 +132,7 @@ export class CQuery {
          eCondition.setAttribute("operator", o.operator.toString() );
          if( o.simple ) eCondition.setAttribute("simple", o.simple );
          if( o.group ) eCondition.setAttribute("simple", o.group );
+         if( o.flags ) eCondition.setAttribute("flags", o.flags );
       });  
       return doc;
    }

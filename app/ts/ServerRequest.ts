@@ -145,7 +145,36 @@ export class CRequest {
       return encodeURIComponent(JSON.stringify(oJson));
    }
 
+   Load( sFile: string, sMimeType: string, sName?: string ) {
+      let XHRequest = new XMLHttpRequest();
+      sName = sName || "Load";
+      XHRequest.open( 'GET', sFile, true ); 
+      if( sMimeType) XHRequest.overrideMimeType(sMimeType);
 
+      let self = this;
+      XHRequest.onreadystatechange = function() {
+         if(this.readyState === 4 ) {
+            if( this.status === 200) {
+               self.CallProcess( sName, this.responseText, this.status );
+            }
+            else {
+               console.assert(false, XHRequest.statusText);
+               self.CallProcess( sName, XHRequest.statusText, this.status );
+            }
+         }
+      };
+
+      XHRequest.send(null);
+   }
+
+
+   /**
+    * Call server method or methods.
+    * @param {string}    sMethod Server method or methods that is  called
+    * @param {object}    oParameters 
+    * @param {string}    sData   [description]
+    * @param {string}    sUrl    [description]
+    */
    Get( sMethod: string, oParameters: { [ key: string ]: string }, sData?: string, sUrl?: string ) {
       const sOpen = sData ? "POST" : "GET";
       oParameters = oParameters || {};
@@ -157,7 +186,7 @@ export class CRequest {
       sUrl += CRequest.GetParameter( oParameters );                            // parameters first
       sUrl += this.GetMethod( sMethod );                                       // methods last, methods need parameters so there fore params need to be first in querystring
 
-      var XHRequest = new XMLHttpRequest();
+      let XHRequest = new XMLHttpRequest();
       let self = this;
       XHRequest.onreadystatechange = function() {
          if(this.readyState === 4 ) {
@@ -208,15 +237,15 @@ export class CRequest {
 
    /**
     * Execute callbacks with data from server
-    * @param {Document} oXml xml document from server
+    * @param {Document | string} _Xml xml document from server
     * @param {string}   sResult all result text from server
     * @param {number}   iStatus server response status
     */
-   CallProcess( oXml: Document, sResult: string, iStatus: number  ) {
+   CallProcess( _Xml: Document | string, sResult: string, iStatus: number  ) {
       if(this.m_callProcess && this.m_callProcess.length > 0) {
          let oEvent: EventRequest = {  sResponseText: sResult, iStatus: iStatus };
 
-         if( oXml === undefined ) {                                            // error, response text is not sent
+         if( _Xml === undefined ) {                                             // error, response text is not sent
             let i = 0, iTo = this.m_callProcess.length;
             let callback = this.m_callProcess[ i ];
             while(i++ < iTo) {
@@ -225,34 +254,17 @@ export class CRequest {
             }
             return;
          }
-
-         let aSection = oXml.getElementsByTagName('section');                  // get all sections
-         for( let i = 0; i < aSection.length; i++ ) {                          // iterate sections
-            let eSection = aSection[i];
-            let sError = eSection.getAttribute("error");                       // found error ?
-            let sMethod = eSection.getAttribute("name");                       // method name for section
-            if( sMethod === "s03" ) { 
-               if( sError === "1" && !this.session ) {
-                  this.m_iGetUserSession++;
-                  this.session = null;
-                  if( this.m_iGetUserSession < 2 ) {
-                     this.m_callProcess[0].call(this, null, "user");
-                     return;
-                  }
-               }
-               else {
-                  const eUser = eSection.querySelector("user");
-                  sError = eUser.getAttribute("error");
-                  if( sError !== "1" ) {
-                     this.m_iGetUserSession = 0;
-                     this.session = eUser.getAttribute("user");
-                     const sAlias = eUser.getAttribute("alias");
-                     if( sAlias ) {
-                        this.m_callProcess[0].call(this, null, "alias", { sMethod: "alias",  sResponseText: sAlias });
-                     }
-                  }
-                  else if( this.m_iGetUserSession === 0 ) {
-                     // try to get user session again, just once
+         else if( typeof _Xml === "string" ) {
+            this.m_callProcess[0].call(this, null, _Xml, oEvent);
+         }
+         else {
+            let aSection = _Xml.getElementsByTagName('section');                // get all sections
+            for( let i = 0; i < aSection.length; i++ ) {                        // iterate sections
+               let eSection = aSection[i];
+               let sError = eSection.getAttribute("error");                     // found error ?
+               let sMethod = eSection.getAttribute("name");                     // method name for section
+               if( sMethod === "s03" ) { 
+                  if( sError === "1" && !this.session ) {
                      this.m_iGetUserSession++;
                      this.session = null;
                      if( this.m_iGetUserSession < 2 ) {
@@ -260,20 +272,41 @@ export class CRequest {
                         return;
                      }
                   }
+                  else {
+                     const eUser = eSection.querySelector("user");
+                     sError = eUser.getAttribute("error");
+                     if( sError !== "1" ) {
+                        this.m_iGetUserSession = 0;
+                        this.session = eUser.getAttribute("user");
+                        const sAlias = eUser.getAttribute("alias");
+                        if( sAlias ) {
+                           this.m_callProcess[0].call(this, null, "alias", { sMethod: "alias",  sResponseText: sAlias });
+                        }
+                     }
+                     else if( this.m_iGetUserSession === 0 ) {
+                        // try to get user session again, just once
+                        this.m_iGetUserSession++;
+                        this.session = null;
+                        if( this.m_iGetUserSession < 2 ) {
+                           this.m_callProcess[0].call(this, null, "user");
+                           return;
+                        }
+                     }
+                  }
                }
-            }
 
-            oEvent.sMethod = sMethod;                                          // server method name
-            sMethod = this.GetMethodName( sMethod );                           // get client method name
+               oEvent.sMethod = sMethod;                                          // server method name
+               sMethod = this.GetMethodName( sMethod );                           // get client method name
 
-            let j = 0, jTo = this.m_callProcess.length;
-            let callback = this.m_callProcess[ j ];
-            while(j++ < jTo) {
-               let bResult = callback.call(this, eSection, sMethod, oEvent);
-               if(bResult === false) return;
-            }
+               let j = 0, jTo = this.m_callProcess.length;
+               let callback = this.m_callProcess[ j ];
+               while(j++ < jTo) {
+                  let bResult = callback.call(this, eSection, sMethod, oEvent);
+                  if(bResult === false) return;
+               }
+            }// for( let i = 0; i < aSection.length; i++ ) {
          }
-      }
+      }// if(this.m_callProcess && this.m_callProcess.length > 0) {
    }
 
 }
