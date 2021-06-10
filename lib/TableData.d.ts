@@ -85,6 +85,7 @@ declare namespace details {
     type position = {
         col?: number;
         convert?: ((value: unknown, aCell: [number, number]) => unknown);
+        header?: number | boolean;
         hide?: number | boolean;
         index?: number;
         page?: number;
@@ -371,6 +372,7 @@ export declare class CTableData {
      * @param {string} _Property property name, if child property remember the format is "property.property"
      * @param {string[]} _Property property names, return multiple properties
      * @param {boolean} [bRaw] Index for column will use direct index in internal column array.
+     * @returns {[ string | number, unknown ][]} index position for value or values and value or values in array for requested properties `[position, [values....]][]`
      */
     COLUMNGetPropertyValue(_Index: boolean | number | string | number[] | string[], _Property: string | string[], bRaw?: boolean): unknown | [string | number, unknown][];
     COLUMNGetPropertyValue(_Index: boolean | number | string | number[] | string[], _Property: string | string[], bRaw: boolean, callIf: ((column: details.column) => boolean)): unknown | [string | number, unknown][];

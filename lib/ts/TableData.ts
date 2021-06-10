@@ -106,10 +106,11 @@ namespace details {
    export type position = {
       col?: number,     // in what column, this is for input forms
       convert?: ((value: unknown, aCell: [number, number]) => unknown), // convert logic
+      header?: number|boolean,// if 0 or false do not generate header for column
       hide?: number|boolean,// if true ore one value like 1 or more this columns is hidden
       index?: number,
       page?: number,    // when forms with pages are used, this has the page columns is placed
-      row?: number,     // index to row. if table then 0 is same row as main row. negative numbers are above, positive numbers are below. in forms it has the index for row
+      row?: number,     // Index to row. If table then 0 is same row as main row. negative numbers are above, positive numbers are below. in forms it has the index for row
    };
 
 
@@ -309,10 +310,17 @@ export class CTableData {
       for(const [sKey, _rule] of Object.entries(oFormat)) {
          switch(sKey) {
             case "max":
-               if( 
-                  ((eType & enumValueType.group_string) && typeof _Value === "string" && (<string>_Value).length > _rule) ||
-                  ((eType & enumValueType.group_number) && typeof _Value === "number" && _Value > _rule)
-               ) aError = [false,sKey];
+               if(eType & enumValueType.group_string) {
+                  if(_Value.toString().length > _rule) aError = [false, sKey];
+               }
+               else if(eType & enumValueType.group_number) {
+                  let i;
+                  if(typeof _Value === "string") i = parseInt(_Value, 10);
+                  else if(typeof _Value === "boolean") i = _Value ? 1 : 0;
+                  else i = _Value;
+
+                  if(i > _rule) aError = [false, sKey];
+               }
                break;
             case "min": 
                if( eType & enumValueType.group_string ) {
@@ -901,6 +909,7 @@ export class CTableData {
     * @param {string} _Property property name, if child property remember the format is "property.property"
     * @param {string[]} _Property property names, return multiple properties
     * @param {boolean} [bRaw] Index for column will use direct index in internal column array.
+    * @returns {[ string | number, unknown ][]} index position for value or values and value or values in array for requested properties `[position, [values....]][]`
     */
    COLUMNGetPropertyValue(_Index: boolean | number | string | number[] | string[], _Property: string | string[], bRaw?: boolean): unknown | [ string | number, unknown ][];
    COLUMNGetPropertyValue(_Index: boolean | number | string | number[] | string[], _Property: string | string[], bRaw: boolean, callIf: ((column: details.column) => boolean) ): unknown | [ string | number, unknown ][];
