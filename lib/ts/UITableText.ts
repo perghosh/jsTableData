@@ -1862,7 +1862,7 @@ export class CUITableText implements IUITableData {
                let eSink: HTMLElement;
                if( (<any>e.target).tagName === "INPUT" || (<any>e.target).tagName === "TEXTAREA") {
                   let oEdit = this.m_oEdits.GetEdit( (<HTMLElement>e.target) );// try to get edit object for edit element
-                  if(!oEdit || oEdit.IsMoveKey(e.keyCode) === false) { return; }
+                  if(!oEdit || oEdit.IsMoveKey(e.keyCode, e) === false) { return; }
                   eSink = self.m_aInput[2];
                }
                else eSink = <HTMLElement>e.currentTarget;

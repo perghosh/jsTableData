@@ -371,7 +371,7 @@ export namespace edit {
        * @param  {number}  iKey number for key
        * @return {boolean}  true if key is valid move key
        */
-      IsMoveKey(iKey: number): boolean {
+      IsMoveKey(iKey: number, e?: any): boolean {
          if( this.m_aMoveKey ) {
             let i = this.m_aMoveKey.length;
             while( --i >= 0 ) {
