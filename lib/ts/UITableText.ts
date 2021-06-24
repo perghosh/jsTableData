@@ -2479,6 +2479,7 @@ export class CUITableText implements IUITableData {
     * @param iIndex
     */
    private _column_in_ui(iIndex: number): number {
+      if( !this.m_aColumnPhysicalIndex || this.m_aColumnPhysicalIndex.length === 0 ) this._generate_physicalindex();
       if( this.m_aColumnPhysicalIndex ) {
          let i = this.m_aColumnPhysicalIndex.length;
          while(--i >= 0) {
@@ -2487,6 +2488,19 @@ export class CUITableText implements IUITableData {
          return -1;
       }
       return iIndex;
+   }
+
+   /**
+    * Generate index to physical position in table data where to column that value is placed in ui table.  
+    * Check if column is hidden, if hide is set then column is ignored in ui table
+    */
+   private _generate_physicalindex(): void {
+      this.m_aColumnPhysicalIndex = [];
+      let aPosition: [number,tabledata_position][] = <[number,tabledata_position][] >this.data.COLUMNGetPropertyValue( true, "position", true );
+      aPosition.forEach( aP => {
+         // if column isn,t hidden then add to physical index
+         if( !aP[1].hide ) { this.m_aColumnPhysicalIndex.push( aP[0] ); }
+      });
    }
 
    private _get_triggerdata(): EventDataTable {

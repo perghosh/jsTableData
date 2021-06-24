@@ -145,10 +145,18 @@ export class CRequest {
       return encodeURIComponent(JSON.stringify(oJson));
    }
 
-   Load( sFile: string, sMimeType: string, sName?: string ) {
+   /**
+    * Load file from server
+    * @param {string} sFile     file name to load
+    * @param {string} sMimeType type of file
+    * @param {string} [sName]     operation name to know what to do
+    * @param {boolean} [bAsynchronous] if true then operation is asynchronous, false and it is synchronous
+    */
+   Load( sFile: string, sMimeType: string, sName?: string, bAsynchronous?: boolean ) {
       let XHRequest = new XMLHttpRequest();
       sName = sName || "Load";
-      XHRequest.open( 'GET', sFile, true ); 
+      if( bAsynchronous === undefined ) bAsynchronous = true;
+      XHRequest.open( 'GET', sFile, bAsynchronous ); 
       if( sMimeType) XHRequest.overrideMimeType(sMimeType);
 
       let self = this;

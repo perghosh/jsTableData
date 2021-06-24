@@ -70,6 +70,13 @@ export declare class CQuery {
         header?: string;
         value?: string;
     }, doc?: XMLDocument): XMLDocument;
+    /**
+     * [VALUEGetDocument description]
+     * @param  {details.value[]} aValue  [description]
+     * @param  {object}         oOptions [description]
+     * @param  {XMLDocument}    doc [description]
+     * @return {XMLDocument} [description]
+     */
     static VALUEGetDocument(aValue: details.value[], oOptions: {
         index?: number;
         row?: string;

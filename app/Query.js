@@ -103,6 +103,13 @@ export class CQuery {
         });
         return doc;
     }
+    /**
+     * [VALUEGetDocument description]
+     * @param  {details.value[]} aValue  [description]
+     * @param  {object}         oOptions [description]
+     * @param  {XMLDocument}    doc [description]
+     * @return {XMLDocument} [description]
+     */
     static VALUEGetDocument(aValue, oOptions, doc) {
         doc = doc || (new DOMParser()).parseFromString("<document/>", "text/xml");
         let xml = doc.documentElement;
