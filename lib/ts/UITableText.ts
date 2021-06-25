@@ -2456,10 +2456,17 @@ export class CUITableText implements IUITableData {
          _item = a;
       }
       else if( _item.indexOf(".") !== -1 ) {
-         let a = _item.split(/(?<!\\)\./);
-         a.forEach(function(s, i) {
-           this[i] = s.replaceAll("\\.", ".");
-         }, a);
+         let bReplace = false;
+         if( _item.indexOf("\\.") !== -1 ) {
+            _item = _item.replaceAll("\\.", "$£%½");
+            bReplace = true;
+         }
+
+         let a = _item.split(".");
+         if( bReplace === true ) {
+            let i = a.length;
+            while( --i >= 0 ) { a[i] = a[i].replaceAll("$£%½", "."); }
+         }
          _item = a;
       }
 
