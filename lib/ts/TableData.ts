@@ -343,7 +343,9 @@ export class CTableData {
                }
                break;
             case "required" : 
-               if( _Value === void 0 || _Value === null || _Value === "" ) aError = [false,sKey];
+               if( _rule ) {
+                  if( _Value === void 0 || _Value === null || _Value === "" ) aError = [false,sKey];
+               }
                break;
          }
       }
@@ -1323,11 +1325,13 @@ export class CTableData {
     * @param  {number} iRow index for row in source array
     * @param  {number|string} _Column index or key to column value
     * @param  {number} [iFormat] if raw value cell value from raw row is returned
+    * @param  {unknown} [_Default] default value if no cell value found
     */
-   CELLGetValue(iRow: number, _Column: string | number, iFormat?: number) {
+   CELLGetValue(iRow: number, _Column: string | number, iFormat?: number, _Default?: unknown): unknown {
       iFormat = iFormat || enumFormat.Format;
       let _V: unknown;
       let [ iR, iC ] = this._get_cell_coords(iRow, _Column, (iFormat & enumFormat.Raw) === enumFormat.Raw); // iR = row index, iC = column index
+      if( iC === -1 || typeof iC !== "number" ) return _Default;                // no column
       let aRow: unknown[] = this.m_aBody[ iR ];
 
       if(Array.isArray(  aRow[ iC ] ) ) {

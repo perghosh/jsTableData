@@ -233,6 +233,7 @@ export declare class CUITableText implements IUITableData {
     /** BLOG: querySelector
      * Return element for specified section.
      * Section elements are stored in array with section names, when section is created it is also stored. Array works as cache.
+     * Sample secitons could be "toolbar", "title", "header", "body", "footer", "statusbar". It depends on what sections is set to be created.
      * @param {string} sName name for section, valid names are found in this.m_aSection
      * @param {boolean} [bNoThrow] If true then return null if section isn't found
      * @returns {HTMLElement} Element for section or null if not found
@@ -371,6 +372,12 @@ export declare class CUITableText implements IUITableData {
     */
     ELEMENTGetCell(aRow: [number, number], sSection?: string): HTMLElement;
     ELEMENTGetCell(iRow: number, iColumn: number, sSection?: string): HTMLElement;
+    /**
+     * Return element for label.
+     * @param {HTMLElement} e Cell element container
+     * @returns {HTMLElement} element to label or null if not found
+     */
+    ELEMENTGetCellLabel(e: HTMLElement): HTMLElement;
     /**
      * Return value element in cell. Get value element in cell if cell has generated dom tree inside
      * @param {HTMLElement} e Cell element

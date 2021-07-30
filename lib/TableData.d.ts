@@ -425,8 +425,9 @@ export declare class CTableData {
      * @param  {number} iRow index for row in source array
      * @param  {number|string} _Column index or key to column value
      * @param  {number} [iFormat] if raw value cell value from raw row is returned
+     * @param  {unknown} [_Default] default value if no cell value found
      */
-    CELLGetValue(iRow: number, _Column: string | number, iFormat?: number): unknown;
+    CELLGetValue(iRow: number, _Column: string | number, iFormat?: number, _Default?: unknown): unknown;
     CELLGetRangeValue(iRow: number, iColumn: number): [unknown[][], number[]];
     CELLGetRangeValue(aRange: [iR1: number, _C1: string | number, iR2: number, _C2: string | number]): [unknown[][], number[]];
     CELLGetRangeValue(aRange: [[iR1: number, _C1: string | number], [iR2: number, _C2: string | number]]): [unknown[][], number[]];
