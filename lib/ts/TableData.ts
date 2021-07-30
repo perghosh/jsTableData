@@ -311,7 +311,7 @@ export class CTableData {
          switch(sKey) {
             case "max":
                if(eType & enumValueType.group_string) {
-                  if(_Value.toString().length > _rule) aError = [false, sKey];
+                  if( (_Value || "").toString().length > _rule) aError = [false, sKey];
                }
                else if(eType & enumValueType.group_number) {
                   let i;
@@ -324,7 +324,7 @@ export class CTableData {
                break;
             case "min": 
                if( eType & enumValueType.group_string ) {
-                  if( _Value.toString().length < _rule ) aError = [false,sKey];
+                  if( (_Value || "").toString().length < _rule ) aError = [false,sKey];
                }
                else if( eType & enumValueType.group_number ) {
                   let i;
@@ -1615,9 +1615,9 @@ export class CTableData {
    }
 
    /**
-    * 
-    * @param {number} iRow row position  where to insert new rows
-    * @param _Row
+    * Insert row into table at selected row position. Position is set using row key
+    * @param {number} iRow row key to position  where to insert new rows
+    * @param {number | unknown[] | unknown[][])} _Row
     * @returns [number,number] keys to added rows, first key and first and one more than last key for added rows
     */
    ROWInsert(iRow: number, _Row?: number | unknown[] | unknown[][]): [ number, number ] {
@@ -1654,6 +1654,28 @@ export class CTableData {
       this.m_aBody.splice(iRow, 0, aRow);
       return [ iFirst, this.m_iNextKey ];
    }
+
+   ROWValidate( iRow: number ): boolean | [number,string][] {
+      let aError: [number,string][] = [];
+
+      let iR = this._row(iRow); // get row position in body
+      let aRow: unknown[] = this.m_aBody[ iR ];
+      for(let i = 0, iTo = this.m_aColumn.length; i < iTo; i++) {
+         const o = this.m_aColumn[i];
+         const oPosition = o.position;
+         if( oPosition.hide ) continue;
+         
+         const _ok = CTableData.ValidateValue( aRow[i+1], o );
+         if(_ok !== true) {
+            let iIndex = o.position.index;
+            if( isNaN( iIndex ) ) iIndex = i;
+            aError.push( [ iIndex,  _ok[1] ] );
+         }
+      }
+
+      return aError.length ? aError : true;
+   }
+
 
    ROWRemove(iRow: number, iLength?: number): unknown[] {
       iLength = iLength || 1;         
