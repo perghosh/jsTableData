@@ -1655,6 +1655,11 @@ export class CTableData {
       return [ iFirst, this.m_iNextKey ];
    }
 
+   /**
+    * Validate values in row
+    * @param  {number}  iRow key to row that is validated
+    * @return {boolean | [number,string][]} true if row values is ok, otherwise error information in array
+    */
    ROWValidate( iRow: number ): boolean | [number,string][] {
       let aError: [number,string][] = [];
 
@@ -1677,9 +1682,16 @@ export class CTableData {
    }
 
 
+   /**
+    * Remove row in body
+    * @param  {number} iRow key to row that is removed
+    * @param  {number} iLength number of rows that is removed after specified row
+    * @return {unknown[]} removed rows
+    */
    ROWRemove(iRow: number, iLength?: number): unknown[] {
+      let iR = this._row(iRow); // get row position in body
       iLength = iLength || 1;         
-      return this.m_aBody.splice(iRow, iLength);
+      return this.m_aBody.splice(iR, iLength);
    }
 
    /**

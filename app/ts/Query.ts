@@ -102,6 +102,37 @@ export class CQuery {
       return sXml;
    }
 
+   /**
+    * Add table valuem may be used to insert value to table in database
+    * @param  {string}  sName  name for value
+    * @param  {unknown} _Value value
+    * @return {number}  number of values in internal list of values
+    */ /**
+    * Add table valuem may be used to insert value to table in database
+    * @param  {number} iIndex number matching index in query used to extract column information for value in table
+    * @param  {unknown} _Value value
+    * @return {number}  number of values in internal list of values
+    */
+   VALUEAdd( sName: string, _Value: unknown ): number;
+   VALUEAdd( iIndex: string, _Value: unknown ): number;
+   VALUEAdd( aValue: details.value[] | details.value ): number;
+   VALUEAdd( _1: any, _2?: any ): number {
+      if( Array.isArray( _1 ) ) {
+         this.m_aValue = this.m_aValue.concat( _1 );
+      }
+      else if( typeof _1 === "object") this.m_aValue.push( _1 );
+      else {
+         let oValue: details.value = {};
+         if( typeof _1 === "number" ) oValue.index = _1;
+         else if( typeof _1 === "string" ) oValue.name = _1;
+
+         oValue.value = _2;
+         if( _2 === null || _2 === undefined ) oValue.is_null = 1;
+         this.m_aValue.push( oValue );
+      }
+
+      return this.m_aValue.length;
+   }
 
    VALUEGetXml(oOptions?: { index?: number, values?: string, value?: string, document?: boolean }, doc?: XMLDocument): XMLDocument | string {
       oOptions = oOptions || {};

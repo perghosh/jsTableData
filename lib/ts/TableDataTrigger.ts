@@ -141,11 +141,20 @@ export class CTableDataTrigger {
       return -1;
    }
 
+   /**
+    * Get trigger name for trigger id
+    * @param  {number} iTrigger trigger number
+    * @return {string}          trigger name
+    */
    static GetTriggerName(iTrigger: number): string {
       return CTableDataTrigger.s_aTriggerName[ iTrigger & enumTrigger.MASK ];
    }
 
 
+   /**
+    * Set name or names for trigger
+    * @param {string[] | [ number, string ][]} aName connect name for trigger numbers
+    */
    static SetTriggerName(aName: string[] | [ number, string ][]) {
       if( CTableDataTrigger.s_aTriggerName.length === 0 ) CTableDataTrigger.s_aTriggerName = new Array( enumTrigger.LAST_EVENT );
       if(Array.isArray(aName[ 0 ])) {
