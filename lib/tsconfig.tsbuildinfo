@@ -222,8 +222,8 @@
         "affectsGlobalScope": false
       },
       "./ts/tabledata.ts": {
-        "version": "b71558b9c8273d00409d6c3b6a42e9524231b75fc4fe24fbee1a4feea5bde555",
-        "signature": "598f5cfb2d9597a0c3ccb66d01aa28bd8cde4ad53364b8c5634a9b0dd8c4bb9d",
+        "version": "049239f8baed976c6b85e99d92125a398a0b33fac940d678061b269ddd189226",
+        "signature": "e65c5b4fdd6cd4f7cc2e971924482755d52e64897b1e9d7490a7461b55de747c",
         "affectsGlobalScope": false
       },
       "./ts/tabledataedit.ts": {
@@ -232,8 +232,8 @@
         "affectsGlobalScope": false
       },
       "./ts/tabledatatrigger.ts": {
-        "version": "7fd7e20c93b50650e7bc523603b52b76ffb46acc6465d7e3566f199c00cc58cc",
-        "signature": "b9fe5f74020920b3c6d939320ace1e08063e7f92536dafd3fdaeffd732023927",
+        "version": "7b465aa1e0336766b20802111c29abad222fd59631a942dc1fe438b8fa4ece6a",
+        "signature": "43f58b95dd8bd8a2037814dd463c12b1c8973e92926b2f3a179077b6c9cfecd8",
         "affectsGlobalScope": false
       },
       "./ts/tabledatatriggernames.ts": {

@@ -108,7 +108,16 @@ export declare class CTableDataTrigger {
      */
     static s_aTriggerName: string[];
     static GetTriggerNumber(sName: string): number;
+    /**
+     * Get trigger name for trigger id
+     * @param  {number} iTrigger trigger number
+     * @return {string}          trigger name
+     */
     static GetTriggerName(iTrigger: number): string;
+    /**
+     * Set name or names for trigger
+     * @param {string[] | [ number, string ][]} aName connect name for trigger numbers
+     */
     static SetTriggerName(aName: string[] | [number, string][]): void;
     constructor(options: details.construct);
     /**

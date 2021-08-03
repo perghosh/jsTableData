@@ -339,7 +339,7 @@ export class CTableData {
                let a = _rule;
                if( !Array.isArray(a) ) a = [a];
                for(let i = 0; i < a.length; i++) {
-                  if((new RegExp(a[ i ], 'g')).test(_Value.toString()) === false) { aError = [ false, sKey ]; break; }
+                  if((new RegExp(a[ i ], 'g')).test((_Value || "").toString()) === false) { aError = [ false, sKey ]; break; }
                }
                break;
             case "required" : 
