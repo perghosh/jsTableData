@@ -8,7 +8,8 @@ export declare const enum enumState {
     SetHistory = 4,
     SetValue = 8,
     SetOneClickActivate = 16,
-    DisableFocus = 32
+    DisableFocus = 32,
+    SetElementIfValue = 64
 }
 declare namespace details {
     type construct = {
@@ -57,7 +58,7 @@ declare namespace details {
             html_row_body_before?: string | string[];
             html_row_body_after?: string | string[];
             html_row_body_container?: string | string[];
-            html_value?: string;
+            html_value?: string | [number, string][];
             html_section_header?: string;
             html_section_body?: string;
             html_section_footer?: string;
@@ -133,7 +134,7 @@ export declare class CUITableText implements IUITableData {
         class_cell_input?: string;
         class_cell_selected?: string;
         html_header?: string;
-        html_value?: string;
+        html_value?: string | [number, string][];
     };
     m_eSupportElement: HTMLElement;
     m_aValueError: [number, number, unknown, unknown][];

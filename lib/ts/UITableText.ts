@@ -26,6 +26,7 @@ export const enum enumState {
    SetValue    = 0x0008,   // Try to set value if property is found in element.
    SetOneClickActivate = 0x0010,// Activate edits in one click
    DisableFocus= 0x0020,   // Setting this and tabIndex isn't set for body no focus event is possible
+   SetElementIfValue= 0x0040,// If "SetValue" flag is set, if value attribute is found on element, it also set value to element
 }
 
 namespace details {
@@ -73,7 +74,7 @@ namespace details {
          html_row_body_before?: string | string[],          // html element used when extra rows is added before main row
          html_row_body_after?: string | string[],           // html element used when extra rows is added after main row
          html_row_body_container?: string | string[],       // html element used if body rows are in a container element
-         html_value?: string,
+         html_value?: string | [number, string][],
          html_section_header?: string,
          html_section_body?: string,
          html_section_footer?: string,
@@ -163,7 +164,7 @@ export class CUITableText implements IUITableData {
    m_oStyle: {
       header?: string, value?: string, cell_focus?: string, cell_selected?: string,
       class_header?: string, class_value?: string, class_section?: string, class_component?: string, class_cell_input?: string, class_cell_selected?: string,
-      html_header?: string, html_value?: string
+      html_header?: string, html_value?: string | [number,string][]
    };
    m_eSupportElement: HTMLElement;
    m_aValueError: [ number, number, unknown, unknown ][];// Error values
@@ -1511,9 +1512,9 @@ export class CUITableText implements IUITableData {
    render_body(_1: any, eSection?: HTMLElement ) {
       eSection = eSection || this.GetSection("body");
       let aResult: [ unknown[][], number[] ];
-      //let sClass: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "class_value") || "";
       let aStyle = <unknown[]>this.data.COLUMNGetPropertyValue(this.m_aColumnPhysicalIndex, "style", true); // position data for columns
       const bSetValue = this.is_state( enumState.SetValue );                    // If try to set value for html element, when you have INPUT elements in column.
+      const bSetElementIfValue = this.is_state( enumState.SetElementIfValue );
 
       if( Array.isArray( _1 ) ) {
          aResult = <[ unknown[][], number[] ]>_1;
@@ -1600,6 +1601,7 @@ export class CUITableText implements IUITableData {
                      if(sValue !== null && sValue != void 0) {
                         if("value" in e) { 
                            (<HTMLElement>e).setAttribute("value", sValue.toString());
+                           if( bSetElementIfValue ) (<HTMLElement>e).innerText = sValue.toString(); // also set element value if state "SetElementIfValue" is set. LI element is one sample
                         }
                         else e.innerText = sValue.toString();
                      }
@@ -2037,9 +2039,9 @@ export class CUITableText implements IUITableData {
       let _HtmlCell = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_cell"); // span is default for cell
       _HtmlCell = this._split( _HtmlCell, "span" );
 //      let sHtmlCell: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_cell") || "span"; // span is default for cell
-      let sHtmlValue: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_value");
-      if( typeof sHtmlValue === "string" ) sHtmlValue = sHtmlValue.trim();
-      this.set_state( sHtmlValue, enumState.HtmlValue );                       // set state if cell is a dom tree or not
+      let _HtmlValue: string | [number,string][] = <string | [number,string][]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_value");
+      if( typeof _HtmlValue === "string" ) _HtmlValue = _HtmlValue.trim();
+      this.set_state( _HtmlValue, enumState.HtmlValue );                       // set state if cell is a dom tree or not
 
 
 /*
@@ -2050,7 +2052,7 @@ export class CUITableText implements IUITableData {
       }
 */      
 
-      let set_row_attr = (eRow: HTMLElement, iRow: number, aColumn: number[], _HtmlCell: string | string[], sValue: string, sStyle: string ) => {
+      let set_row_attr = (eRow: HTMLElement, iRow: number, aColumn: number[], _HtmlCell: string | string[], _HtmlValue: string | [number,string][], sStyle: string ) => {
          eRow.dataset.r = iRow.toString();
          eRow.dataset.c_row = "C" + aColumn.join(",C") + ",";
 
@@ -2086,7 +2088,21 @@ export class CUITableText implements IUITableData {
             e.dataset.c = iColumn.toString();
             const oFormat = this.m_aColumnFormat[iColumn];
             if( typeof oFormat.html === "string" ) e.innerHTML = oFormat.html;
-            else if( sHtmlValue ) e.innerHTML = sHtmlValue;
+            else if( _HtmlValue ) {
+               let s: string;
+               if( typeof _HtmlValue === "string" ) s = _HtmlValue;
+               else {
+                  for( let iValueIndex = 0; iValueIndex < _HtmlValue.length; iValueIndex++ ) {
+                     const a = _HtmlValue[iValueIndex];
+                     if( a[0] === i ) {
+                        s = a[1]; break;
+                     }
+                     else if( a[0] === -1 ) s = a[1];      // default value has -1
+                  }
+               }
+               e.innerHTML = s;
+            } 
+
             if(sStyle) e.style.cssText = sStyle;
             eRow.appendChild( eCell );
          });
@@ -2113,20 +2129,20 @@ export class CUITableText implements IUITableData {
       while( aRowLevel[ iLevelIndex ] < 0 ) {                                  // rows before main row
          let aRow = this._create_row( _HtmlBefore );
          oRowRows.SetRowElement( iLevelIndex, aRow[1] );
-         set_row_attr( aRow[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), _HtmlCell, sHtmlValue, sStyle );
+         set_row_attr( aRow[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), _HtmlCell, _HtmlValue, sStyle );
          aRow[1].dataset.i = iLevelIndex.toString();
          iLevelIndex++;
       }
 
       oRowRows.SetRowElement( iLevelIndex, aRowMain[1] );                      // main row
-      set_row_attr( aRowMain[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), _HtmlCell, sHtmlValue, sStyle );
+      set_row_attr( aRowMain[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), _HtmlCell, _HtmlValue, sStyle );
       aRowMain[1].dataset.i = iLevelIndex.toString();
       iLevelIndex++;
 
       if(aRowLevel[ iLevelIndex ] > 0) {                                       // rows after main row
          let aRow = this._create_row( _HtmlAfter );
          oRowRows.SetRowElement( iLevelIndex, aRow[1] );
-         set_row_attr( aRow[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), _HtmlCell, sHtmlValue, sStyle );
+         set_row_attr( aRow[1], aRowLevel[ iLevelIndex ], oRowRows.GetRowColumns(iLevelIndex), _HtmlCell, _HtmlValue, sStyle );
          aRow[1].dataset.i = iLevelIndex.toString();
          iLevelIndex++;
       }

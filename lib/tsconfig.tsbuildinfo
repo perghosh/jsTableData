@@ -252,8 +252,8 @@
         "affectsGlobalScope": false
       },
       "./ts/uitabletext.ts": {
-        "version": "8dbf6d999d2dfaccff226b7ccac64970f519e330b786e421932a7ca3d99ad8fc",
-        "signature": "d10ba71ec25762b901a8b2f3731b5f1d8ef37e4b2c80cfe57c5d66278cdff3dd",
+        "version": "312282d94f016d9c85cb2ce7583287dac91ca6ffc470e9313fa1de8e8a66fa29",
+        "signature": "bb8c5a45692c98a7796d53461a2dcaae48577278f427de36eb41825fb5bf70c0",
         "affectsGlobalScope": false
       }
     },
