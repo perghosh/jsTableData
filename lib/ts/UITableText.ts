@@ -27,6 +27,7 @@ export const enum enumState {
    SetOneClickActivate = 0x0010,// Activate edits in one click
    DisableFocus= 0x0020,   // Setting this and tabIndex isn't set for body no focus event is possible
    SetElementIfValue= 0x0040,// If "SetValue" flag is set, if value attribute is found on element, it also set value to element
+   CancelRowRender= 0x0080,// Don't render row, this is done by callback
 }
 
 namespace details {
@@ -69,6 +70,7 @@ namespace details {
          html_cell?: string | string[],
          html_cell_header?: string,
          html_cell_footer?: string,
+         html_row_complete?: string | HTMLElement,          // values are inserted from code, row is just generated
          html_row?: string | string[],
          html_row_body?: string | string[],                 // html element used to render rows in body
          html_row_body_before?: string | string[],          // html element used when extra rows is added before main row
@@ -349,7 +351,7 @@ export class CUITableText implements IUITableData {
    }
 
    /**
-    * 
+    * Collect dispatch messages here for connected components
     * @param oMessage
     * @param sender
     */
@@ -1510,6 +1512,7 @@ export class CUITableText implements IUITableData {
    render_body(aResult?: [ unknown[][], number[] ], eSection?: HTMLElement);
    render_body(bUpdate: boolean, eSection?: HTMLElement)
    render_body(_1: any, eSection?: HTMLElement ) {
+      let EVT = this._get_triggerdata();
       eSection = eSection || this.GetSection("body");
       let aResult: [ unknown[][], number[] ];
       let aStyle = <unknown[]>this.data.COLUMNGetPropertyValue(this.m_aColumnPhysicalIndex, "style", true); // position data for columns
@@ -1525,6 +1528,7 @@ export class CUITableText implements IUITableData {
 
       if(eSection === null) return;
       let bCall = this._has_render_callback( "askCellValue", "body" );
+      const bCancelRowRender = this.is_state( enumState.CancelRowRender );
 
       let eRow = <HTMLElement>eSection.firstElementChild;
       if( eRow === null ) return;
@@ -1560,7 +1564,6 @@ export class CUITableText implements IUITableData {
             let eColumn: HTMLElement = <HTMLElement>eR.firstElementChild;
             const iTo = aColumn.length;
             for(let i = 0; i < iTo; i++) {
-            //aColumn.forEach(iC => { 
                const iC = this._column_in_ui( aColumn[i] );                    // index to column in table data
                let e = this.ELEMENTGetCellValue(eColumn);                      // get cell value element
                let sValue = aRow[ iC ];                                        // value for active cell
@@ -1571,11 +1574,15 @@ export class CUITableText implements IUITableData {
                if( bCall ) { 
                   let bRender = true;
                   for(let j = 0; j < this.m_acallRender.length; j++) {
-                     let b = this.m_acallRender[j].call(this, "beforeCellValue", sValue, eColumn, oColumn );
+                     EVT.eElement = e;
+                     EVT.information = sValue;
+                     let b = this.m_acallRender[j].call(this, "beforeCellValue", EVT, "body", oColumn );
                      if( b === false ) bRender = false;
                   }
                   if( bRender === false ) continue;
                }
+
+               if( bCancelRowRender ) continue;
 
                if(Object.keys(aStyle[ i ][1]).length > 0) Object.assign(e.style, aStyle[ i ][1]);
 
@@ -2032,6 +2039,7 @@ export class CUITableText implements IUITableData {
 
 //      let sClass: string;
       let sStyle: string = <string>CTableData.GetPropertyValue(this.m_oStyle, false, "value") || null;
+      let _HtmlRowComplete = <string|HTMLElement>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_complete");
       let _HtmlRow = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body") || <string>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row") || "div";
       let _HtmlBefore = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body_before") || _HtmlRow;
       let _HtmlAfter = <string|string[]>CTableData.GetPropertyValue(this.m_oStyle, false, "html_row_body_after") || _HtmlRow;
@@ -2043,14 +2051,6 @@ export class CUITableText implements IUITableData {
       if( typeof _HtmlValue === "string" ) _HtmlValue = _HtmlValue.trim();
       this.set_state( _HtmlValue, enumState.HtmlValue );                       // set state if cell is a dom tree or not
 
-
-/*
-      if(!sHtmlCell) sHtmlCell = "span";                                       // span is default element for values
-      if( sHtmlCell.indexOf(".") !== -1 ) {
-         let a = sHtmlCell.split(".");
-         if(a.length > 1) [ sHtmlCell, sClass ] = a;                           // element for value, this can be element name and class if format is in "element_name.class_names" like "span.value".
-      }
-*/      
 
       let set_row_attr = (eRow: HTMLElement, iRow: number, aColumn: number[], _HtmlCell: string | string[], _HtmlValue: string | [number,string][], sStyle: string ) => {
          eRow.dataset.r = iRow.toString();
@@ -2114,12 +2114,16 @@ export class CUITableText implements IUITableData {
 
       let eFragment = document.createDocumentFragment();                       // fragment used to collect markup that is added to table, markup is cloned into page
       let eContainer: HTMLElement | DocumentFragment;
-      let aRowMain = this._create_row( _HtmlRow );
+      let aRowMain = _HtmlRowComplete ? this._create_row( <HTMLTemplateElement>_HtmlRowComplete ) : this._create_row( _HtmlRow );
       let aContainer: [HTMLElement, HTMLElement];
       if(_HtmlContainer) {
          aContainer = this._create_container( _HtmlContainer );
          eContainer = aContainer[1];
          eFragment.appendChild( aContainer[0] );
+      }
+      else if( _HtmlRowComplete ) { 
+         eFragment.appendChild( aRowMain[0] );
+         eContainer = eFragment; 
       }
       else { eContainer = eFragment; }                                         // rows without container, set container to fragment
 
@@ -2202,11 +2206,45 @@ export class CUITableText implements IUITableData {
 
    /**
     * Create row or row "row-tree" of elements from string or array with strings
-    * @param {string | string[]} aRow element names for row tree
+    * @param {string | string[]} aRow element names for row tree. If row is array the first array element
+    * is used as class and second is used as style
     */
-   _create_row( aRow: string | string[] ): [HTMLElement, HTMLElement] {
-      if( !Array.isArray( aRow ) ) aRow = [aRow];
-      let eRoot: HTMLElement = null, eRow: HTMLElement, eParent: HTMLElement;
+   _create_row( aRow: string | string[] | HTMLTemplateElement ): [HTMLElement, HTMLElement] {
+      if( typeof aRow === "string" ) aRow = [aRow];
+      // let eRoot: HTMLElement = null, eRow: HTMLElement, eParent: HTMLElement;
+      let fCreateFromElement = ( eRow: HTMLElement ): [HTMLElement, HTMLElement] => {
+         let eMarkup = <HTMLElement>(<HTMLTemplateElement>aRow).content.cloneNode(true);
+         let e = <HTMLElement>eMarkup.firstElementChild;
+         e.dataset.type = "row";
+         return [e,e];
+      }
+
+      let fCreateFromArray = ( aRow: string[] ): [HTMLElement, HTMLElement] => {
+         let eRoot: HTMLElement = null, eRow: HTMLElement, eParent: HTMLElement;
+         for( let i = 0; i < aRow.length; i++ ) {
+            const a = this._split( aRow[i] ); //   aRow[i].split(".");
+            eRow = document.createElement(a[0]);
+            if( eParent ) eParent.appendChild( eRow );
+            if( a.length > 1 ) { eRow.className = a[1]; }
+            if( a.length > 2 ) { eRow.style.cssText = a[2]; }
+
+            if( eRoot === null ) {
+               eRoot = eRow;
+            }
+            eParent = eRow; // parent is always the last row created, may be used when rows has a tree markup
+         }
+
+         eRow.dataset.type = "row";
+         return [eRoot,eRow];
+      }
+
+
+      if( typeof aRow !== "string" && Array.isArray( aRow ) === false ) {
+         return fCreateFromElement( <HTMLTemplateElement>aRow );
+      }
+
+      return fCreateFromArray( <string[]>aRow );
+/*
       for( let i = 0; i < aRow.length; i++ ) {
          const a = this._split( aRow[i] ); //   aRow[i].split(".");
          eRow = document.createElement(a[0]);
@@ -2217,11 +2255,12 @@ export class CUITableText implements IUITableData {
          if( eRoot === null ) {
             eRoot = eRow;
          }
-         eParent = eRow;
+         eParent = eRow; // parent is always the last row created, may be used when rows has a tree markup
       }
 
       eRow.dataset.type = "row";
       return [eRoot,eRow];
+      */
    }
 
    /**

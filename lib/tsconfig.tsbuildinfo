@@ -217,8 +217,8 @@
         "affectsGlobalScope": true
       },
       "./ts/dispatch.ts": {
-        "version": "d8a6aa12a4cc926616cdbefcc5d8d30e1690e48f9f858d3890e8113618089beb",
-        "signature": "d286b5f02b723fe0335fd8a67adecf63100ab96f935b8f1ab5ce605471ded7c5",
+        "version": "a5d5e18d1baf93da96855991b2339ecfac36104ef67bc93c36666a9dc6bb82ca",
+        "signature": "31296a46299d535f1ff3eadb5047868e16b4d88a7d7bf5ddd3eb70027f7f96bf",
         "affectsGlobalScope": false
       },
       "./ts/tabledata.ts": {
@@ -252,8 +252,8 @@
         "affectsGlobalScope": false
       },
       "./ts/uitabletext.ts": {
-        "version": "312282d94f016d9c85cb2ce7583287dac91ca6ffc470e9313fa1de8e8a66fa29",
-        "signature": "bb8c5a45692c98a7796d53461a2dcaae48577278f427de36eb41825fb5bf70c0",
+        "version": "64bf56f60274e68de759eaa677b41918a47971ac08983713c8849360622e097e",
+        "signature": "c157340f7cae03697811064ca3bf78da2859384c8546633795f54ddab918505e",
         "affectsGlobalScope": false
       }
     },

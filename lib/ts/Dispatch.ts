@@ -7,16 +7,18 @@ export type DispatchMessage = {
 
 
 export interface IDispatch {
-   id: string;
-   name: string;
-
-   on: ((oMessage: DispatchMessage, sender: string|IDispatch ) => any);
-   destroy?: (() => void);
+   id?: string;               // component id, this should be unique
+   name?: string;             // component name
+   on?: ((oMessage: DispatchMessage, sender: string|IDispatch ) => any);// manage events send using dispatcher
+   destroy?: (() => void);    // destroy event
 }
 
-
+/**
+ * Object used to connect objects for communication
+ * Objects needs to implement "on" and "destroy" methods to work with dispatch
+ */
 export class CDispatch {
-   m_aListeners: IDispatch[];
+   m_aListeners: IDispatch[]; // Connected listeners
    m_oChain: { [key_name: string]: IDispatch[] }; // chains of items if a message is sent to selected objects
 
    constructor() {
