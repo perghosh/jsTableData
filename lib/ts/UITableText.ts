@@ -587,6 +587,11 @@ export class CUITableText implements IUITableData {
       const iDataRow: number = this._row_in_data(iRow), iDataColumn: number = this._column_in_data(iColumn);  // index for row and column in CTableData, its physical position
 
       const oColumn = this.data.COLUMNGet(iDataColumn, undefined, true);
+      let get_value_stack = () => {
+         if( oTriggerData.edit ) return oTriggerData.edit.GetValueStack();
+         return [[ iRow, iColumn ],null,value,null];
+      }
+      
       if(oTriggerData) {
          oTriggerData.column = oColumn;
          oTriggerData.data = this.data;
@@ -594,7 +599,7 @@ export class CUITableText implements IUITableData {
       }
 
       if( oTrigger ) { 
-         bOk = oTrigger.Trigger( enumTrigger.BeforeValidateValue, oTriggerData, oTriggerData.edit.GetValueStack() ); 
+         bOk = oTrigger.Trigger( enumTrigger.BeforeValidateValue, oTriggerData, get_value_stack() ); 
          if( bOk === false ) return;
       }
       let _result = CTableData.ValidateValue( value, oColumn );              // validate value
@@ -604,7 +609,7 @@ export class CUITableText implements IUITableData {
 
       if(_result === true || _result[0] === true ) {
          if( this.m_aValueError.length > 0 ) this.RemoveCellError( iRow, iColumn );// remove error for this value if it was set before
-         if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.BeforeSetValue, oTriggerData, oTriggerData.edit.GetValueStack() ); }
+         if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.BeforeSetValue, oTriggerData, get_value_stack() ); }
 
          if( bOk !== false ) {
             if( this.is_state( enumState.SetHistory ) ) this.data.HISTORYPush( iDataRow,iDataColumn ); // add to history
@@ -614,7 +619,7 @@ export class CUITableText implements IUITableData {
             if( this.is_state( enumState.SetDirtyRow ) ) this.data.DIRTYSet( iDataRow ); // Set row as dirty
          }
 
-         if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.AfterSetValue, oTriggerData, oTriggerData.edit.GetValueStack() ); }
+         if( oTrigger ) { bOk = oTrigger.Trigger( enumTrigger.AfterSetValue, oTriggerData, get_value_stack() ); }
       }
       else {
          if( oTrigger ) { 
