@@ -5,7 +5,7 @@ export declare type DispatchMessage = {
     data?: any;
 };
 export interface IDispatch {
-    id?: string;
+    id?: string | (() => string);
     name?: string;
     on?: ((oMessage: DispatchMessage, sender: string | IDispatch) => any);
     destroy?: (() => void);
@@ -25,6 +25,16 @@ export declare class CDispatch {
      * @param {unknown[]} aResult array with anything that is checked for false values
      */
     static IsCancel(aResult: unknown[]): boolean;
+    /**
+     * Return id for dispatch interface
+     * @param oListener
+     */
+    static GetId(_Listener: string | IDispatch): string;
+    /**
+     * Add listener to list of listeners
+     * @param oListener listener to add
+     * @param aChain if chain is added for id
+     */
     AddListener(oListener: IDispatch, aChain: any): IDispatch;
     /**
      * Append chain to listener chain if there is one, otherwise chain is created
@@ -39,15 +49,19 @@ export declare class CDispatch {
      */
     NotifyConnected(_Id: string | IDispatch, oMessage: DispatchMessage): unknown[];
     /**
-       * [SendMessage description]
-       * @param {CListener} source Listener object that sends message to connected m_aListeners
-       * @param {object} message sent message { source: "source object name", command: "command name", "target object name", data: {message data}, xml: xml_object }
-       */
-    SendMessage(oMessage: DispatchMessage, source: any): void;
+     * [SendMessage description]
+     * @param {CListener} source Listener object that sends message to connected m_aListeners
+     * @param {object} message sent message { source: "source object name", command: "command name", "target object name", data: {message data}, xml: xml_object }
+     */
+    SendMessage(oMessage: DispatchMessage, source?: IDispatch): void;
     /**
      * Remove listener from dispatch
      * @param {string|IDispatch} sId id for component that is removed
      */
-    Remove(sId: string | IDispatch, bDestroy?: boolean): any;
-    RemoveChain(sId: any): void;
+    Remove(sId: string | IDispatch, bDestroy?: boolean): void;
+    /**
+     * Remove chain from chain list
+     * @param sId {string} id for chain to remove
+     */
+    RemoveChain(sId: string): void;
 }

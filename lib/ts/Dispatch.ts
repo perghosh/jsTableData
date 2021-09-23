@@ -7,7 +7,7 @@ export type DispatchMessage = {
 
 
 export interface IDispatch {
-   id?: string;               // component id, this should be unique
+   id?: string | (() => string);// component id, this should be unique
    name?: string;             // component name
    on?: ((oMessage: DispatchMessage, sender: string|IDispatch ) => any);// manage events send using dispatcher
    destroy?: (() => void);    // destroy event
@@ -30,7 +30,7 @@ export class CDispatch {
     * Check array for false values
     * @param {unknown[]} aResult array with anything that is checked for false values
     */
-   static IsCancel(aResult: unknown[]) {
+   static IsCancel(aResult: unknown[]): boolean {
       let i = aResult.length;
       while(--i >= 0) {
          if( aResult[i] === false ) return true;
@@ -38,12 +38,36 @@ export class CDispatch {
       return false;
    }
 
-   AddListener( oListener: IDispatch, aChain ) {
+   /**
+    * Return id for dispatch interface
+    * @param oListener
+    */
+   static GetId(_Listener: string | IDispatch): string {
+      let sSourceId = "";
+      if(typeof _Listener == "string") {
+         sSourceId = _Listener;
+      }
+      else if(_Listener && _Listener.id) {
+         sSourceId = typeof _Listener.id === "function" ? _Listener.id() : _Listener.id;
+      }
+
+      return sSourceId;
+   }
+
+   /**
+    * Add listener to list of listeners
+    * @param oListener listener to add
+    * @param aChain if chain is added for id
+    */
+   AddListener( oListener: IDispatch, aChain ): IDispatch {
       if( !oListener ) throw "Unknown listener added!";
-      this.Remove( oListener.id );
+
+      const sId = CDispatch.GetId(oListener);
+
+      this.Remove( sId );
 
       this.m_aListeners.push(oListener);
-      if( aChain ) { this.m_oChain[oListener.id] = aChain; }
+      if( aChain ) { this.m_oChain[sId] = aChain; }
       return oListener;
    }
 
@@ -52,11 +76,11 @@ export class CDispatch {
     * @param {CListener} listener listener chain is added to
     * @param {IDispatch | IDispatch[]} aChain array with listeners
     */
-   AddChain( _Id: string | IDispatch, aChain: IDispatch | IDispatch[] ) {
+   AddChain( _Id: string | IDispatch, aChain: IDispatch | IDispatch[] ): void {
       let bAdded = false;
       if( Array.isArray( aChain ) === false ) aChain = <IDispatch[]>[ aChain ];
 
-      const sId: string = typeof _Id === "object" ? _Id.id : _Id;
+      const sId = CDispatch.GetId(_Id);
       for( var i = 0; i < this.m_aListeners.length; i++ ) {
          if( this.m_aListeners[i].id === sId ) {
             if( !this.m_oChain[sId] ) { this.m_oChain[sId] = <IDispatch[]>aChain; }
@@ -70,15 +94,13 @@ export class CDispatch {
       }
    }
 
-
-
    /**
     * Notify connected items found in chain. 
     * @param sId to chain with connected items
     * @param {DispatchMessage} oMessage message object sent to items in chain
     */
    NotifyConnected( _Id: string | IDispatch, oMessage: DispatchMessage ): unknown[] {
-      const sId: string = typeof _Id === "object" ? _Id.id : _Id;
+      const sId = CDispatch.GetId(_Id);
       let oListener: IDispatch,        // listener item in chain list
           aResult: unknown[] = [];     // result from calling listeners
 
@@ -95,11 +117,12 @@ export class CDispatch {
    }
 
    /**
-      * [SendMessage description]
-      * @param {CListener} source Listener object that sends message to connected m_aListeners
-      * @param {object} message sent message { source: "source object name", command: "command name", "target object name", data: {message data}, xml: xml_object }
-      */
-   SendMessage( oMessage: DispatchMessage, source ) {
+    * [SendMessage description]
+    * @param {CListener} source Listener object that sends message to connected m_aListeners
+    * @param {object} message sent message { source: "source object name", command: "command name", "target object name", data: {message data}, xml: xml_object }
+    */
+   SendMessage( oMessage: DispatchMessage, source?: IDispatch ): void {
+      let sSourceId = CDispatch.GetId(source);
       var i, oListener;
       if(Array.isArray( oMessage.target ) === true ) {
          var aTarget = oMessage.target;
@@ -134,12 +157,12 @@ export class CDispatch {
     * Remove listener from dispatch
     * @param {string|IDispatch} sId id for component that is removed
     */
-   Remove(sId: string | IDispatch, bDestroy?: boolean ) {
+   Remove(sId: string | IDispatch, bDestroy?: boolean ): void {
       var sName;
       var i, oListener;
       if( typeof sId === "object" ) {
          if( sId.name ) { sName = sId.name; }
-         else { sId = sId.id; }
+         else { sId = CDispatch.GetId(sId); }
       }
 
       if( typeof sId === "string" ) {
@@ -169,7 +192,11 @@ export class CDispatch {
       return null;
    }
 
-   RemoveChain( sId ) {
+   /**
+    * Remove chain from chain list
+    * @param sId {string} id for chain to remove
+    */
+   RemoveChain( sId: string ): void {
       if( this.m_oChain.hasOwnProperty( sId ) ) {
          delete this.m_oChain[sId];
       }
