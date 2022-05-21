@@ -1,3 +1,18 @@
+/*
+|Method|Description|
+|-|-|
+|`Reindex`|Generate new index values for each row in body, starts from 0 to number of rows - 1|
+|`CELLGetValue`||
+|||
+|`ROWGetCount`|Get number of rows with data in body, doesn't count header and footer rows|
+|`ROWGetRowIndex`|Get the physical position in body for row key|
+|`ROWGetRowKey`|Get key for row at physical position in body|
+|`ROWInsert`|Insert rows in body of rows|
+
+
+
+*/
+
 export const enum enumFormat {
    Raw      = 0x0001,
    Format   = 0x0002,
@@ -710,6 +725,17 @@ export class CTableData {
       return true;
    }
 
+   /**
+    * Reindex rows in body. Each row in body starts with index number for row, this index can be used to access row data.
+    * Sometiems you might reindex rows based on their position in body (first row gets 0, second gets 1 and so on). 
+    */
+   Reindex(): void {
+      this.m_aBody.forEach( (aRow, iIndex) => {
+         aRow[0] = iIndex;
+      })
+   }
+
+
 
    /**
     * Clear internal data, everything that is data related that is.
@@ -897,6 +923,16 @@ export class CTableData {
             else if(v === _Value) iCount++;
          }
       });
+   }
+
+   /**
+    * Clear columns data from column information, if data is added this do not work after column information is cleared
+    * @returns column array with cleared columns if any
+    */
+   COLUMNClear(): details.column[] {
+      let aColumn = this.m_aColumn;
+      this.m_aColumn = [];
+      return aColumn;
    }
 
 
@@ -1520,6 +1556,17 @@ export class CTableData {
    ROWGetRowIndex(iRow: number): number { return this._row(iRow); }
 
    /**
+    * Return row key for row at physical position specified by index parameter
+    * @param iIndex physical position in row data row key is returned for
+    * @returns row key for row based on physical position in body, if index is larger than number of rows -1 is returned
+    */
+   ROWGetRowKey(iIndex: number): number { 
+      iIndex += this.m_iHeaderSize;
+      if( iIndex < this.m_aBody.length ) return <number>this.m_aBody[iIndex][0];
+      return -1;
+   }
+
+   /**
     * Return values for row as array
     * @param iRow key to row or if bRay it is the physical index
     * @param bRaw if true then access internal row
@@ -1651,7 +1698,10 @@ export class CTableData {
       }
 
       // Rows are prepared, time to insert
-      this.m_aBody.splice(iRow, 0, aRow);
+      for( let i = 0; i < aRow.length; i++ ) {
+         this.m_aBody.splice(iRow + i, 0, aRow[i]);
+      }
+      
       return [ iFirst, this.m_iNextKey ];
    }
 
