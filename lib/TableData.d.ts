@@ -299,6 +299,11 @@ export declare class CTableData {
      */
     ValidateCoords(iR: number, _C: number | string): boolean;
     /**
+     * Reindex rows in body. Each row in body starts with index number for row, this index can be used to access row data.
+     * Sometiems you might reindex rows based on their position in body (first row gets 0, second gets 1 and so on).
+     */
+    Reindex(): void;
+    /**
      * Clear internal data, everything that is data related that is.
      * @param {"column" | "body"} [sType] Type of data to be cleared
      */
@@ -361,6 +366,11 @@ export declare class CTableData {
      * @param {string|number} [_Value] Value to compare with if specified values are counted
      */
     COLUMNGetCount(sProperty?: string, _Value?: string | number): number;
+    /**
+     * Clear columns data from column information, if data is added this do not work after column information is cleared
+     * @returns column array with cleared columns if any
+     */
+    COLUMNClear(): details.column[];
     /**
      * Returns selected property value from column or columns.
      * Each column holds a number of property values. With this function you can get any of them.
@@ -458,6 +468,12 @@ export declare class CTableData {
      * @param iRow key to row that physical index is returned for
      */
     ROWGetRowIndex(iRow: number): number;
+    /**
+     * Return row key for row at physical position specified by index parameter
+     * @param iIndex physical position in row data row key is returned for
+     * @returns row key for row based on physical position in body, if index is larger than number of rows -1 is returned
+     */
+    ROWGetRowKey(iIndex: number): number;
     /**
      * Return values for row as array
      * @param iRow key to row or if bRay it is the physical index

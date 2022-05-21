@@ -1,0 +1,212 @@
+<!-- http://localhost:8080/git/jsTableData/sample/sampleDragDrop.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+   <meta charset="utf-8" />
+   <title>Drag and drow using jsTableData</title>
+</head>
+<body>
+   
+   <script>
+      class CPage
+      {
+
+         constructor( oOptions ) {
+            this.m_oTDDragDrop = new CTableData();         // Generate table data for drag drop sample
+            this.m_eDragged = null;                        // When drag and drop is in action triggered by user, this has the element that is beeing dragged
+            this.m_eContainerDragDrop = null;
+         }
+
+         DRAGDROP_Initialize( aData ) {
+            let oTD = this.m_oTDDragDrop;
+            oTD.COLUMNClear();                             // clear columns
+            oTD.COLUMNAppend( aData[0].length );           // add columns 
+            oTD.ReadArray(aTable1, {begin:0});              // read data
+         }
+
+         DRAGDROP_AddColumn( sValue ) {
+            let oTD = this.m_oTDDragDrop;
+            oTD.COLUMNAppend( 1 );
+            oTD.ROWExpand( 1 );
+            let iColumn = oTD.COLUMNGetCount() - 1;
+            for( let iRow = oTD.ROWGetCount() - 1; iRow >= 0; iRow-- ) {
+               oTD.CELLSetValue( iRow, iColumn, sValue + (iRow + 1).toString(), true );
+            }
+
+            this.DRAGDROP_Render();               
+         }
+
+         DRAGDROP_Render( eContainer ) {
+            if( eContainer === undefined ) eContainer = this.m_eContainerDragDrop;
+            eContainer.innerHTML = "";                     // clear container
+            this.m_eContainerDragDrop = eContainer;
+
+            let eControl = document.createElement("div");
+            eContainer.appendChild( eControl );
+
+
+            let oTD = this.m_oTDDragDrop;
+            let aData = oTD.GetData();
+            
+            let eFragment = document.createDocumentFragment();
+
+            for(let iRow = 0; iRow < oTD.ROWGetCount(); iRow++) {
+               let eRow = document.createElement("div");
+               eRow.setAttribute("draggable", true);
+               eRow.dataset.drop_zone = true;
+
+               let iKey = oTD.CELLGetValue(iRow, 0);
+               let iOrder = oTD.CELLGetValue(iRow, 1);
+               let sName = oTD.CELLGetValue(iRow, 2);
+               let sRow = `<span>${iKey}</span><span>${iOrder}</span><span>${sName}</span>`;
+               if( oTD.COLUMNGetCount() > 3 ) {
+                  for( let iColumn = 3; iColumn < oTD.COLUMNGetCount(); iColumn++ ) {
+                     let sValue = oTD.CELLGetValue(iRow, iColumn);
+                     sRow += `<span>${sValue}</span>`;
+                  }
+               }
+               eRow.innerHTML = sRow;
+               eRow.dataset.key = iKey.toString();
+               eRow.dataset.row = iRow.toString();
+               eFragment.appendChild( eRow );
+            }
+
+            // ## Add events to enable drag and drop
+            //    Events added to each row are `dragover`, `dragstart`
+            //    Add drop event to elements that can be dropped on to know where it is dropped, this is done on all spans and event is called `drop`
+
+            // disable dragover to make the `drop` event to work
+            eControl.addEventListener("dragover", (oEvent) => {
+               oEvent.preventDefault();
+            });
+
+            eControl.addEventListener("dragstart", (oEvent) => {
+               this.m_eDragged = oEvent.target;
+               console.log("Start moving row [event = dragstart]")
+            });
+
+            let aSpan = eFragment.querySelectorAll("span");
+            aSpan.forEach( (e) => {  
+               e.style.cssText = "border: black solid 1px; box-sizing: border-box; display: inline-block; margin: 2px; padding: 2px; width: 100px;";
+            });
+
+            eControl.appendChild(eFragment);               // insert markup to control
+            aSpan.forEach( (e) => {  
+               e.addEventListener("drop", (oEvent) => {
+                  oEvent.preventDefault();
+                  let eTarget = oEvent.target;
+                  console.log(`dropped at ${eTarget.tagName} [event = drop]`)
+
+                  // ## Get row (div)
+                  let eRow = eTarget.closest("div");
+                  if( eRow.hasAttribute("data-drop_zone") ) {
+                     let iKey = parseInt( eRow.dataset.key, 10 );
+                     let iRow = parseInt( eRow.dataset.row, 10 );
+                     let iDraggedKey = parseInt( this.m_eDragged.dataset.key, 10 );
+                     let iDraggedRow = parseInt( this.m_eDragged.dataset.row, 10 );
+                     console.log("row: " + iDraggedKey + " is dropped on key: " + iKey);
+
+                     let iRowIndex = oTD.ROWGetRowIndex( iRow );
+                     if( iKey !== iDraggedKey ) {
+                        let aRow = oTD.ROWRemove( iDraggedRow )[0];
+                        let iRowInsert = iRow;
+                        if( iDraggedRow < iRow ) {       // When dragged row is below row daragged is dropped on, it should be inserted after
+                           let iRowIndexInBody = oTD.ROWGetRowIndex( iRow );
+                           iRowIndexInBody++;
+                           iRow = oTD.ROWGetRowKey( iRowIndexInBody );
+                           iRowInsert = iRow;
+                        }
+
+                        aRow.splice( 0, 1 );             // remove row index
+                        if( iRowInsert != -1 ) oTD.ROWInsert( iRowInsert, aRow ); // insert row at specified position
+                        else oTD.ROWAppend( aRow ); // add row
+                        oTD.Reindex();
+                        this.DRAGDROP_Render();
+                        // ## How to replace
+                        // If item is moved "down" then the replaced element should be moved before (use `insert after`)
+                        // If item is moved "up" then the replaced element should be moved after (use `insert before`)
+
+                     }
+                  }
+
+                  this.m_eDragged = null;
+               });
+            });
+
+         }
+      }
+
+      function PAGE_Setup() {
+         window.application = { cache: {}, js_object: {} };
+
+
+         let oPage = new CPage({});
+         oPage.DRAGDROP_Initialize( aTable1 );
+         oPage.DRAGDROP_Render( document.getElementById("idContainer1") );
+
+         let eButtonAddColumn = document.querySelector("button[data-command='add_column']");
+
+         eButtonAddColumn.addEventListener('click', function() {
+            let eInput = document.querySelector("input[data-argument='add_column']");
+            let sValue = eInput.value;
+            oPage.DRAGDROP_AddColumn( sValue );
+         });
+
+      }
+   </script>
+
+
+   <!--
+    | Init page
+    -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+         PAGE_Setup();
+      });
+   </script>
+
+   <!--
+    |  Import and set object for used components using ES6 `import`
+   -->
+   <script type="module">
+      import { CTableData, browser } from "./../lib/TableData.js";
+      import { edit } from "./../lib/TableDataEdit.js";
+      import { CTableDataTrigger } from "./../lib/TableDataTrigger.js";
+      import { CUITableText } from "./../lib/UITableText.js";
+      import { CUIPagerPreviousNext } from "./../lib/UIPagerPreviousNext.js";
+      import { CDispatch } from "./../lib/Dispatch.js";
+      import { SetTriggerName } from "./../lib/TableDataTriggerNames.js";
+
+      // ## Set global object names for imported components
+      window.edit = edit;
+      window.CTableData = CTableData;
+      window.CTableData_browser = browser;
+      window.CUITableText = CUITableText;
+      window.CTableDataTrigger = CTableDataTrigger;
+      window.CUIPagerPreviousNext = CUIPagerPreviousNext;
+      window.CDispatch = CDispatch;
+
+      SetTriggerName(); // connect trigger names with trigger id values
+   </script>
+
+   <script>
+   var aTable1 = [
+[1,1,"ONE","Monday"],
+[2,2,"TWO","Tuseday"],
+[3,3,"THREE","Wednesday"],
+[4,4,"FOUR","Tursday"],
+[5,5,"FIVE","Friday"]
+];
+
+   </script>
+
+
+   <div id="idContainer1">
+
+   </div>
+   <hr style="margin: 10px;" />
+   <button data-command="add_column">Add Column</button><input type="text" data-argument="add_column" />
+
+</body>
+</html>
